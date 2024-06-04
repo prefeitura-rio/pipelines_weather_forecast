@@ -5,6 +5,7 @@ entry_points:
     parameters:
       dataset1: {type: str, default: ""}
     #   dataset2: {type: str, default: ""}
-    command: "python etl_alertario.py -t {dataset1}"
+    command: "python etl_alertario.py -p {dataset1}"
+    # command: "python etl_alertario.py -t {dataset1}"
     # command: "python etl_alertario.py {dataset_1} {dataset_2}"
     # command: "python etl_alertario.py -t"
