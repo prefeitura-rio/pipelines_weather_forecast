@@ -1,4 +1,4 @@
-import numpy as np 
+import numpy as np
 import pandas as pd
 from metpy.units import units
 from metpy.calc import wind_components
@@ -13,8 +13,8 @@ def cyclic_time_encoding(s: pd.Series):
     Returns:
         tuple(pandas.Series, pandas.Series): a tuple of two pandas series with the sine and cosine encoding of the time of day
     """
-    hour_float = s.dt.hour + s.dt.minute/60.0
-    return cyclic_encoding(hour_float, 24.)
+    hour_float = s.dt.hour + s.dt.minute / 60.0
+    return cyclic_encoding(hour_float, 24.0)
 
 
 def cyclic_month_encoding(s: pd.Series):
@@ -26,8 +26,8 @@ def cyclic_month_encoding(s: pd.Series):
     Returns:
         tuple(pandas.Series, pandas.Series): a tuple of two pandas series with the sine and cosine encoding of the month of year
     """
-    month_float = s.dt.month.astype('float')
-    return cyclic_encoding(month_float, 12.)
+    month_float = s.dt.month.astype("float")
+    return cyclic_encoding(month_float, 12.0)
 
 
 def cyclic_encoding(s: pd.Series, max_value):
@@ -39,9 +39,9 @@ def cyclic_encoding(s: pd.Series, max_value):
     Returns:
         tuple(pandas.Series, pandas.Series): a tuple of two pandas series with the sine and cosine encoding
     """
-    s_float = s.astype('float')
-    s_sin = np.sin(2. * np.pi * s_float/max_value)
-    s_cos = np.cos(2. * np.pi * s_float/max_value)
+    s_float = s.astype("float")
+    s_sin = np.sin(2.0 * np.pi * s_float / max_value)
+    s_cos = np.cos(2.0 * np.pi * s_float / max_value)
     return s_sin, s_cos
 
 
@@ -50,14 +50,13 @@ def cyclic_wind_encoding(wind_speed: pd.Series, wind_direction: pd.Series):
 
     Args:
         wind_speed (pd.Series): wind speed series
-        
+
         wind_direction (pd.Series): wind direction series
 
     Returns:
         tuple(numpy.ndarray, numpy.ndarray): a tuple of two numpy.ndarray with U and V wind components
     """
     wind_u, wind_v = wind_components(
-        wind_speed.to_numpy() * units.meter_per_second, 
-        wind_direction.to_numpy() * units.deg
+        wind_speed.to_numpy() * units.meter_per_second, wind_direction.to_numpy() * units.deg
     )
     return wind_u.magnitude, wind_v.magnitude
