@@ -3,20 +3,23 @@
 # depois ver como fazer esse envio via api
 # chamar api pra ver os resultados
 # escritorio_dados/cor-alagamentos/lncc.txt
+# $ python etl_alertario.py -t
 
 import argparse, os, warnings
 import numpy as np
 import pandas as pd
+import sys
+from argparse import ArgumentParser
 # import pyarrow as pa
 # import pyarrow.parquet as pq
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 # from utils.logging import Logger
 # from src.utils.datalake import DataLakeWrapper
-from utils.meteorological import (
-    cyclic_time_encoding,
-    cyclic_month_encoding,
-    cyclic_wind_encoding,
-)
+# from utils.meteorological import (
+#     cyclic_time_encoding,
+#     cyclic_month_encoding,
+#     cyclic_wind_encoding,
+# )
 from utils.filesystem import make_path, destroy_path
 
 warnings.filterwarnings("ignore")
@@ -209,6 +212,7 @@ class DataOptimizer:
     def process_objects(self):
         try:
             df = pd.read_csv(f"{self.station_type}_bq.csv")
+            print(f"File opened\n{df.iloc[0]}")
             df = df.reset_index(drop=True)
             # code to stage data for HBV ambiguous fixer
             # station_type = self.remote_prefix.split('/')[0]
@@ -223,6 +227,7 @@ class DataOptimizer:
             attrs.update(self.variables)
 
             save_path = f"{self.station_type}_optimized.csv"
+            print(f"File before saving\n{df.iloc[0]}")
             print(f"Saving file on path {save_path}.")
             df[self.columns].to_csv(save_path, index=False)
         except Exception as e:
@@ -243,7 +248,7 @@ class DataOptimizer:
         df["datetime"] = df["data_particao"] + " " + df["horario"]
         print(f"Casting datetime column...")
         df["datetime"] = pd.to_datetime(
-            df["datetime"], dayfirst=True, errors="coerce", format="%d/%m/%Y %H:%M:%S"
+            df["datetime"], dayfirst=True, errors="coerce", format="%Y/%m/%d %H:%M:%S"
         )
         df.drop(["data_particao", "horario"], axis=1, inplace=True)
         # if not args.skip_hbv_fixer:
@@ -293,7 +298,7 @@ class RainGaugeDataOptimizer(DataOptimizer):
     def __init__(self, local_data_path, station_type) -> None:
         super().__init__(local_data_path, station_type)
         # self.columns = ["data", "hora", "HBV", "15min", "01h", "04h", "24h", "96h"]
-        self.columns = ["id_estacao", "acumulado_chuva_15_min", "acumulado_chuva_1_h", "acumulado_chuva_4_h", "acumulado_chuva_24_h", "acumulado_chuva_96_h", "horario", "data_particao"]
+        self.columns = ["id_estacao", "acumulado_chuva_15_min", "acumulado_chuva_1_h", "acumulado_chuva_4_h", "acumulado_chuva_24_h", "acumulado_chuva_96_h", "datetime", "year", "month"] #, "horario", "data_particao"]
         self.numeric_cols = ["acumulado_chuva_15_min", "acumulado_chuva_1_h", "acumulado_chuva_4_h", "acumulado_chuva_24_h", "acumulado_chuva_96_h"]
         self.instrument = {"instrument": "Rain Gauge"}
         self.variables = {"variable": "precipitation (mm/h)"}
@@ -677,6 +682,8 @@ Possible values: [rain_gauge, weather_station]. Default: [rain_gauge]",
 If not passed, process all available years.",
     )
     parser.add_argument("--skip_hbv_fixer", action="store_true", help="Does not fix HBV column")
+    parser.add_argument("dataset1", type=str, help="Description of dataset1")
+    # parser.add_argument("dataset2", type=str, help="Description of dataset2")
     return parser.parse_args()
 
 
@@ -685,7 +692,8 @@ def main():
 
 
 if __name__ == "__main__":
-    load_dotenv("config/.env")
+    # load_dotenv("config/.env")
     args = parameter_parser()
     # Logger.init(filename=args.logfile, level=args.loglevel, verbose=args.verbose)
     main()
+
