@@ -404,6 +404,7 @@ class DataPreprocessor:
         print(dfr.iloc[0])
         print(dfr.iloc[1])
         dfr.drop(["data_particao", "horario"], axis=1, inplace=True)
+
         # if not args.skip_hbv_fixer:
         #     print(f"Fixing HBV indicator...")
         #     dfr = self._hbv_fixer.fix(dfr)
@@ -413,29 +414,30 @@ class DataPreprocessor:
         return dfr
 
     def _drop_duplicates(self, dfr: pd.DataFrame):
+        """
+        Removing duplicates considering:
+        - all columns
+        - temporal duplicates on id_estacao
+        """
         print("Start removing duplicates")
         n_rows = dfr.shape[0]
         dfr = dfr.drop_duplicates()
         dfr_temporal_duplicates = dfr[dfr.duplicated(subset=["id_estacao", "datetime"], keep=False)].copy()
-        print(f"Total temporal duplicates: {dfr_temporal_duplicates.shape[0]}")
+        # print(f"Total temporal duplicates: {dfr_temporal_duplicates.shape[0]}")
         feature_columns = list(self._variable_limits.keys())
-        print(f"feature_columns: {feature_columns}")
+        # print(f"feature_columns: {feature_columns}")
         dfr_to_kept = dfr_temporal_duplicates.dropna(subset=feature_columns, how="all")
-        print(f"dfr_to_kept: {dfr_to_kept.shape[0]}")
+        # print(f"dfr_to_kept: {dfr_to_kept.shape[0]}")
         if dfr_to_kept.duplicated(subset=["datetime", "id_estacao"]).sum() > 0:
             # self._logger.warning(
             #     "There are temporal duplicates with different precipitation values"
             # )
             print("There are temporal duplicates with different precipitation values")
-            # print(dfr_to_kept.sort_values(by=["datetime", "id_estacao"]).iloc[0])
-            # print(dfr_to_kept.sort_values(by=["datetime", "id_estacao"]).iloc[1])
-            # print(dfr_to_kept.sort_values(by=["datetime", "id_estacao"]).iloc[2])
         dfr_to_drop = dfr_temporal_duplicates[dfr_temporal_duplicates[feature_columns].isna()]
-        print(f"Total drops: {dfr_to_drop.shape[0]}")
+        # print(f"Total drops: {dfr_to_drop.shape[0]}")
         dfr = dfr[~dfr.index.isin(dfr_to_drop.index)]
         current_n_rows = dfr.shape[0]
         n_removed_rows = n_rows - current_n_rows
-        print("End removing duplicates")
         return dfr, n_removed_rows
 
     def _remove_inconsistent_values(self, dfr: pd.DataFrame):
@@ -450,11 +452,11 @@ class DataPreprocessor:
         return dfr
 
     def _add_latitude_longitude(self, dfr: pd.DataFrame):
-        filepath = "landing/instruments_info/alertario_stations.parquet"
-        columns = ["estacao_desc", "latitude", "longitude"]
-        # dfr_stations = self._data_lake_handler.read_parquet(filepath, columns=columns).compute()
-        # dfr = dfr.merge(dfr_stations, left_on="station", right_on="estacao_desc", how="left")
-        dfr = dfr.drop(columns=["estacao_desc"])
+        columns_stations = ["id_estacao", "latitude", "longitude"]
+        # dfr_stations = pd.read_csv(f"{self.station_type}_station.csv", usecols=columns_stations)
+        dfr_stations = pd.read_csv(f"data/input/{self.station_type}_station.csv", usecols=columns_stations)
+        dfr = dfr.merge(dfr_stations, on="id_estacao", how="left")
+        dfr = dfr.drop(columns=["id_estacao"])
         return dfr
 
     # def _df_to_arrow(self, df: pd.DataFrame):
@@ -641,7 +643,7 @@ class RainGaugeDataPreprocessor(DataPreprocessor):
             dfr = dfr.reset_index(drop=True)
             # code to stage data for HBV ambiguous fixer
             # station_type = self.remote_prefix.split('/')[0]
-            # dfr.to_pickle(f'data/hbv_fixer_{station_type}_YYYY.pkl')
+            # dfr.to_pickle(f'data/hbv_fixer_{station_type}_YYYY.pkl') # tem que ver essa questão do ano
             print("Casting columns")
             dfr = self._cast_columns(dfr)
             print("Creating year and month column")
@@ -672,9 +674,8 @@ class RainGaugeDataPreprocessor(DataPreprocessor):
             dfr["hour_sin"], dfr["hour_cos"] = cyclic_time_encoding(dfr["datetime"])
             dfr["month_sin"], dfr["month_cos"] = cyclic_month_encoding(dfr["datetime"])
 
-            # ??? descomentar e adicionar enrtada de dados
-            # print("Adding latitude and longitude")
-            # dfr = self._add_latitude_longitude(dfr)
+            print("Adding latitude and longitude")
+            dfr = self._add_latitude_longitude(dfr)
 
             # print("Preparing data to be stored")
             # table = self._dfr_to_arrow(dfr)
@@ -683,9 +684,11 @@ class RainGaugeDataPreprocessor(DataPreprocessor):
             # self._data_lake_handler.store_data(table, self.curated_path)
 
             save_path = f"{self.station_type}_optimized.csv"
-            print(f"File before saving\n{dfr.iloc[0]}")
             print(f"Saving file on path {save_path}.")
+            print(f"File before saving\n{dfr.iloc[0]}")
+            
             dfr.to_csv(save_path, index=False)
+            print("Success on saving file")
         except Exception as error:
             print(f"Failed to process {self.station_type}: {error}")
 
@@ -829,6 +832,7 @@ If not passed, process all available years.",
     )
     parser.add_argument("--skip_hbv_fixer", action="store_true", help="Does not fix HBV column")
     parser.add_argument("dataset1", type=str, help="Description of dataset1")
+    # parser.add_argument("station1", type=str, help="Dataset with station latlon for dataset1")
     # parser.add_argument("dataset2", type=str, help="Description of dataset2")
     return parser.parse_args()
 
