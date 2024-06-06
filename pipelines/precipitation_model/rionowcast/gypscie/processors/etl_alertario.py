@@ -1,6 +1,14 @@
 # -*- coding: utf-8 -*-
 
 """
+rodar local: 
+python etl_alertario.py -p --dataset1 rain_gauge_bq.csv -s rain_gauge
+python etl_alertario.py -p --dataset1 weather_station2_bq.csv -s weather_station
+rodar gypscie
+Escolhe como dataset rain_gauge_bq ou weather_station2_bq
+dataset1 coloca rain_gauge_bq ou weather_station2_bq
+station_type coloca rain_gauge ou weather_station
+
 # subir arquivo que veio direto do alertario já com latitude e longitude das estações no gypscie
 # subir esse arquivo em zip com o conda, scrip, mlproject e enviar no campo de dataset processor
 # depois ver como fazer esse envio via api
@@ -26,7 +34,7 @@ import pandas as pd
 from utils.meteorological import (
     cyclic_time_encoding,
     cyclic_month_encoding,
-    # cyclic_wind_encoding,
+    cyclic_wind_encoding,
 )
 from utils.filesystem import make_path, destroy_path
 
@@ -349,11 +357,12 @@ class DataPreprocessor:
     ADD
     """
 
-    def __init__(self, station_type):
+    def __init__(self, dataset, station_type):
         # self.staged_path = staged_path
         # self.curated_path = curated_path
         # self._logger = Logger.get_logger()
         # self._data_lake_handler = DataLakeHandler()
+        self.dataset = dataset
         self.station_type = station_type
         self.columns = None
         self.read_cols = None
@@ -375,7 +384,7 @@ class DataPreprocessor:
         """
         # ddf = self._data_lake_handler.read_parquet(self.staged_path, columns=columns)
         # df = ddf.compute()
-        dfr = pd.read_csv(f"{self.station_type}_bq.csv", usecols=self.columns)
+        dfr = pd.read_csv(f"{self.dataset}", usecols=self.columns)
         print(f"\nFile opened\n{dfr.iloc[0]}")
         print(f"\nFile opened\n{dfr.iloc[1]}")
         print(f"\nFile opened\n{dfr.iloc[2]}")
@@ -404,6 +413,9 @@ class DataPreprocessor:
         print(dfr.iloc[0])
         print(dfr.iloc[1])
         dfr.drop(["data_particao", "horario"], axis=1, inplace=True)
+
+        dfr["year"] = dfr["datetime"].dt.year
+        dfr["month"] = dfr["datetime"].dt.month
 
         # if not args.skip_hbv_fixer:
         #     print(f"Fixing HBV indicator...")
@@ -452,7 +464,7 @@ class DataPreprocessor:
         return dfr
 
     def _add_latitude_longitude(self, dfr: pd.DataFrame):
-        columns_stations = ["id_estacao", "latitude", "longitude"]
+        columns_stations = ["id_estacao", "estacao", "latitude", "longitude"]
         # dfr_stations = pd.read_csv(f"{self.station_type}_station.csv", usecols=columns_stations)
         dfr_stations = pd.read_csv(f"data/input/{self.station_type}_station.csv", usecols=columns_stations)
         dfr = dfr.merge(dfr_stations, on="id_estacao", how="left")
@@ -495,116 +507,172 @@ class DataPreprocessor:
         raise NotImplementedError
 
 
-# # class WeatherStationDataPreprocessor(DataPreprocessor):
+class WeatherStationDataPreprocessor(DataPreprocessor):
 
-# #     def __init__(self, staged_path, curated_path) -> None:
-# #         super().__init__(staged_path, curated_path)
-# #         self._instrument = 'weather station'
-# #         self._columns = [
-# #             'station',
-# #             'datetime',
-# #             'precipitation',
-# #             'wind_dir',
-# #             'wind_speed',
-# #             'temperature',
-# #             'pressure',
-# #             'humidity',
-# #         ]
-# #         self._columns_rename_map = None
-# #         self._variable_limits = self._build_variable_limits()
-
-
-# #     def run(self):
-# #         self._logger.info(f"Loading data from {self.staged_path}")
-# #         df = self._load_data()
-# #         self._logger.info('Dropping duplicates')
-# #         df, n_removed_rows = self._drop_duplicates(df)
-# #         self._logger.info(f'Dropped {n_removed_rows} rows')
-# #         self._logger.info('Removing inconsistent values')
-# #         df = self._remove_inconsistent_values(df)
-# #         self._logger.info('Removing wind direction values for null wind speed')
-# #         df = self._remove_inconsistent_wind_dir(df)
-# #         self._logger.info('Converting datetime to UTC')
-# #         df['datetime'] = df['datetime'].dt.tz_convert('UTC')
-# #         self._logger.info('Encoding cyclic wind')
-# #         df['wind_u'], df['wind_v'] = cyclic_wind_encoding(df['wind_speed'], df['wind_dir'])
-# #         self._logger.info('Encoding cyclic time')
-# #         df['hour_sin'], df['hour_cos'] = cyclic_time_encoding(df['datetime'])
-# #         df['month_sin'], df['month_cos'] = cyclic_month_encoding(df['datetime'])
-# #         self._logger.info('Adding latitude and longitude')
-# #         df = self._add_latitude_longitude(df)
-# #         self._logger.info('Preparing data to be stored')
-# #         table = self._df_to_arrow(df)
-# #         self._logger.info(f'Storing data in {self.curated_path}')
-# #         self._data_lake_handler.store_data(table, self.curated_path)
+    def __init__(self, dataset, station_type) -> None:
+        super().__init__(dataset, station_type)
+        self._instrument = 'weather station'
+        self.instrument = {"instrument": "Weather Station"} # ?
+        self.columns = [
+            'id_estacao',
+            'horario',
+            'data_particao',
+            'acumulado_chuva_1_h',
+            'direcao_vento',
+            'velocidade_vento',
+            'temperatura',
+            'pressao',
+            'umidade',
+        ]
+        self.numeric_cols = [
+            "acumulado_chuva_1_h",
+            'velocidade_vento',
+            'temperatura',
+            'pressao',
+            'umidade',
+            "direcao_vento",
+        ]
+        self._columns_rename_map = {
+            "acumulado_chuva_1_h": "precipitation",
+        }
+        self._variable_limits = self._build_variable_limits()
+        self.variables = self._build_variables()
 
 
-# #     def _remove_inconsistent_wind_dir(self, df:pd.DataFrame):
-# #         c1 = df['wind_dir'].notna()
-# #         c2 = df['wind_speed'].isna()
-# #         df.loc[c1 & c2, 'wind_dir'] = np.nan
-# #         return df
+    def run(self):
+        try:
+            # self._logger.info(f"Loading data from {self.staged_path}")
+            print(f"Loading data from {self.station_type}")
+            dfr = self._load_data()
+            dfr = dfr.reset_index(drop=True)
+            # self._logger.info('Dropping duplicates')
+
+            print("Casting columns")
+            dfr = self._cast_columns(dfr)
+            print("Creating year and month column")
+            if self._columns_rename_map:
+                print(f"Renaming columns {self._columns_rename_map}")
+                dfr = dfr.rename(columns=self._columns_rename_map)
+            dfr.reset_index(drop=True, inplace=True)
+            
+            print(dfr.shape)
+            attrs = {"naming_authority": "INMET", "timezone": "America/Sao_Paulo"} # ?
+            attrs.update(self.instrument) # ?
+            attrs.update(self.variables) # ?
+    
+            print('Dropping duplicates')
+            dfr, n_removed_rows = self._drop_duplicates(dfr)
+            # self._logger.info(f'Dropped {n_removed_rows} rows')
+            # self._logger.info('Removing inconsistent values')
+            print(f'Dropped {n_removed_rows} rows')
+
+            print('Removing inconsistent values')
+            dfr = self._remove_inconsistent_values(dfr)
+            # self._logger.info('Removing wind direction values for null wind speed')
+
+            print('Removing wind direction values for null wind speed')
+            dfr = self._remove_inconsistent_wind_dir(dfr)
+            # self._logger.info('Converting datetime to UTC')
+
+            print('Converting datetime to UTC')
+            dfr["datetime"] = dfr["datetime"].dt.tz_localize("America/Sao_Paulo")
+            dfr['datetime'] = dfr['datetime'].dt.tz_convert('UTC')
+            # self._logger.info('Encoding cyclic wind')
+
+            print('Encoding cyclic wind')
+            dfr['wind_u'], dfr['wind_v'] = cyclic_wind_encoding(dfr['velocidade_vento'], dfr['direcao_vento'])
+            # self._logger.info('Encoding cyclic time')
+
+            print('Encoding cyclic time')
+            dfr['hour_sin'], dfr['hour_cos'] = cyclic_time_encoding(dfr['datetime'])
+            dfr['month_sin'], dfr['month_cos'] = cyclic_month_encoding(dfr['datetime'])
+            # self._logger.info('Adding latitude and longitude')
+
+            print('Adding latitude and longitude')
+            dfr = self._add_latitude_longitude(dfr)
+            # self._logger.info('Preparing data to be stored')
+
+            # print('Preparing data to be stored')
+            # table = self._dfr_to_arrow(dfr)
+            # self._logger.info(f'Storing data in {self.curated_path}')
+            
+            # self._data_lake_handler.store_data(table, self.curated_path)
+
+            save_path = f"{self.station_type}_optimized.csv"
+            print(f"Saving file on path {save_path}.")
+            print(f"File before saving\n{dfr.iloc[0]}")
+            
+            dfr.to_csv(save_path, index=False)
+            print("Success on saving file")
+        except Exception as error:
+            print(f"Failed to process {self.station_type}: {error}")
+
+    def _remove_inconsistent_wind_dir(self, dfr:pd.DataFrame):
+        c_1 = dfr['direcao_vento'].notna()
+        c_2 = dfr['velocidade_vento'].isna()
+        dfr.loc[c_1 & c_2, 'direcao_vento'] = np.nan
+        return dfr
 
 
-# #     def _build_variable_limits(self):
-# #         return {
-# #             'precipitation': {
-# #                 'min': 0.0,
-# #                 'max': 70.0,
-# #             },
-# #             'wind_dir': {
-# #                 'min': 0.0,
-# #                 'max': 360.0,
-# #             },
-# #             'wind_speed': {
-# #                 'min': 0.0,
-# #                 'max': 120.0,
-# #             },
-# #             'temperature': {
-# #                 'min': 0.0,
-# #                 'max': 50.0,
-# #             },
-# #             'pressure': {
-# #                 'min': 800.0,
-# #                 'max': 1200.0,
-# #             },
-# #             'humidity': {
-# #                 'min': 0.0,
-# #                 'max': 100.0,
-# #             },
-# #         }
+    def _build_variable_limits(self):
+        return {
+            'precipitation': {
+                'min': 0.0,
+                'max': 70.0,
+            },
+            'direcao_vento': {
+                'min': 0.0,
+                'max': 360.0,
+            },
+            'velocidade_vento': {
+                'min': 0.0,
+                'max': 120.0,
+            },
+            'temperatura': {
+                'min': 0.0,
+                'max': 50.0,
+            },
+            'pressao': {
+                'min': 800.0,
+                'max': 1200.0,
+            },
+            'umidade': {
+                'min': 0.0,
+                'max': 100.0,
+            },
+        }
 
 
-# #     def _build_variables(self):
-# #         values = [
-# #             'station - station name',
-# #             'datetime - UTC datetime of the measurement',
-# #             'precipitation (mm/15min)',
-# #             'wind_dir (degrees)',
-# #             'wind_speed (km/h)',
-# #             'temperature (degrees Celsius)',
-# #             'pressure (hPa)',
-# #             'humidity (%)',
-# #             'wind_u (cyclic U component from the wind)',
-# #             'wind_v (cyclic V component from the wind)',
-# #             'hour_sin (sine encoding of the time of day)',
-# #             'hour_cos (cosine encoding of the time of day)',
-# #             'month_sin (sine encoding of the month of year)',
-# #             'month_cos (cosine encoding of the month of year)',
-# #             'latitude (degrees)',
-# #             'longitude (degrees)',
-# #         ]
-# #         keys = [f'variable_{i}' for i in range(1,len(values)+1)]
-# #         return dict(zip(keys, values))
+    def _build_variables(self):
+        values = [
+            'station - station name',
+            'datetime - UTC datetime of the measurement',
+            'precipitation (mm/15min)',
+            'wind_dir (degrees)',
+            'wind_speed (km/h)',
+            'temperature (degrees Celsius)',
+            'pressure (hPa)',
+            'humidity (%)',
+            'wind_u (cyclic U component from the wind)',
+            'wind_v (cyclic V component from the wind)',
+            'hour_sin (sine encoding of the time of day)',
+            'hour_cos (cosine encoding of the time of day)',
+            'month_sin (sine encoding of the month of year)',
+            'month_cos (cosine encoding of the month of year)',
+            'latitude (degrees)',
+            'longitude (degrees)',
+        ]
+        keys = [f'variable_{i}' for i in range(1,len(values)+1)]
+        return dict(zip(keys, values))
 
 
 class RainGaugeDataPreprocessor(DataPreprocessor):
     """
     ADD
     """
-
-    def __init__(self, station_type) -> None:
-        super().__init__(station_type)
+        
+    def __init__(self, dataset, station_type) -> None:
+        super().__init__(dataset, station_type)
         self._instrument = "rain gauge"
         self.columns = [
             "id_estacao",
@@ -651,20 +719,22 @@ class RainGaugeDataPreprocessor(DataPreprocessor):
                 print(f"Renaming columns {self._columns_rename_map}")
                 dfr = dfr.rename(columns=self._columns_rename_map)
             dfr.reset_index(drop=True, inplace=True)
-            dfr["year"] = dfr["datetime"].dt.year
-            dfr["month"] = dfr["datetime"].dt.month
+            
             print(dfr.shape)
-            attrs = {"naming_authority": "Alerta Rio", "timezone": "America/Sao_Paulo"}
-            attrs.update(self.instrument)
-            attrs.update(self.variables)
+            attrs = {"naming_authority": "Alerta Rio", "timezone": "America/Sao_Paulo"} # ?
+            attrs.update(self.instrument) # ?
+            attrs.update(self.variables) # ?
+    
             print("Dropping duplicates")
             # self._logger.info("Dropping duplicates")
             dfr, n_removed_rows = self._drop_duplicates(dfr)
             print(f"Dropped {n_removed_rows} rows")
             print(dfr.shape)
+    
             print("Removing inconsistent values")
             dfr = self._remove_inconsistent_values(dfr)
             print(dfr.shape)
+    
             print("Converting datetime to UTC")
             print(f"{dfr.iloc[0]}")
             dfr["datetime"] = dfr["datetime"].dt.tz_localize("America/Sao_Paulo")
@@ -730,50 +800,51 @@ class ETL:
         self._preprocessing() if args.preprocessing else None
         print("Script finished")
 
-    def _transform(self):
-        """
-        Get data from zip and organize it adding station name as a column
-        ?? Posso elimianr essa parte de anos?
-        """
-        # if args.years:
-        #     try:
-        #         for year in args.years:
-        #             if len(str(year)) != 4 or year < 1970:
-        #                 message = f"Invalid year. Years must be a list of 4-digit number equal to or greater than 1970. Received: {args.years}"
-        #                 raise Exception(message)
-        #         years = sorted(args.years)
-        #     except Exception as error:
-        #         print(error)
-        #         exit()
-        # else:
-        #     years = []
-        if args.station_type not in ["rain_gauge", "weather_station"]:
-            raise Exception(
-                f"Invalid station type. Must be rain_gauge or weather_station. Received: {args.station_type}"
-            )
-        station_type = args.station_type
-        print(f"Performing transform step. Station type: {station_type}")
-        ###### remover comentário
-        # Optimizer = (
-        #     RainGaugeDataOptimizer if station_type == "rain_gauge" else WeatherStationDataOptimizer
-        # )
-        Optimizer = RainGaugeDataOptimizer if station_type == "rain_gauge" else None
-        optimizer = Optimizer(
-            local_data_path="data/alertario",
-            station_type=station_type,
-        )
-        # print("Getting files from data lake...")
-        # optimizer.get_objects_from_lake(years)
+    # def _transform(self):
+    #     """
+    #     Get data from zip and organize it adding station name as a column
+    #     ?? Posso elimianr essa parte de anos?
+    #     """
+    #     # if args.years:
+    #     #     try:
+    #     #         for year in args.years:
+    #     #             if len(str(year)) != 4 or year < 1970:
+    #     #                 message = f"Invalid year. Years must be a list of 4-digit number equal to or greater than 1970. Received: {args.years}"
+    #     #                 raise Exception(message)
+    #     #         years = sorted(args.years)
+    #     #     except Exception as error:
+    #     #         print(error)
+    #     #         exit()
+    #     # else:
+    #     #     years = []
+    #     if args.station_type not in ["rain_gauge", "weather_station"]:
+    #         raise Exception(
+    #             f"Invalid station type. Must be rain_gauge or weather_station. Received: {args.station_type}"
+    #         )
+    #     station_type = args.station_type
+    #     print(f"Performing transform step. Station type: {station_type}")
+    #     ###### remover comentário
+    #     # Optimizer = (
+    #     #     RainGaugeDataOptimizer if station_type == "rain_gauge" else WeatherStationDataOptimizer
+    #     # )
+    #     Optimizer = RainGaugeDataOptimizer if station_type == "rain_gauge" else None
+    #     optimizer = Optimizer(
+    #         local_data_path="data/alertario",
+    #         station_type=station_type,
+    #     )
+    #     # print("Getting files from data lake...")
+    #     # optimizer.get_objects_from_lake(years)
 
-        print("Processing...")
-        optimizer.process_objects()
+    #     print("Processing...")
+    #     optimizer.process_objects()
 
-        print("Transform step finished.")
+    #     print("Transform step finished.")
 
     def _preprocessing(self):
         """
         ADD
         """
+        dataset = args.dataset1
         if args.station_type not in ["rain_gauge", "weather_station"]:
             raise Exception(
                 f"Invalid station type. Must be rain_gauge or weather_station. Received: {args.station_type}"
@@ -781,13 +852,14 @@ class ETL:
         station_type = args.station_type
         print(f"Performing preprocessing step. Station type: {station_type}")
         ###### remover comentário
-        # Preprocessor = (
-        #     RainGaugeDataPreprocessor
-        #     if station_type == "rain_gauge"
-        #     else WeatherStationDataPreprocessor
-        # )
-        Preprocessor = RainGaugeDataPreprocessor if station_type == "rain_gauge" else None
+        Preprocessor = (
+            RainGaugeDataPreprocessor
+            if station_type == "rain_gauge"
+            else WeatherStationDataPreprocessor
+        )
+        # Preprocessor = RainGaugeDataPreprocessor if station_type == "rain_gauge" else None
         preprocessor = Preprocessor(
+            dataset,
             station_type
             # f"staged/{station_type}/alertario",
             # f"curated/{station_type}/alertario",
@@ -831,7 +903,7 @@ Possible values: [rain_gauge, weather_station]. Default: [rain_gauge]",
 If not passed, process all available years.",
     )
     parser.add_argument("--skip_hbv_fixer", action="store_true", help="Does not fix HBV column")
-    parser.add_argument("dataset1", type=str, help="Description of dataset1")
+    parser.add_argument("--dataset1", type=str, help="Description of dataset1")
     # parser.add_argument("station1", type=str, help="Dataset with station latlon for dataset1")
     # parser.add_argument("dataset2", type=str, help="Description of dataset2")
     return parser.parse_args()
