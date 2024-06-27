@@ -17,6 +17,7 @@ class GypscieApi:
     """
     GypscieApi
     """
+
     def __init__(
         self,
         username: str = None,

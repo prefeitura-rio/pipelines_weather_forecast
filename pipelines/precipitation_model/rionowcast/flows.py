@@ -121,7 +121,7 @@ with Flow(
         pluviometrical_dataset_response = register_dataset(api, pluviometrical_path, domain_id)
 
         pluviometrical_processor_parameters = {
-            "dataset1": str(pluviometrical_path).rsplit('/', maxsplit=1)[-1],
+            "dataset1": str(pluviometrical_path).rsplit("/", maxsplit=1)[-1],
             "station_type": "rain_gauge",
         }
         # Send data to be processed and treated
