@@ -1,12 +1,12 @@
 # Build arguments
-ARG PYTHON_VERSION=3.10-slim-buster
+ARG PYTHON_VERSION=3.10-slim
 
 # Start Python image
 FROM python:${PYTHON_VERSION}
 
 # Install git
 RUN apt-get update && \
-apt-get install --no-install-recommends -y git curl gnupg2 libaio1 && \
+    apt-get install -y --no-install-recommends git ffmpeg libsm6 libxext6 && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
