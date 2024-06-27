@@ -400,7 +400,7 @@ def smart_split(
         )
 
     return [
-        text[: separator_index],
+        text[ :separator_index],
         *smart_split(
             text[separator_index + len(separator) :],
             max_length,
