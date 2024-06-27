@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-rodar local: 
+rodar local:
 python etl_alertario.py -p --dataset1 rain_gauge_bq.csv -s rain_gauge
 python etl_alertario.py -p --dataset1 weather_station2_bq.csv -s weather_station
 rodar gypscie
@@ -11,8 +11,6 @@ station_type coloca rain_gauge ou weather_station
 
 # subir arquivo que veio direto do alertario já com latitude e longitude das estações no gypscie
 # subir esse arquivo em zip com o conda, scrip, mlproject e enviar no campo de dataset processor
-# depois ver como fazer esse envio via api
-# chamar api pra ver os resultados
 # escritorio_dados/cor-alagamentos/lncc.txt
 # $ python etl_alertario.py -t
 
@@ -29,8 +27,6 @@ import mlflow
 import numpy as np
 import pandas as pd
 
-# import pyarrow as pa
-# import pyarrow.parquet as pq
 # from dotenv import load_dotenv
 # from utils.logging import Logger
 # from src.utils.datalake import DataLakeWrapper
@@ -39,7 +35,7 @@ from utils.meteorological import (
     cyclic_month_encoding,
     cyclic_wind_encoding,
 )
-from utils.filesystem import make_path, destroy_path
+from utils.filesystem import make_path  # , destroy_path
 
 warnings.filterwarnings("ignore")
 
@@ -85,133 +81,8 @@ class FileSystemHandler:
             make_path(path)
         except FileExistsError:
             # cls.logger.warning(f'Path "{path}" already exists. Ignoring create path command...')
+            print(f'Path "{path}" already exists. Ignoring create path command...')
             pass
-        except:
-            raise
-
-
-# class HBVIndicatorFixer:
-
-#     def __init__(self, local_data_path) -> pd.DataFrame:
-#         self._local_data_path = local_data_path
-#         # self._logger = Logger.get_logger()
-#         # self._dlc = DataLakeWrapper().get_client()
-#         self._df_hbv = self._load_hbv_calendar()
-
-#     def fix(self, df: pd.DataFrame):
-#         # self._logger.debug("Fixing HBV started ...")
-#         if df["datetime"].isnull().sum():
-#             raise Exception(
-#                 "There are null values in datetime column. Fix it before running this HBVFixer"
-#             )
-#         year = df.iloc[0]["datetime"].year
-#         hbv_start_date, hbv_end_date = self._get_hbv_dates(year)
-#         df["fixed_hbv"] = None
-#         if not pd.isnull(hbv_start_date):
-#             df = self._fix_start_interval(df, hbv_start_date)
-#         df = self._fix_non_hbv_interval(df, hbv_start_date, hbv_end_date)
-#         if not pd.isnull(hbv_end_date):
-#             df = self._fix_end_interval(df, hbv_end_date)
-#         self._run_assertions(df)
-#         df["HBV"] = df["fixed_hbv"].astype(bool)
-#         df = df.drop(columns=["fixed_hbv"])
-#         # self._logger.debug("Fixing HBV done.")
-#         return df
-
-#     def _load_hbv_calendar(self):
-#         local_path = os.path.join(self._local_data_path, "bdst.parquet")
-#         self._dlc.fget_object(
-#             bucket_name="landing",
-#             object_name="brazilian_daylight_saving_time/bdst.parquet",
-#             file_path=local_path,
-#         )
-#         df = pd.read_parquet(local_path)
-#         return df
-
-#     def _get_hbv_dates(self, year):
-#         try:
-#             hbv_start_date = self._df_hbv[self._df_hbv["year"] == year]["started"].item()
-#             hbv_end_date = self._df_hbv[self._df_hbv["year"] == year]["ended"].item()
-#         except Exception:
-#             raise Exception(f"HBV calendar not found for year {year}")
-#         return hbv_start_date, hbv_end_date
-
-#     def _fix_start_interval(self, df: pd.DataFrame, hbv_start_date):
-#         # self._logger.debug("Checking HBV inconsistent interval")
-#         print("Checking HBV inconsistent interval")
-#         hbv_inconsistent_interval = (
-#             hbv_start_date,
-#             hbv_start_date + pd.Timedelta(minutes=59, seconds=59),
-#         )
-#         if df.query(
-#             f'datetime >= "{hbv_inconsistent_interval[0]}" and datetime <= "{hbv_inconsistent_interval[1]}"'
-#         ).shape[0]:
-#             message = f"There are records in HBV inconsistent interval from {hbv_inconsistent_interval[0]} to {hbv_inconsistent_interval[1]}"
-#             raise Exception(message)
-#         # self._logger.debug("Setting records after HBV start datetime")
-#         print("Setting records after HBV start datetime")
-#         hbv_start_datetime = hbv_start_date + pd.Timedelta(hours=1)
-#         df.loc[df["datetime"] >= hbv_start_datetime, "fixed_hbv"] = True
-#         return df
-
-#     def _fix_non_hbv_interval(self, df: pd.DataFrame, hbv_start_date, hbv_end_date):
-#         if pd.isnull(hbv_start_date) and pd.isnull(hbv_end_date):
-#             df.loc[:, "fixed_hbv"] = False
-#             return df
-#         c1 = df["datetime"] >= hbv_end_date
-#         c2 = df["datetime"] < hbv_start_date
-#         if (not pd.isnull(hbv_start_date)) and (not pd.isnull(hbv_end_date)):
-#             df.loc[c1 & c2, "fixed_hbv"] = False
-#         elif not pd.isnull(hbv_end_date):
-#             df.loc[c1, "fixed_hbv"] = False
-#         elif not pd.isnull(hbv_start_date):
-#             df.loc[c2, "fixed_hbv"] = False
-#         return df
-
-#     def _fix_end_interval(self, df, hbv_end_date):
-#         # self._logger.debug("Setting records before HBV ambiguous interval")
-#         hbv_ambiguous_interval_start = hbv_end_date - pd.Timedelta(hours=1)
-#         df.loc[df["datetime"] < hbv_ambiguous_interval_start, "fixed_hbv"] = True
-#         # self._logger.debug("Setting records within HBV ambiguous interval")
-#         hbv_ambiguous_mask = df["fixed_hbv"].isnull()
-#         df_hbv_ambiguous = df.loc[hbv_ambiguous_mask]
-#         min_hbv_ambiguous_datetime = df_hbv_ambiguous["datetime"].min()
-#         max_hbv_ambiguous_datetime = df_hbv_ambiguous["datetime"].max()
-#         if (
-#             min_hbv_ambiguous_datetime < hbv_ambiguous_interval_start
-#             or max_hbv_ambiguous_datetime > hbv_end_date
-#         ):
-#             raise Exception("There are records outside HBV ambiguous interval")
-#         ambiguous_duplicated_index = df_hbv_ambiguous[
-#             df_hbv_ambiguous.duplicated(subset=["station", "datetime"])
-#         ].index
-#         df.loc[ambiguous_duplicated_index, "fixed_hbv"] = False
-#         df.loc[df["fixed_hbv"].isnull(), "fixed_hbv"] = True
-#         return df
-
-#     def _run_assertions(self, df: pd.DataFrame):
-#         # self._logger.debug("Checking if all records are marked")
-#         if df.query("fixed_hbv.isnull()").shape[0]:
-#             message = "There are records without fixed HBV indicator"
-#             raise Exception(message)
-#         # self._logger.debug("Checking inconsistencies between original and processed HBV indicator")
-#         c1 = (df["HBV"] == "HBV") & (df["fixed_hbv"] == False)
-#         c2 = (df["HBV"] != "HBV") & (df["fixed_hbv"] == True)
-#         numeric_cols = df.select_dtypes(include="number").columns
-#         if df.loc[c1 | c2].dropna(subset=numeric_cols, how="all").shape[0]:
-#             INCONSISTENCIES_PATH = os.path.join("data", "hbv_inconsistencies")
-#             FileSystemHandler.create_path(INCONSISTENCIES_PATH)
-#             year = df.iloc[0]["datetime"].year
-#             instrument = "weather_station" if "wind_dir" in numeric_cols else "rain_gauge"
-#             df.loc[c1 | c2].dropna(subset=numeric_cols, how="all").to_parquet(
-#                 os.path.join("data", "hbv_inconsistencies", f"{instrument}_{year}.parquet")
-#             )
-#             # self._logger.warning(
-#             #     f'There are inconsistencies between original and processed HBV indicator. Check "{INCONSISTENCIES_PATH}" folder'
-#             # )
-#             print(
-#                 f'There are inconsistencies between original and processed HBV indicator. Check "{INCONSISTENCIES_PATH}" folder'
-#             )
 
 
 # class DataOptimizer:
@@ -283,12 +154,8 @@ class FileSystemHandler:
 #             dfr["datetime"], dayfirst=True, errors="coerce", format="%Y/%m/%d %H:%M:%S"
 #         )
 #         dfr.drop(["data_particao", "horario"], axis=1, inplace=True)
-#         # if not args.skip_hbv_fixer:
-#         #     print(f"Fixing HBV indicator...")
-#         #     dfr = self._hbv_fixer.fix(dfr)
 #         # print('Localizing datetime column to "America/Sao_Paulo" timezone...')
-#         # dfr["datetime"] = dfr["datetime"].dt.tz_localize("America/Sao_Paulo", ambiguous=dfr["HBV"])
-#         # dfr.drop("HBV", axis=1, inplace=True)
+#         # dfr["datetime"] = dfr["datetime"].dt.tz_localize("America/Sao_Paulo")
 #         return dfr
 
 
@@ -420,12 +287,6 @@ class DataPreprocessor:
         dfr["year"] = dfr["datetime"].dt.year
         dfr["month"] = dfr["datetime"].dt.month
 
-        # if not args.skip_hbv_fixer:
-        #     print(f"Fixing HBV indicator...")
-        #     dfr = self._hbv_fixer.fix(dfr)
-        # print('Localizing datetime column to "America/Sao_Paulo" timezone...')
-        # dfr["datetime"] = dfr["datetime"].dt.tz_localize("America/Sao_Paulo", ambiguous=dfr["HBV"])
-        # dfr.drop("HBV", axis=1, inplace=True)
         return dfr
 
     def _drop_duplicates(self, dfr: pd.DataFrame):
@@ -716,9 +577,6 @@ class RainGaugeDataPreprocessor(DataPreprocessor):
             dfr = self._load_data()
             print(f"dtypes {dfr.dtypes}")
             dfr = dfr.reset_index(drop=True)
-            # code to stage data for HBV ambiguous fixer
-            # station_type = self.remote_prefix.split('/')[0]
-            # dfr.to_pickle(f'data/hbv_fixer_{station_type}_YYYY.pkl') # tem que ver essa questão do ano
             print("Casting columns")
             dfr = self._cast_columns(dfr)
             print("Creating year and month column")
@@ -800,10 +658,6 @@ class ETL:
         ADD
         """
         print("Script initialized")
-        if not any([args.transform, args.preprocessing]):
-            print("No parameters passed, performing all steps")
-            args.transform = args.preprocessing = True
-        self._transform() if args.transform else None
         self._preprocessing() if args.preprocessing else None
         print("Script finished")
 
@@ -816,7 +670,8 @@ class ETL:
     #     #     try:
     #     #         for year in args.years:
     #     #             if len(str(year)) != 4 or year < 1970:
-    #     #                 message = f"Invalid year. Years must be a list of 4-digit number equal to or greater than 1970. Received: {args.years}"
+    #     #                 message = f"Invalid year. Years must be a list of 4-digit number equal\
+    #     #                      to or greater than 1970. Received: {args.years}"
     #     #                 raise Exception(message)
     #     #         years = sorted(args.years)
     #     #     except Exception as error:
@@ -826,13 +681,15 @@ class ETL:
     #     #     years = []
     #     if args.station_type not in ["rain_gauge", "weather_station"]:
     #         raise Exception(
-    #             f"Invalid station type. Must be rain_gauge or weather_station. Received: {args.station_type}"
+    #             f"Invalid station type. Must be rain_gauge or weather_station. \
+    #                   Received: {args.station_type}"
     #         )
     #     station_type = args.station_type
     #     print(f"Performing transform step. Station type: {station_type}")
     #     ###### remover comentário
     #     # Optimizer = (
-    #     #     RainGaugeDataOptimizer if station_type == "rain_gauge" else WeatherStationDataOptimizer
+    #     #     RainGaugeDataOptimizer if station_type == "rain_gauge" \
+    #               else WeatherStationDataOptimizer
     #     # )
     #     Optimizer = RainGaugeDataOptimizer if station_type == "rain_gauge" else None
     #     optimizer = Optimizer(
@@ -854,11 +711,12 @@ class ETL:
         dataset = args.dataset1
         if args.station_type not in ["rain_gauge", "weather_station"]:
             raise Exception(
-                f"Invalid station type. Must be rain_gauge or weather_station. Received: {args.station_type}"
+                f"Invalid station type. Must be rain_gauge or weather_station.\
+                      Received: {args.station_type}"
             )
         station_type = args.station_type
         print(f"Performing preprocessing step. Station type: {station_type}")
-        ###### remover comentário
+
         Preprocessor = (
             RainGaugeDataPreprocessor
             if station_type == "rain_gauge"

@@ -82,9 +82,7 @@ def get_stations_or_historical_data(
 
     log(f"Query to be downloaded:\n{query}")
     log(f"Downloading data and saving on {savepath}")
-    bd.download(
-        savepath=savepath, query=query, billing_project_id=bq_project()
-    )
+    bd.download(savepath=savepath, query=query, billing_project_id=bq_project())
 
     log(f"{dataset_info['table_id']} {type} data saved on {savepath}")
     return savepath
