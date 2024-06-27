@@ -19,7 +19,6 @@ from prefeitura_rio.pipelines_utils.logging import log
 from pipelines.constants import constants
 from pipelines.precipitation_model.rionowcast.utils import bq_project, GypscieApi
 
-
 @task()
 def access_api():
     """
