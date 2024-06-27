@@ -1,5 +1,5 @@
 # Build arguments
-ARG PYTHON_VERSION=3.10-slim
+ARG PYTHON_VERSION=3.10-slim-buster
 
 # Start Python image
 FROM python:${PYTHON_VERSION}
