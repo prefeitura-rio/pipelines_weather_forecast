@@ -28,7 +28,6 @@ from pipelines.precipitation_model.rionowcast.tasks import (
     register_dataset,
     wait_task_run,
 )
-
 from pipelines.utils.decorators import Flow
 
 with Flow(
