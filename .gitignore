@@ -147,3 +147,7 @@ dmypy.json
 
 # VSCode project settings
 .vscode/
+
+# MLflow
+**/mlruns/**
+*.csv

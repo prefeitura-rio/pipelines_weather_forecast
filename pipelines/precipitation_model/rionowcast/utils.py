@@ -1,503 +1,127 @@
-import argparse, os
-import pandas as pd
-import pyarrow as pa
-import pyarrow.parquet as pq
-from dotenv import load_dotenv
-from src.utils.logging import Logger
-from src.utils.datalake import DataLakeWrapper
-from src.utils.date_time import is_valid_date, today, split_date, parse_to_date
-from datetime import datetime
+# -*- coding: utf-8 -*-
+"""
+Utils file
+"""
+
+# from concurrent.futures import ThreadPoolExecutor, as_completed, wait
+from datetime import datetime, timedelta
+from typing import Callable, Dict, Tuple  # , List
+import requests
+
+import basedosdados as bd
+
+from prefeitura_rio.pipelines_utils.logging import log
 
 
-INSTRUMENTS = ['AlertaRioRG', 'AlertaRioWS', 'InmetWS', 'IneaRadar']
-FEATURE_HANDLERS = ['NoneHandler', 'ZeroHandler', 'ZeroWithFlagHandler']
-
-
-class DataLakeHandler:
-    """Class responsible for collecting and storing processed data in the data lake
+class GypscieApi:
     """
-    def __init__(self) -> None:
-        self._dl = DataLakeWrapper()
-    
-    
-    def read_parquet(self, remote_path, columns=None, filters=None):
-        ddf = self._dl.read_parquet_from_lake(
-            remote_path, 
-            columns=columns,
-            filters=filters
+    GypscieApi
+    """
+    def __init__(
+        self,
+        username: str = None,
+        password: str = None,
+        base_url: str = None,
+        token_callback: Callable[[str, datetime], None] = lambda *_: None,
+    ) -> None:
+        if username is None or password is None:
+            raise ValueError("Must be set refresh token or username with password")
+
+        self._base_url = base_url or "https://gypscie.dados.rio/api/"
+        self._username = username
+        self._password = password
+        self._token_callback = token_callback
+        self._headers, self._token, self._expires_at = self._get_headers()
+
+    def _get_headers(self) -> Tuple[Dict[str, str], str, datetime]:
+
+        response = requests.post(
+            f"{self._base_url}login",
+            headers={"accept": "application/json", "Content-Type": "application/json"},
+            json={
+                # 'grant_type': 'password',
+                # 'scope': 'openid profile',
+                "username": self._username,
+                "password": self._password,
+            },
         )
-        return ddf
-
-        
-    def store_data_in_lake(self, table:pa.Table, path):
-        pq.write_table(
-            table,
-            where=f's3://{path}',
-            filesystem=self._dl.get_filesystem(),
-        )
-
-
-class Instrument:
-    
-    def __init__(self, data_lake_handler: DataLakeHandler) -> None:
-        self._data = None
-        self._remote_path = None
-        self._institution = None
-        self._instrument = None
-        self._dl = data_lake_handler
-        self._features = []
-
-    
-    def prepare_data(self):
-        self._load_data()
-        self._add_source_columns()
-
-    
-    def get_data(self):
-        return self._data
-    
-    
-    def get_features(self):
-        return self._features
-    
-    
-    def get_non_features(self):
-        return [col for col in self._data.columns if col not in self._features]
-
-
-    def _load_data(self):
-        start_date, end_date = self._compute_period()
-        df = self._dl.read_parquet(
-            self._remote_path,
-            filters=[
-                ('year', '>=', start_date['year']),
-                ('year', '<=', end_date['year']),
-            ],
-        ).compute()
-        start_date = pd.to_datetime(f'{start_date["year"]}-{start_date["month"]}-{start_date["day"]}').tz_localize('UTC')
-        end_date = pd.to_datetime(f'{end_date["year"]}-{end_date["month"]}-{end_date["day"]}').tz_localize('UTC')
-        df = df.query('datetime.between(@start_date, @end_date)')
-        self._data = df.drop(columns=['year', 'month'])
-    
-    
-    def _compute_period(self):
-        period = args.period
-        year, month, day = split_date(parse_to_date(period[0]))
-        start_date = {'year': year, 'month': month, 'day': day}
-        if len(period) == 2:
-            year, month, day = split_date(parse_to_date(period[1]))
+        if response.status_code == 200:
+            token = response.json()["token"]
+            # now + expires_in_seconds - 10 minutes
+            expires_at = datetime.now() + timedelta(seconds=30 * 60)
         else:
-            year, month, day = split_date(today())
-        end_date = {'year': year, 'month': month, 'day': day}
-        return (start_date, end_date)
-    
-    
-    def _add_source_columns(self):
-        self._data['institution'] = '_'.join(self._institution.lower().split())
-        self._data['instrument'] = '_'.join(self._instrument.lower().split())
+            log(f"Status code: {response.status_code}\nResponse:{response.content}")
+            raise Exception()
 
+        return {"Authorization": f"Bearer {token}"}, token, expires_at
 
-class AlertaRioRG(Instrument):
-    
-    def __init__(self, data_lake_handler: DataLakeHandler) -> None:
-        super().__init__(data_lake_handler)
-        self._remote_path = os.path.join('curated', 'rain_gauge', 'alertario')
-        self._institution = 'Alerta Rio'
-        self._instrument = 'Rain Gauge'
-        self.name = f'{self._institution} - {self._instrument}'
-        self._features = [
-            'precipitation', 
-            'hour_sin', 
-            'hour_cos', 
-            'month_sin', 
-            'month_cos'
-        ]
-        
-        
-    def prepare_data(self):
-        super().prepare_data()
-        if 'InmetWS' in args.sources or args.sources == ['all']:
-            self._aggregate_data()
-    
-    
-    def _aggregate_data(self):
-        df = self._data.copy()
-        df['datetime'] = df['datetime'].dt.ceil('H')
-        df = df.groupby(['institution', 'instrument', 'station', 'datetime']) \
-            .agg({
-                'precipitation': 'sum',
-                'hour_sin': 'mean',
-                'hour_cos': 'mean',
-                'month_sin': 'mean',
-                'month_cos': 'mean',
-                'latitude': 'first',
-                'longitude': 'first',
-            }) \
-            .reset_index()
-        self._data = df
+    def _refresh_token_if_needed(self) -> None:
+        if self._expires_at <= datetime.now():
+            self._headers, self._token, self._expires_at = self._get_headers()
+            self._token_callback(self.get_token(), self.expires_at())
 
-
-class AlertaRioWS(Instrument):
-    
-    def __init__(self, data_lake_handler: DataLakeHandler) -> None:
-        super().__init__(data_lake_handler)
-        self._remote_path = os.path.join('curated', 'weather_station', 'alertario')
-        self._institution = 'Alerta Rio'
-        self._instrument = 'Weather Station'
-        self.name = f'{self._institution} - {self._instrument}'
-        self._features = [
-            'precipitation', 
-            'wind_dir',
-            'wind_speed',
-            'temperature',
-            'pressure',
-            'humidity',
-            'wind_u',
-            'wind_v',
-            'hour_sin', 
-            'hour_cos', 
-            'month_sin', 
-            'month_cos'
-        ]
-    
-    
-    def prepare_data(self):
-        super().prepare_data()
-        if 'InmetWS' in args.sources or args.sources == ['all']:
-            self._aggregate_data()
-    
-    
-    def _aggregate_data(self):
-        df = self._data.copy()
-        df['datetime'] = df['datetime'].dt.ceil('H')
-        df = df.groupby(['institution', 'instrument', 'station', 'datetime']) \
-            .agg({
-                'precipitation': 'sum',
-                'wind_dir': 'mean',
-                'wind_speed': 'mean',
-                'temperature': 'mean',
-                'pressure': 'mean',
-                'humidity': 'mean',
-                'wind_u': 'mean',
-                'wind_v': 'mean',
-                'hour_sin': 'mean',
-                'hour_cos': 'mean',
-                'month_sin': 'mean',
-                'month_cos': 'mean',
-                'latitude': 'first',
-                'longitude': 'first',
-            }) \
-            .reset_index()
-        self._data = df
-
-
-class InmetWS(Instrument):
-    
-    def __init__(self, data_lake_handler: DataLakeHandler) -> None:
-        super().__init__(data_lake_handler)
-        self._remote_path = os.path.join('curated', 'weather_station', 'inmet')
-        self._institution = 'INMET'
-        self._instrument = 'Weather Station'
-        self.name = f'{self._institution} - {self._instrument}'
-        self._features = [
-            'precipitation',
-            'pressure',
-            'temperature',
-            'dew_point',
-            'humidity',
-            'wind_dir',
-            'wind_speed',
-            'wind_u',
-            'wind_v',
-            'hour_sin',
-            'hour_cos',
-            'month_sin',
-            'month_cos',
-        ]
-
-
-class IneaRadar(Instrument):
-    
-    def __init__(self, data_lake_handler: DataLakeHandler) -> None:
-        super().__init__(data_lake_handler)
-        self._remote_path = os.path.join('curated', 'radar', 'inea')
-        self._institution = 'INEA'
-        self._instrument = 'Radar'
-        self.name = f'{self._institution} - {self._instrument}'
-        self._features = [
-            'horizontal_reflectivity_mean',
-            'hour_sin',
-            'hour_cos',
-            'month_sin',
-            'month_cos',
-        ]
-    
-    
-    def _load_data(self):
-        super()._load_data()
-        self._data = self._data.drop(columns=['day'])
-
-
-class ConstantHandler:
-    
-    @staticmethod
-    def handle_features(df: pd.DataFrame, all_features: set, constant_value=None):
-        columns = set(df.columns)
-        features_to_handle = sorted(all_features.difference(columns))
-        for feature in features_to_handle:
-            df[feature] = constant_value
-        return df
-
-
-class NoneHandlerStrategy:
-    
-    @staticmethod
-    def handle_features(df: pd.DataFrame, all_features: set):
-        return ConstantHandler.handle_features(df, all_features, constant_value=None)
-
-
-class ZeroHandlerStrategy:
-    
-    @staticmethod
-    def handle_features(df: pd.DataFrame, all_features: set):
-        return ConstantHandler.handle_features(df, all_features, constant_value=0)
-
-
-class ZeroWithFlagHandlerStrategy:
-    
-    @staticmethod
-    def handle_features(df: pd.DataFrame, all_features: set):
-        columns = set(df.columns)
-        existing_features = sorted(all_features.intersection(columns))
-        for feature in existing_features:
-            df[f'{feature}_flag'] = 1
-        features_to_handle = sorted(all_features.difference(columns))
-        for feature in features_to_handle:
-            df[feature] = 0
-            df[f'{feature}_flag'] = 0
-        return df
-
-
-class DataIntegrator:
-    
-    def __init__(self) -> None:
-        self._logger = Logger.get_logger()
-        self._dl = DataLakeHandler()
-        self._feature_handler = self._get_feature_handler(args.non_shared_feature_handler)
-        self._datasets = [] # como tenho que passar os datasets
-        self._all_features = list()
-        self._all_non_features = list()
-        self._integrated_data = None
-        self._all_metadata = self._build_all_metadata()
-        self._sources = INSTRUMENTS if args.sources == ['all'] else args.sources
-
-    
-    def run(self):
-        self._logger.info('Script initialized')
-        self._prepare_data()
-        self._integrate_data()
-        self._save_data()
-        self._logger.info('Script finished')
-    
-    
-    def _prepare_data(self):
-        for string_source in self._sources:
-            source = eval(string_source)(self._dl)
-            try:
-                self._logger.info(f'Preparing data from source {source.name}...')
-                source.prepare_data()
-                self._datasets.append(source.get_data())
-                self._all_features.append(source.get_features())
-                self._all_non_features.append(source.get_non_features())
-            except:
-                message = f'Error while preparing data from source {source.name}. \
-Source will be ignored and data integration will continue.'
-                self._logger.error(message)
-                continue
-
-    
-    def _integrate_data(self):
-        self._logger.info('Integrating data sources...')
-        if len(self._datasets) > 1:
-            non_shared_features = self._get_non_shared_elements(self._all_features)
-            self._logger.debug(f'Non shared features: {non_shared_features}')
-            non_shared_non_features = self._get_non_shared_elements(self._all_non_features)
-            self._logger.debug(f'Non shared non features: {non_shared_non_features}')
-            columns_order = None
-            self._integrated_data = pd.DataFrame(data=None)
-            for _ in range(len(self._datasets)):
-                df = self._datasets.pop(0)
-                df = self._feature_handler.handle_features(df, non_shared_features)
-                df = self._handle_non_features(df, non_shared_non_features)
-                if columns_order is None:
-                    columns_order = df.columns
-                else:
-                    df = df[columns_order]
-                self._integrated_data = pd.concat([self._integrated_data, df], ignore_index=True)
-                del df
-            self._integrated_data = self._integrated_data.reset_index(drop=True)
-        else:
-            self._integrated_data = self._datasets[0]
-            self._datasets = None
-    
-    
-    def _get_non_shared_elements(self, all_elements: list):
-        """Returns a set with all elements that are not common to all lists
-
-        Args:
-            all_elements (list): A list of lists
-
-        Returns:
-            set: a set with all elements that are not common to all lists
+    def refresh_token(self):
         """
-        all_elements = list(map(set, all_elements))
-        shared_elements = all_elements[0].intersection(*all_elements)
-        non_shared_elements = set()
-        for s in all_elements:
-            non_shared_elements.update(s.difference(shared_elements))
-        return non_shared_elements
-    
-    
-    def _get_feature_handler(self, strategy):
-        try:
-            if not args.non_shared_feature_handler:
-                return NoneHandlerStrategy
-            handler_strategy = eval(f'{strategy}Strategy')
-            return handler_strategy
-        except NameError:
-            message = f'Class {strategy}Strategy not implemented.'
-            self._logger.error(message)
-            exit()
-        except Exception as e:
-            message = f'Error while instantiating handler strategy'
-            self.logger.error(message)
-            self._logger.error(e)
-            exit()
-    
-    
-    def _handle_non_features(self, df: pd.DataFrame, non_shared_non_features: set):
-        columns = set(df.columns)
-        non_features_to_handle = sorted(non_shared_non_features.difference(columns))
-        for non_feature in non_features_to_handle:
-            df[non_feature] = None
-        return df
-    
-    
-    def _build_all_metadata(self):
-        non_features = {
-            'institution': 'institution (name of the authority owning the data)',
-            'instrument': 'instrument (type of meteorological instrument)',
-            'station': 'station (station name)',
-            'station_id': 'station_id (station UID)',
-            'datetime': 'datetime (UTC datetime of the measurement)', 
-            'latitude': 'latitude (degrees)', 
-            'longitude': 'longitude (degrees)',
-            'altitude': 'altitude (kilometers)',
-        }
-        features = {
-            'horizontal_reflectivity_mean': 'horizontal_reflectivity_mean (mean reflectivity in dBZ)', 
-            'dew_point': 'dew_point (dew point temperature in Celsius)', 
-            'humidity': 'humidity (instant relative humidity in %)',
-            'pressure': 'pressure (instant atmospheric pressure in mB)', 
-            'temperature': 'temperature (instant temperature in Celsius)',
-            'wind_dir': 'wind_dir (clockwise wind direction in degrees)', 
-            'wind_speed': 'wind_speed (hourly wind speed in m/s)', 
-            'wind_u': 'wind_u (cyclic U component from the wind)', 
-            'wind_v': 'wind_v (cyclic V component from the wind)',
-            'precipitation': 'precipitation (hourly precipitation in mm)',
-            'hour_sin': 'hour_sin (sine encoding of the time of day)',
-            'hour_cos': 'hour_cos (cosine encoding of the time of day)',
-            'month_sin': 'month_sin (sine encoding of the month of year)', 
-            'month_cos': 'month_cos (cosine encoding of the month of year)',
-        }
-        return {'features': features, 'non_features': non_features}
-    
-    
-    def _save_data(self):
-        self._logger.info('Preparing data to be stored...')
-        table = self._dataframe_to_arrow(self._integrated_data)
-        created_at = table.schema.metadata[b'created_at'].decode('utf-8').replace(' ', '_')
-        filepath = f'curated/datasets/data_{created_at}.parquet'
-        self._dl.store_data_in_lake(table, filepath)
-        self._logger.info(f'Data stored in {filepath}')
+        refresh
+        """
+        self._refresh_token_if_needed()
 
-    
-    def _dataframe_to_arrow(self, df:pd.DataFrame):
-        self._logger.debug(f'Converting dataframe to arrow table...')
-        attrs = self._build_metadata()
-        table = pa.Table.from_pandas(df, preserve_index=False)
-        table = table.cast(
-            pa.schema(
-                table.schema,
-                metadata=attrs
-            )
+    def get_token(self):
+        """
+        get token
+        """
+        self._refresh_token_if_needed()
+
+        return self._headers["Authorization"].split(" ")[1]
+
+    def expires_at(self):
+        """
+        expire
+        """
+        return self._expires_at
+
+    def get(self, path: str, timeout: int = 120) -> Dict:
+        """
+        get
+        """
+        self._refresh_token_if_needed()
+        response = requests.get(f"{self._base_url}{path}", headers=self._headers, timeout=timeout)
+        response.raise_for_status()
+        return response.json()
+
+    def put(self, path, json_data=None):
+        """
+        put
+        """
+        self._refresh_token_if_needed()
+        response = requests.put(f"{self._base_url}{path}", headers=self._headers, json=json_data)
+        return response
+
+    def post(self, path, data: dict = None, json_data: dict = None, files: dict = None):
+        """
+        post
+        """
+        self._refresh_token_if_needed()
+        response = requests.post(
+            url=f"{self._base_url}{path}",
+            headers=self._headers,
+            data=data,
+            json=json_data,
+            files=files,
         )
-        return table
+        # response = requests.post(f"{self._base_url}{path}", headers=self._headers, json=json_data)
+        return response
 
 
-    def _build_metadata(self):
-        attrs = {
-            'created_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            'param_1': f'sources: {self._sources}', # TODO: filter only sources that were successfully integrated
-            'param_2': f'period: {args.period}',
-            'param_3': f'non_shared_feature_handler: {args.non_shared_feature_handler}',
-        }
-        attrs.update(self._build_variables('non_features'))
-        attrs.update(self._build_variables('features'))
-        return attrs
-    
-    
-    def _build_variables(self, string_category):
-        columns = [col for col in self._integrated_data.columns if col in self._all_metadata[string_category].keys()]
-        values = [self._all_metadata[string_category][col] for col in columns]
-        keys = [f'{string_category}_{i}' for i in range(1,len(values)+1)]
-        return dict(zip(keys, values))
+def bq_project(kind: str = "bigquery_prod"):
+    """Get the set BigQuery project_id
 
-    
-def assert_arguments():
-    if args.sources != ['all']:
-        for source in args.sources:
-            assert source in INSTRUMENTS, f"Argument --sources must be <all> or a subset of [{', '.join(INSTRUMENTS)}]. Got '{args.sources}'"
-    assert len(args.period) in [1, 2], f'Argument --period must have one or two values. Got {len(args.period)}'
-    for date in args.period:
-        assert is_valid_date(date), f'Argument --period is not a valid date in format YYYY-MM-DD. Got "{date}"' 
-    if args.non_shared_feature_handler:
-        assert args.non_shared_feature_handler in FEATURE_HANDLERS, f'Argument --non_shared_feature_handler must be one of [{", ".join(FEATURE_HANDLERS)}]. Got "{args.non_shared_feature_handler}"'
+    Args:
+        kind (str, optional): Which client to get the project name from.
+        Options are 'bigquery_staging', 'bigquery_prod' and 'storage_staging'
+        Defaults to 'bigquery_prod'.
 
-
-# def parameter_parser():
-#     description = 'Script to perform weather sources data integration.'
-        
-#     parser = argparse.ArgumentParser(description=description,
-#                                      formatter_class=argparse.RawTextHelpFormatter)
-#     parser = Logger.add_log_parameters(parser, os.path.basename(__file__))
-    
-#     parser.add_argument("--sources",
-#                         nargs= "+",
-#                         required=True,
-#                         help=f"REQUIRED. Sources to be integrated. Accepts <all> or a subset of {'{'+ ', '.join(INSTRUMENTS) + '}'}"),
-#     parser.add_argument("--period",
-#                         nargs= "+",
-#                         required=True,
-#                         help="REQUIRED. Period (<start_date>, <end_date>) to be integrated. Accepts one or two values in format YYYY-MM-DD. \
-# If only one value is passed, it will be considered as <start_date> and <end_date> will be set to today."),
-#     parser.add_argument("--non_shared_feature_handler",
-#                         nargs= "?",
-#                         default=None,
-#                         help = f"OPTIONAL. Method to be applied for weather feature integration. Accepts one value in {'{'+ ', '.join(FEATURE_HANDLERS) + '}'}. \
-# Defines weather feature integration method for weather features not common to all source/instruments. If not passed, None will by applied.")
-#     return parser.parse_args()
-
-
-def main():
-    assert_arguments()
-    DataIntegrator().run()
-
-
-if __name__ == '__main__':
-    load_dotenv('config/.env')
-    # args = parameter_parser()
-    # Logger.init(filename=args.logfile,
-    #             level=args.loglevel, 
-    #             verbose=args.verbose)
-    main()
+    Returns:
+        str: the requested project_id
+    """
+    return bd.upload.base.Base().client[kind].project
