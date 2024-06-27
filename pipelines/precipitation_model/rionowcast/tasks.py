@@ -4,11 +4,8 @@ Tasks
 """
 import os
 import time
-
 from pathlib import Path
-from typing import Dict, Tuple  # , List
-
-#  from typing import Callable, Dict, List, Tuple, Union
+from typing import Dict  # Tuple, List
 
 import basedosdados as bd
 import pendulum
@@ -19,7 +16,7 @@ from prefeitura_rio.pipelines_utils.logging import log
 from pipelines.constants import constants
 from pipelines.precipitation_model.rionowcast.utils import bq_project, GypscieApi
 
-# noqa E303
+# noqa E302, E303
 @task()
 def access_api():
     """  # noqa E303
