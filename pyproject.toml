@@ -9,8 +9,19 @@ python = ">=3.10,<3.11"
 dbt-bigquery = "^1.6.1"
 google-cloud-storage = "^2.10.0"
 prefect = "1.4.1"
-prefeitura-rio = "1.0.0rc1"
-
+prefeitura-rio = { git = "https://github.com/prefeitura-rio/prefeitura-rio.git", rev = "62236b527b3528437b8d460f60c79ee39309b151", branch = "feat/reimplement-templates", extras = [
+    "pipelines",
+    "pipelines-templates",
+] }
+geopandas = "^0.14.1"
+numpy = "^1.26.2"
+pandas = "^2.1.4"
+pendulum = "^3.0.0"
+requests = "^2.31.0"
+shapely = "^2.0.2"
+h3 = "^3.7.6"
+google-cloud-asset = "^3.24.1"
+google-cloud-logging = "^3.10.0"
 
 [tool.poetry.group.dev]
 optional = true
