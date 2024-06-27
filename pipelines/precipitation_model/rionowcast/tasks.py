@@ -21,7 +21,7 @@ from pipelines.precipitation_model.rionowcast.utils import bq_project, GypscieAp
 
 @task()
 def access_api():
-    """
+    """  # noqa E303
     Acess api and return it to be used in other requests
     """
     infisical_username = constants.INFISICAL_USERNAME.value
