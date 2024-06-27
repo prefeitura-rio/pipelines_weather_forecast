@@ -6,7 +6,7 @@ FROM python:${PYTHON_VERSION}
 
 # Install git
 RUN apt-get update && \
-    apt-get install -y git && \
+apt-get install --no-install-recommends -y git curl gnupg2 libaio1 && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
