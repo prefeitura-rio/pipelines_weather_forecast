@@ -19,10 +19,13 @@ station_type coloca rain_gauge ou weather_station
 """
 
 import argparse
-import os
-import sys
+
+# import os
+# import sys
 import warnings
-from argparse import ArgumentParser
+
+# from argparse import ArgumentParser
+import mlflow
 import numpy as np
 import pandas as pd
 
@@ -211,82 +214,82 @@ class FileSystemHandler:
 #             )
 
 
-class DataOptimizer:
-    """
-    ADD
-    """
+# class DataOptimizer:
+#     """
+#     ADD
+#     """
 
-    def __init__(self, local_data_path, station_type) -> None:
-        # self._logger = Logger.get_logger()
-        # self._dlc = DataLakeWrapper().get_client()
-        # self._dlfs = DataLakeWrapper().get_filesystem()
-        # self.remote_bucket = remote_bucket
-        # self.remote_prefix = remote_prefix
-        self.local_data_path = local_data_path
-        # FileSystemHandler.create_path(self.local_data_path)
-        # self._hbv_fixer = HBVIndicatorFixer(self.local_data_path)
-        self.local_extracted_path = os.path.join(self.local_data_path, "extracted")
-        # FileSystemHandler.create_path(self.local_extracted_path)
-        self.columns = []
-        self.numeric_cols = []
-        self.instrument = None
-        self.variables = {}
-        self.station_type = station_type
+#     def __init__(self, local_data_path, station_type) -> None:
+#         # self._logger = Logger.get_logger()
+#         # self._dlc = DataLakeWrapper().get_client()
+#         # self._dlfs = DataLakeWrapper().get_filesystem()
+#         # self.remote_bucket = remote_bucket
+#         # self.remote_prefix = remote_prefix
+#         self.local_data_path = local_data_path
+#         # FileSystemHandler.create_path(self.local_data_path)
+#         # self._hbv_fixer = HBVIndicatorFixer(self.local_data_path)
+#         self.local_extracted_path = os.path.join(self.local_data_path, "extracted")
+#         # FileSystemHandler.create_path(self.local_extracted_path)
+#         self.columns = []
+#         self.numeric_cols = []
+#         self.instrument = None
+#         self.variables = {}
+#         self.station_type = station_type
 
-    def process_objects(self):
-        """
-        ADD
-        """
-        try:
-            dfr = pd.read_csv(f"{self.station_type}_bq.csv")
-            # print(f"File opened\n{dfr.iloc[0]}")
-            print(f"File opened\n{dfr.head()}")
+#     def process_objects(self):
+#         """
+#         ADD
+#         """
+#         try:
+#             dfr = pd.read_csv(f"{self.station_type}_bq.csv")
+#             # print(f"File opened\n{dfr.iloc[0]}")
+#             print(f"File opened\n{dfr.head()}")
 
-            dfr = dfr.reset_index(drop=True)
-            # code to stage data for HBV ambiguous fixer
-            # station_type = self.remote_prefix.split('/')[0]
-            # dfr.to_pickle(f'data/hbv_fixer_{station_type}_YYYY.pkl')
-            print("Starting casting columns")
-            dfr = self._cast_columns(dfr)
-            print("Performing final steps...")
-            dfr.reset_index(drop=True, inplace=True)
-            dfr["year"] = dfr["datetime"].dt.year
-            dfr["month"] = dfr["datetime"].dt.month
-            attrs = {"naming_authority": "Alerta Rio", "timezone": "America/Sao_Paulo"}
-            attrs.update(self.instrument)
-            attrs.update(self.variables)
+#             dfr = dfr.reset_index(drop=True)
+#             # code to stage data for HBV ambiguous fixer
+#             # station_type = self.remote_prefix.split('/')[0]
+#             # dfr.to_pickle(f'data/hbv_fixer_{station_type}_YYYY.pkl')
+#             print("Starting casting columns")
+#             dfr = self._cast_columns(dfr)
+#             print("Performing final steps...")
+#             dfr.reset_index(drop=True, inplace=True)
+#             dfr["year"] = dfr["datetime"].dt.year
+#             dfr["month"] = dfr["datetime"].dt.month
+#             attrs = {"naming_authority": "Alerta Rio", "timezone": "America/Sao_Paulo"}
+#             attrs.update(self.instrument)
+#             attrs.update(self.variables)
 
-            save_path = f"{self.station_type}_optimized.csv"
-            print(f"File before saving\n{dfr.iloc[0]}")
-            print(f"Saving file on path {save_path}.")
-            dfr[self.columns].to_csv(save_path, index=False)
-        except Exception as error:
-            print(f"Failed to process {self.station_type}: {error}")
-        # destroy_path(self.local_extracted_path, recursive=True)
-        # destroy_path(self.local_data_path, recursive=True)
+#             save_path = f"{self.station_type}_optimized.csv"
+#             print(f"File before saving\n{dfr.iloc[0]}")
+#             print(f"Saving file on path {save_path}.")
+#             dfr[self.columns].to_csv(save_path, index=False)
+#         except Exception as error:
+#             print(f"Failed to process {self.station_type}: {error}")
+#         # destroy_path(self.local_extracted_path, recursive=True)
+#         # destroy_path(self.local_data_path, recursive=True)
 
-    def _cast_columns(self, dfr: pd.DataFrame):
-        """
-        Casting columns to right format, create datetime column and fix HBV.
-        """
-        dfr["id_estacao"] = dfr["id_estacao"].astype("category")
-        for col in self.numeric_cols:
-            print(f"Casting {col} column...")
-            dfr[col] = pd.to_numeric(dfr[col], errors="coerce")
-        print("Building string datetime column...")
-        dfr["datetime"] = dfr["data_particao"] + " " + dfr["horario"]
-        print("Casting datetime column...")
-        dfr["datetime"] = pd.to_datetime(
-            dfr["datetime"], dayfirst=True, errors="coerce", format="%Y/%m/%d %H:%M:%S"
-        )
-        dfr.drop(["data_particao", "horario"], axis=1, inplace=True)
-        # if not args.skip_hbv_fixer:
-        #     print(f"Fixing HBV indicator...")
-        #     dfr = self._hbv_fixer.fix(dfr)
-        # print('Localizing datetime column to "America/Sao_Paulo" timezone...')
-        # dfr["datetime"] = dfr["datetime"].dt.tz_localize("America/Sao_Paulo", ambiguous=dfr["HBV"])
-        # dfr.drop("HBV", axis=1, inplace=True)
-        return dfr
+#     def _cast_columns(self, dfr: pd.DataFrame):
+#         """
+#         Casting columns to right format, create datetime column and fix HBV.
+#         """
+#         dfr["id_estacao"] = dfr["id_estacao"].astype("category")
+#         for col in self.numeric_cols:
+#             print(f"Casting {col} column...")
+#             dfr[col] = pd.to_numeric(dfr[col], errors="coerce")
+#         print("Building string datetime column...")
+#         dfr["datetime"] = dfr["data_particao"] + " " + dfr["horario"]
+#         print("Casting datetime column...")
+#         dfr["datetime"] = pd.to_datetime(
+#             dfr["datetime"], dayfirst=True, errors="coerce", format="%Y/%m/%d %H:%M:%S"
+#         )
+#         dfr.drop(["data_particao", "horario"], axis=1, inplace=True)
+#         # if not args.skip_hbv_fixer:
+#         #     print(f"Fixing HBV indicator...")
+#         #     dfr = self._hbv_fixer.fix(dfr)
+#         # print('Localizing datetime column to "America/Sao_Paulo" timezone...')
+#         # dfr["datetime"] = dfr["datetime"].dt.tz_localize("America/Sao_Paulo", ambiguous=dfr["HBV"])
+#         # dfr.drop("HBV", axis=1, inplace=True)
+#         return dfr
 
 
 # # class WeatherStationDataOptimizer(DataOptimizer):
@@ -322,34 +325,34 @@ class DataOptimizer:
 # #         return dict(zip(keys, values))
 
 
-class RainGaugeDataOptimizer(DataOptimizer):
-    """
-    ADD
-    """
+# class RainGaugeDataOptimizer(DataOptimizer):
+#     """
+#     ADD
+#     """
 
-    def __init__(self, local_data_path, station_type) -> None:
-        super().__init__(local_data_path, station_type)
-        # self.columns = ["data", "hora", "HBV", "15min", "01h", "04h", "24h", "96h"]
-        self.columns = [
-            "id_estacao",
-            "acumulado_chuva_15_min",
-            "acumulado_chuva_1_h",
-            "acumulado_chuva_4_h",
-            "acumulado_chuva_24_h",
-            "acumulado_chuva_96_h",
-            "datetime",
-            "year",
-            "month",
-        ]  # , "horario", "data_particao"]
-        self.numeric_cols = [
-            "acumulado_chuva_15_min",
-            "acumulado_chuva_1_h",
-            "acumulado_chuva_4_h",
-            "acumulado_chuva_24_h",
-            "acumulado_chuva_96_h",
-        ]
-        self.instrument = {"instrument": "Rain Gauge"}
-        self.variables = {"variable": "precipitation (mm/h)"}
+#     def __init__(self, local_data_path, station_type) -> None:
+#         super().__init__(local_data_path, station_type)
+#         # self.columns = ["data", "hora", "HBV", "15min", "01h", "04h", "24h", "96h"]
+#         self.columns = [
+#             "id_estacao",
+#             "acumulado_chuva_15_min",
+#             "acumulado_chuva_1_h",
+#             "acumulado_chuva_4_h",
+#             "acumulado_chuva_24_h",
+#             "acumulado_chuva_96_h",
+#             "datetime",
+#             "year",
+#             "month",
+#         ]  # , "horario", "data_particao"]
+#         self.numeric_cols = [
+#             "acumulado_chuva_15_min",
+#             "acumulado_chuva_1_h",
+#             "acumulado_chuva_4_h",
+#             "acumulado_chuva_24_h",
+#             "acumulado_chuva_96_h",
+#         ]
+#         self.instrument = {"instrument": "Rain Gauge"}
+#         self.variables = {"variable": "precipitation (mm/h)"}
 
 
 class DataPreprocessor:
@@ -434,7 +437,9 @@ class DataPreprocessor:
         print("Start removing duplicates")
         n_rows = dfr.shape[0]
         dfr = dfr.drop_duplicates()
-        dfr_temporal_duplicates = dfr[dfr.duplicated(subset=["id_estacao", "datetime"], keep=False)].copy()
+        dfr_temporal_duplicates = dfr[
+            dfr.duplicated(subset=["id_estacao", "datetime"], keep=False)
+        ].copy()
         # print(f"Total temporal duplicates: {dfr_temporal_duplicates.shape[0]}")
         feature_columns = list(self._variable_limits.keys())
         # print(f"feature_columns: {feature_columns}")
@@ -466,7 +471,9 @@ class DataPreprocessor:
     def _add_latitude_longitude(self, dfr: pd.DataFrame):
         columns_stations = ["id_estacao", "estacao", "latitude", "longitude"]
         # dfr_stations = pd.read_csv(f"{self.station_type}_station.csv", usecols=columns_stations)
-        dfr_stations = pd.read_csv(f"data/input/{self.station_type}_station.csv", usecols=columns_stations)
+        dfr_stations = pd.read_csv(
+            f"data/input/{self.station_type}_station.csv", usecols=columns_stations
+        )
         dfr = dfr.merge(dfr_stations, on="id_estacao", how="left")
         dfr = dfr.drop(columns=["id_estacao"])
         return dfr
@@ -508,28 +515,27 @@ class DataPreprocessor:
 
 
 class WeatherStationDataPreprocessor(DataPreprocessor):
-
     def __init__(self, dataset, station_type) -> None:
         super().__init__(dataset, station_type)
-        self._instrument = 'weather station'
-        self.instrument = {"instrument": "Weather Station"} # ?
+        self._instrument = "weather station"
+        self.instrument = {"instrument": "Weather Station"}  # ?
         self.columns = [
-            'id_estacao',
-            'horario',
-            'data_particao',
-            'acumulado_chuva_1_h',
-            'direcao_vento',
-            'velocidade_vento',
-            'temperatura',
-            'pressao',
-            'umidade',
+            "id_estacao",
+            "horario",
+            "data_particao",
+            "acumulado_chuva_1_h",
+            "direcao_vento",
+            "velocidade_vento",
+            "temperatura",
+            "pressao",
+            "umidade",
         ]
         self.numeric_cols = [
             "acumulado_chuva_1_h",
-            'velocidade_vento',
-            'temperatura',
-            'pressao',
-            'umidade',
+            "velocidade_vento",
+            "temperatura",
+            "pressao",
+            "umidade",
             "direcao_vento",
         ]
         self._columns_rename_map = {
@@ -537,7 +543,6 @@ class WeatherStationDataPreprocessor(DataPreprocessor):
         }
         self._variable_limits = self._build_variable_limits()
         self.variables = self._build_variables()
-
 
     def run(self):
         try:
@@ -554,115 +559,116 @@ class WeatherStationDataPreprocessor(DataPreprocessor):
                 print(f"Renaming columns {self._columns_rename_map}")
                 dfr = dfr.rename(columns=self._columns_rename_map)
             dfr.reset_index(drop=True, inplace=True)
-            
+
             print(dfr.shape)
-            attrs = {"naming_authority": "INMET", "timezone": "America/Sao_Paulo"} # ?
-            attrs.update(self.instrument) # ?
-            attrs.update(self.variables) # ?
-    
-            print('Dropping duplicates')
+            attrs = {"naming_authority": "INMET", "timezone": "America/Sao_Paulo"}  # ?
+            attrs.update(self.instrument)  # ?
+            attrs.update(self.variables)  # ?
+
+            print("Dropping duplicates")
             dfr, n_removed_rows = self._drop_duplicates(dfr)
             # self._logger.info(f'Dropped {n_removed_rows} rows')
             # self._logger.info('Removing inconsistent values')
-            print(f'Dropped {n_removed_rows} rows')
+            print(f"Dropped {n_removed_rows} rows")
 
-            print('Removing inconsistent values')
+            print("Removing inconsistent values")
             dfr = self._remove_inconsistent_values(dfr)
             # self._logger.info('Removing wind direction values for null wind speed')
 
-            print('Removing wind direction values for null wind speed')
+            print("Removing wind direction values for null wind speed")
             dfr = self._remove_inconsistent_wind_dir(dfr)
             # self._logger.info('Converting datetime to UTC')
 
-            print('Converting datetime to UTC')
+            print("Converting datetime to UTC")
             dfr["datetime"] = dfr["datetime"].dt.tz_localize("America/Sao_Paulo")
-            dfr['datetime'] = dfr['datetime'].dt.tz_convert('UTC')
+            dfr["datetime"] = dfr["datetime"].dt.tz_convert("UTC")
             # self._logger.info('Encoding cyclic wind')
 
-            print('Encoding cyclic wind')
-            dfr['wind_u'], dfr['wind_v'] = cyclic_wind_encoding(dfr['velocidade_vento'], dfr['direcao_vento'])
+            print("Encoding cyclic wind")
+            dfr["wind_u"], dfr["wind_v"] = cyclic_wind_encoding(
+                dfr["velocidade_vento"], dfr["direcao_vento"]
+            )
             # self._logger.info('Encoding cyclic time')
 
-            print('Encoding cyclic time')
-            dfr['hour_sin'], dfr['hour_cos'] = cyclic_time_encoding(dfr['datetime'])
-            dfr['month_sin'], dfr['month_cos'] = cyclic_month_encoding(dfr['datetime'])
+            print("Encoding cyclic time")
+            dfr["hour_sin"], dfr["hour_cos"] = cyclic_time_encoding(dfr["datetime"])
+            dfr["month_sin"], dfr["month_cos"] = cyclic_month_encoding(dfr["datetime"])
             # self._logger.info('Adding latitude and longitude')
 
-            print('Adding latitude and longitude')
+            print("Adding latitude and longitude")
             dfr = self._add_latitude_longitude(dfr)
             # self._logger.info('Preparing data to be stored')
 
             # print('Preparing data to be stored')
             # table = self._dfr_to_arrow(dfr)
             # self._logger.info(f'Storing data in {self.curated_path}')
-            
+
             # self._data_lake_handler.store_data(table, self.curated_path)
 
             save_path = f"{self.station_type}_optimized.csv"
             print(f"Saving file on path {save_path}.")
             print(f"File before saving\n{dfr.iloc[0]}")
-            
+
             dfr.to_csv(save_path, index=False)
+            mlflow.log_artifact(save_path)
             print("Success on saving file")
         except Exception as error:
             print(f"Failed to process {self.station_type}: {error}")
 
-    def _remove_inconsistent_wind_dir(self, dfr:pd.DataFrame):
-        c_1 = dfr['direcao_vento'].notna()
-        c_2 = dfr['velocidade_vento'].isna()
-        dfr.loc[c_1 & c_2, 'direcao_vento'] = np.nan
+    def _remove_inconsistent_wind_dir(self, dfr: pd.DataFrame):
+        c_1 = dfr["direcao_vento"].notna()
+        c_2 = dfr["velocidade_vento"].isna()
+        dfr.loc[c_1 & c_2, "direcao_vento"] = np.nan
         return dfr
-
 
     def _build_variable_limits(self):
         return {
-            'precipitation': {
-                'min': 0.0,
-                'max': 70.0,
+            "precipitation": {
+                "min": 0.0,
+                "max": 70.0,
             },
-            'direcao_vento': {
-                'min': 0.0,
-                'max': 360.0,
+            "direcao_vento": {
+                "min": 0.0,
+                "max": 360.0,
             },
-            'velocidade_vento': {
-                'min': 0.0,
-                'max': 120.0,
+            "velocidade_vento": {
+                "min": 0.0,
+                "max": 120.0,
             },
-            'temperatura': {
-                'min': 0.0,
-                'max': 50.0,
+            "temperatura": {
+                "min": 0.0,
+                "max": 50.0,
             },
-            'pressao': {
-                'min': 800.0,
-                'max': 1200.0,
+            "pressao": {
+                "min": 800.0,
+                "max": 1200.0,
             },
-            'umidade': {
-                'min': 0.0,
-                'max': 100.0,
+            "umidade": {
+                "min": 0.0,
+                "max": 100.0,
             },
         }
 
-
     def _build_variables(self):
         values = [
-            'station - station name',
-            'datetime - UTC datetime of the measurement',
-            'precipitation (mm/15min)',
-            'wind_dir (degrees)',
-            'wind_speed (km/h)',
-            'temperature (degrees Celsius)',
-            'pressure (hPa)',
-            'humidity (%)',
-            'wind_u (cyclic U component from the wind)',
-            'wind_v (cyclic V component from the wind)',
-            'hour_sin (sine encoding of the time of day)',
-            'hour_cos (cosine encoding of the time of day)',
-            'month_sin (sine encoding of the month of year)',
-            'month_cos (cosine encoding of the month of year)',
-            'latitude (degrees)',
-            'longitude (degrees)',
+            "station - station name",
+            "datetime - UTC datetime of the measurement",
+            "precipitation (mm/15min)",
+            "wind_dir (degrees)",
+            "wind_speed (km/h)",
+            "temperature (degrees Celsius)",
+            "pressure (hPa)",
+            "humidity (%)",
+            "wind_u (cyclic U component from the wind)",
+            "wind_v (cyclic V component from the wind)",
+            "hour_sin (sine encoding of the time of day)",
+            "hour_cos (cosine encoding of the time of day)",
+            "month_sin (sine encoding of the month of year)",
+            "month_cos (cosine encoding of the month of year)",
+            "latitude (degrees)",
+            "longitude (degrees)",
         ]
-        keys = [f'variable_{i}' for i in range(1,len(values)+1)]
+        keys = [f"variable_{i}" for i in range(1, len(values) + 1)]
         return dict(zip(keys, values))
 
 
@@ -670,7 +676,7 @@ class RainGaugeDataPreprocessor(DataPreprocessor):
     """
     ADD
     """
-        
+
     def __init__(self, dataset, station_type) -> None:
         super().__init__(dataset, station_type)
         self._instrument = "rain gauge"
@@ -682,7 +688,8 @@ class RainGaugeDataPreprocessor(DataPreprocessor):
             "acumulado_chuva_24_h",
             "acumulado_chuva_96_h",
             "horario",
-            "data_particao"]
+            "data_particao",
+        ]
         self.numeric_cols = [
             "acumulado_chuva_15_min",
             "acumulado_chuva_1_h",
@@ -719,22 +726,22 @@ class RainGaugeDataPreprocessor(DataPreprocessor):
                 print(f"Renaming columns {self._columns_rename_map}")
                 dfr = dfr.rename(columns=self._columns_rename_map)
             dfr.reset_index(drop=True, inplace=True)
-            
+
             print(dfr.shape)
-            attrs = {"naming_authority": "Alerta Rio", "timezone": "America/Sao_Paulo"} # ?
-            attrs.update(self.instrument) # ?
-            attrs.update(self.variables) # ?
-    
+            attrs = {"naming_authority": "Alerta Rio", "timezone": "America/Sao_Paulo"}  # ?
+            attrs.update(self.instrument)  # ?
+            attrs.update(self.variables)  # ?
+
             print("Dropping duplicates")
             # self._logger.info("Dropping duplicates")
             dfr, n_removed_rows = self._drop_duplicates(dfr)
             print(f"Dropped {n_removed_rows} rows")
             print(dfr.shape)
-    
+
             print("Removing inconsistent values")
             dfr = self._remove_inconsistent_values(dfr)
             print(dfr.shape)
-    
+
             print("Converting datetime to UTC")
             print(f"{dfr.iloc[0]}")
             dfr["datetime"] = dfr["datetime"].dt.tz_localize("America/Sao_Paulo")
@@ -756,7 +763,7 @@ class RainGaugeDataPreprocessor(DataPreprocessor):
             save_path = f"{self.station_type}_optimized.csv"
             print(f"Saving file on path {save_path}.")
             print(f"File before saving\n{dfr.iloc[0]}")
-            
+
             dfr.to_csv(save_path, index=False)
             print("Success on saving file")
         except Exception as error:
