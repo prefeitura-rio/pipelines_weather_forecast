@@ -19,6 +19,7 @@ from prefeitura_rio.pipelines_utils.logging import log
 from pipelines.constants import constants
 from pipelines.precipitation_model.rionowcast.utils import bq_project, GypscieApi
 
+# noqa E303
 @task()
 def access_api():
     """  # noqa E303
@@ -109,7 +110,7 @@ def register_dataset(api, filepath: Path, domain_id: int = 1) -> Dict:
 
 
 @task(nout=2)
-def get_dataset_processor_info(api, processor_name: str) -> Tuple(dict, int):
+def get_dataset_processor_info(api, processor_name: str):
     """
     Geting dataset processor information
     """
