@@ -155,4 +155,5 @@ dmypy.json
 !/gypscie/MLproject
 !/gypscie/etl_alertario.py
 !/gypscie/conda.yaml
+/gypscie/utils/logging.py
 !/gypscie/utils/*
