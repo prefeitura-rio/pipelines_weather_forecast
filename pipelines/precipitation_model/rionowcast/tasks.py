@@ -1,243 +1,204 @@
 # -*- coding: utf-8 -*-
-from pipelines.utils.utils import (
-    log,
-    # to_partitions,
-)
+"""
+Tasks
+"""
+import os
+import time
+
+from pathlib import Path
+from typing import Dict, Tuple  # , List
+
+#  from typing import Callable, Dict, List, Tuple, Union
+
+import basedosdados as bd
+import pendulum
 from prefect import task
-# from prefeitura_rio.pipelines_utils.logging import log # ver
+
+from pipelines.constants import constants
+from pipelines.precipitation_model.rionowcast.utils import bq_project, GypscieApi
+from prefeitura_rio.pipelines_utils.infisical import get_secret
+from prefeitura_rio.pipelines_utils.logging import log
 
 
-from prefect import Task
+@task()
+def access_api():
+    """
+    Acess api and return it to be used in other requests
+    """
+    infisical_username = constants.INFISICAL_USERNAME.value
+    infisical_password = constants.INFISICAL_PASSWORD.value
+    username = get_secret(infisical_username)[infisical_username]
+    password = get_secret(infisical_password)[infisical_password]
+    log("\n\n[DEBUG]: username from infisical: {username} {type(username)} ")
+    log("\n\n[DEBUG]: password from infisical: {password}")
+    # info = json.loads(base64.b64decode(secret))
 
-from datetime import datetime
-import pandas as pd
-import pyarrow as pa
+    # secret_name = f"DISCORD_WEBHOOK_URL_{monitor_slug.upper()}"
+    # webhook_url = get_secret(secret_name=secret_name, environment=environment).get(secret_name)
 
-class ReadParquetTask(Task):
-    def __init__(self, data_lake_handler, **kwargs):
-        super().__init__(**kwargs)
-        self.data_lake_handler = data_lake_handler
+    api = GypscieApi(username=username, password=password)
 
-    def run(self, remote_path, columns=None, filters=None):
-        ddf = self.data_lake_handler.read_parquet(
-            remote_path, 
-            columns=columns, 
-            filters=filters
+    return api
+
+
+@task()
+def get_stations_or_historical_data(
+    dataset_info: dict,
+    data_type: str = "historical",
+    start_date: str = None,
+    end_date: str = None,
+) -> Path:
+    """
+    Download data from stations or historical data changing param data_type.
+    data_type: str = "historical" or "station,
+    """
+    log(f"Start downloading {dataset_info['table_id']} {data_type} Data")
+
+    directory_path = Path("data/input/")
+    if not os.path.exists(directory_path):
+        os.makedirs(directory_path)
+
+    actual_timestamp = pendulum.now("America/Sao_Paulo").format("YYYYMMDDhhmmss")
+    savepath = directory_path / f"{dataset_info['filename']}_{actual_timestamp}.csv"
+
+    # pylint: disable=consider-using-f-string
+    query = """
+        SELECT
+            *
+        FROM rj-cor.{}.{}
+        """.format(
+        dataset_info["dataset_id"],
+        dataset_info["table_id"],
+    )
+
+    # pylint: disable=consider-using-f-string
+    if data_type == "historical":
+        filter_query = """
+            WHERE data_particao BETWEEN '{}' AND '{}'
+        """.format(
+            start_date, end_date
         )
-        return ddf.compute()
+        query += filter_query
+
+    log(f"Query to be downloaded:\n{query}")
+    log(f"Downloading data and saving on {savepath}")
+    bd.download(
+        savepath=savepath, query=query, billing_project_id=bq_project()
+    )
+
+    log(f"{dataset_info['table_id']} {type} data saved on {savepath}")
+    return savepath
 
 
-class StoreDataInLakeTask(Task):
-    def __init__(self, data_lake_handler, **kwargs):
-        super().__init__(**kwargs)
-        self.data_lake_handler = data_lake_handler
+@task()
+def register_dataset(api, filepath: Path, domain_id: int = 1) -> Dict:
+    """
+    Register dataset on gypscie and return its informations like id
+    """
+    log(f"\nStart registring dataset by sending {filepath} Data to Gypscie")
 
-    def run(self, table, path):
-        self.data_lake_handler.store_data_in_lake(table, path)
+    data = {
+        "domain_id": domain_id,
+        "name": str(filepath).split("/")[-1].split(".csv")[0],  # pylint: disable=use-maxsplit-arg
+    }
+    log(type(data), data)
+    files = {
+        "files": open(file=filepath, mode="rb"),  # pylint: disable=consider-using-with
+    }
 
+    response = api.post(path="datasets", data=data, files=files)
 
-class DataframeToArrowTask(Task):
-    def run(self, df):
-        table = pa.Table.from_pandas(df, preserve_index=False)
-        return table
-
-
-class DataIntegratorTask(Task):
-    def __init__(self, logger, dl, non_shared_feature_handler, sources, period, **kwargs):
-        super().__init__(**kwargs)
-        # self.logger = logger
-        self.dl = dl
-        self.non_shared_feature_handler = non_shared_feature_handler
-        self.sources = sources
-        self.period = period
-
-    def run(self):
-        # Your DataIntegrator logic here
-        pass
+    log(response)
+    log(response.json())
+    return response.json()
 
 
-class DataIntegrator:
-    
-    def __init__(self) -> None:
-        # self._logger = Logger.get_logger()
-        self._dl = DataLakeHandler()
-        self._feature_handler = self._get_feature_handler(args.non_shared_feature_handler)
-        self._datasets = []
-        self._all_features = list()
-        self._all_non_features = list()
-        self._integrated_data = None
-        self._all_metadata = self._build_all_metadata()
-        self._sources = INSTRUMENTS if args.sources == ['all'] else args.sources
+@task(nout=2)
+def get_dataset_processor_info(api, processor_name: str) -> Tuple(dict, int):
+    """
+    Geting dataset processor information
+    """
+    log(f"Getting dataset processor info for {processor_name}")
+    dataset_processors_response = api.get(
+        path="dataset_processors",
+    )
 
-    
-    def run(self):
-        # self._logger.info('Script initialized')
-        self._prepare_data()
-        self._integrate_data()
-        self._save_data()
-        # self._logger.info('Script finished')
-    
-    
-    def _prepare_data(self):
-        for string_source in self._sources:
-            source = eval(string_source)(self._dl)
-            try:
-                # self._logger.info(f'Preparing data from source {source.name}...')
-                log(f'Preparing data from source {source.name}...')
-                source.prepare_data()
-                self._datasets.append(source.get_data())
-                self._all_features.append(source.get_features())
-                self._all_non_features.append(source.get_non_features())
-            except:
-                message = f'Error while preparing data from source {source.name}. \
-Source will be ignored and data integration will continue.'
-                # self._logger.error(message)
-                log(message)
-                continue
+    # log(dataset_processors_response)
+    dataset_processor_id = None
+    for response in dataset_processors_response:
+        if response.get("name") == processor_name:
+            dataset_processor_id = response["id"]
+            # log(response)
+            # log(response["id"])
+    return dataset_processors_response, dataset_processor_id
 
-    
-    def _integrate_data(self):
-        # self._logger.info('Integrating data sources...')
-        log('Integrating data sources...')
-        if len(self._datasets) > 1:
-            non_shared_features = self._get_non_shared_elements(self._all_features)
-            # self._logger.debug(f'Non shared features: {non_shared_features}')
-            log(f'Non shared features: {non_shared_features}')
-            non_shared_non_features = self._get_non_shared_elements(self._all_non_features)
-            # self._logger.debug(f'Non shared non features: {non_shared_non_features}')
-            log(f'Non shared non features: {non_shared_non_features}')
-            columns_order = None
-            self._integrated_data = pd.DataFrame(data=None)
-            for _ in range(len(self._datasets)):
-                df = self._datasets.pop(0)
-                df = self._feature_handler.handle_features(df, non_shared_features)
-                df = self._handle_non_features(df, non_shared_non_features)
-                if columns_order is None:
-                    columns_order = df.columns
-                else:
-                    df = df[columns_order]
-                self._integrated_data = pd.concat([self._integrated_data, df], ignore_index=True)
-                del df
-            self._integrated_data = self._integrated_data.reset_index(drop=True)
-        else:
-            self._integrated_data = self._datasets[0]
-            self._datasets = None
-    
-    
-    def _get_non_shared_elements(self, all_elements: list):
-        """Returns a set with all elements that are not common to all lists
+    # if not dataset_processor_id:
+    #     log(f"{processor_name} not found. Try adding it.")
 
-        Args:
-            all_elements (list): A list of lists
 
-        Returns:
-            set: a set with all elements that are not common to all lists
-        """
-        all_elements = list(map(set, all_elements))
-        shared_elements = all_elements[0].intersection(*all_elements)
-        non_shared_elements = set()
-        for s in all_elements:
-            non_shared_elements.update(s.difference(shared_elements))
-        return non_shared_elements
-    
-    
-    def _get_feature_handler(self, strategy):
-        try:
-            if not args.non_shared_feature_handler:
-                return NoneHandlerStrategy
-            handler_strategy = eval(f'{strategy}Strategy')
-            return handler_strategy
-        except NameError:
-            message = f'Class {strategy}Strategy not implemented.'
-            # self._logger.error(message)
-            log(message)
-            exit()
-        except Exception as e:
-            message = f'Error while instantiating handler strategy'
-            # self.logger.error(message)
-            # self._logger.error(e)
-            log(message)
-            log(e)
-            exit()
-    
-    
-    def _handle_non_features(self, df: pd.DataFrame, non_shared_non_features: set):
-        columns = set(df.columns)
-        non_features_to_handle = sorted(non_shared_non_features.difference(columns))
-        for non_feature in non_features_to_handle:
-            df[non_feature] = None
-        return df
-    
-    
-    def _build_all_metadata(self):
-        non_features = {
-            'institution': 'institution (name of the authority owning the data)',
-            'instrument': 'instrument (type of meteorological instrument)',
-            'station': 'station (station name)',
-            'station_id': 'station_id (station UID)',
-            'datetime': 'datetime (UTC datetime of the measurement)', 
-            'latitude': 'latitude (degrees)', 
-            'longitude': 'longitude (degrees)',
-            'altitude': 'altitude (kilometers)',
-        }
-        features = {
-            'horizontal_reflectivity_mean': 'horizontal_reflectivity_mean (mean reflectivity in dBZ)', 
-            'dew_point': 'dew_point (dew point temperature in Celsius)', 
-            'humidity': 'humidity (instant relative humidity in %)',
-            'pressure': 'pressure (instant atmospheric pressure in mB)', 
-            'temperature': 'temperature (instant temperature in Celsius)',
-            'wind_dir': 'wind_dir (clockwise wind direction in degrees)', 
-            'wind_speed': 'wind_speed (hourly wind speed in m/s)', 
-            'wind_u': 'wind_u (cyclic U component from the wind)', 
-            'wind_v': 'wind_v (cyclic V component from the wind)',
-            'precipitation': 'precipitation (hourly precipitation in mm)',
-            'hour_sin': 'hour_sin (sine encoding of the time of day)',
-            'hour_cos': 'hour_cos (cosine encoding of the time of day)',
-            'month_sin': 'month_sin (sine encoding of the month of year)', 
-            'month_cos': 'month_cos (cosine encoding of the month of year)',
-        }
-        return {'features': features, 'non_features': non_features}
-    
-    
-    def _save_data(self):
-        # self._logger.info('Preparing data to be stored...')
-        log('Preparing data to be stored...')
-        table = self._dataframe_to_arrow(self._integrated_data)
-        created_at = table.schema.metadata[b'created_at'].decode('utf-8').replace(' ', '_')
-        filepath = f'curated/datasets/data_{created_at}.parquet'
-        self._dl.store_data_in_lake(table, filepath)
-        # self._logger.info(f'Data stored in {filepath}')
-        log(f'Data stored in {filepath}')
+@task()
+# pylint: disable=too-many-arguments
+def execute_dataset_processor(
+    api,
+    processor_id: int,
+    dataset_id: list,  # como pegar os vários datasets
+    environment_id: int,
+    project_id: int,
+    parameters: dict
+    # adicionar campos do dataset_processor
+) -> Dict:
+    """
+    Requisição de execução de um DatasetProcessor
+    """
+    log("\nStarting executing dataset processing")
+    log(
+        "processor_id",
+        processor_id,
+        "dataset_id",
+        dataset_id,
+        "environment_id",
+        environment_id,
+        "project_id",
+        project_id,
+    )
 
-    
-    def _dataframe_to_arrow(self, df:pd.DataFrame):
-        # self._logger.debug(f'Converting dataframe to arrow table...')
-        log(f'Converting dataframe to arrow table...')
-        attrs = self._build_metadata()
-        table = pa.Table.from_pandas(df, preserve_index=False)
-        table = table.cast(
-            pa.schema(
-                table.schema,
-                metadata=attrs
-            )
+    task_response = api.post(
+        path="processor_run",
+        json_data={
+            "dataset_id": dataset_id,
+            "environment_id": environment_id,
+            "parameters": parameters,
+            "processor_id": processor_id,
+            "project_id": project_id,
+        },
+    )
+
+    log(task_response.status_code)
+    log(task_response.json())
+    log("\nFinish executing dataset processing")
+    return task_response.json()
+
+
+@task()
+def wait_task_run(api, task_id) -> Dict:
+    """
+    Force flow wait for the end of data processing
+    """
+    if "task_id" in task_id.keys():
+        _id = task_id.get("task_id")
+
+        # Requisição do resultado da task_id
+        response = api.get(
+            path="status_processor_run/" + _id,
         )
-        return table
 
+    log(f"Response state: {response['state']}")
+    while response["state"] == "STARTED":
+        log("Transformation started")
+        time.sleep(5)
+        response = wait_task_run(api, task_id)
 
-    def _build_metadata(self):
-        attrs = {
-            'created_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            'param_1': f'sources: {self._sources}', # TODO: filter only sources that were successfully integrated
-            'param_2': f'period: {args.period}',
-            'param_3': f'non_shared_feature_handler: {args.non_shared_feature_handler}',
-        }
-        attrs.update(self._build_variables('non_features'))
-        attrs.update(self._build_variables('features'))
-        return attrs
-    
-    
-    def _build_variables(self, string_category):
-        columns = [col for col in self._integrated_data.columns if col in self._all_metadata[string_category].keys()]
-        values = [self._all_metadata[string_category][col] for col in columns]
-        keys = [f'{string_category}_{i}' for i in range(1,len(values)+1)]
-        return dict(zip(keys, values))
+    if response["state"] != "SUCCESS":
+        log("Error processing this dataset. Stop flow or restart this task")
+    else:
+        return response

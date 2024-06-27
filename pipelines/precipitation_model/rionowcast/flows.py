@@ -1,51 +1,151 @@
 # -*- coding: utf-8 -*-
-from tasks import ReadParquetTask, StoreDataInLakeTask, DataframeToArrowTask, DataIntegratorTask
-from prefect import Flow, Parameter
+# pylint: disable=invalid-name
+"""
+Download meteorological data, treat then, integrate and predict
+"""
+
+# from prefect import case, Parameter
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 
+from prefeitura_rio.pipelines_utils.state_handlers import (
+    handler_initialize_sentry,
+    handler_inject_bd_credentials,
+)
+
 from pipelines.constants import constants
+from pipelines.precipitation_model.rionowcast.schedules import (
+    update_schedule,
+)
 
-# Initialize your logger and data lake handler
-logger = Logger.get_logger()
-data_lake_handler = DataLakeWrapper()
+# from pathlib import Path
 
-# Instantiate tasks
-read_parquet_task = ReadParquetTask(data_lake_handler)
-store_data_in_lake_task = StoreDataInLakeTask(data_lake_handler)
-dataframe_to_arrow_task = DataframeToArrowTask()
-data_integrator_task = DataIntegratorTask(logger, data_lake_handler)
+from pipelines.precipitation_model.rionowcast.tasks import (
+    access_api,
+    get_dataset_processor_info,
+    get_stations_or_historical_data,
+    execute_dataset_processor,
+    register_dataset,
+    wait_task_run,
+)
 
-# Define the flow
-with Flow("WeatherDataIntegrationFlow") as flow:
-    # Define parameters if needed
-    sources = Parameter("sources", default=["all"])
-    period = Parameter("period", default=["start_date", "end_date"])
-    non_shared_feature_handler = Parameter("non_shared_feature_handler", default=None)
-
-    # Connect tasks based on your logic
-    parquet_result = read_parquet_task(remote_path="...", columns=["..."])
-    arrow_table = dataframe_to_arrow_task(df=parquet_result)
-    
-    # More connections based on your existing logic
-
-    # Connect DataIntegratorTask
-    data_integrator_result = data_integrator_task(
-        non_shared_feature_handler=non_shared_feature_handler,
-        sources=sources,
-        period=period
-    )
+from pipelines.utils.decorators import Flow
 
 with Flow(
-    name="weather_forecast: Nome do objetivo - Descrição detalhada do objetivo",
-) as exemplo__nome_do_objetivo__greet_flow:
-    # Parameters
-    name = Parameter("name", default="weather_forecast")
+    name="WEATHER FORECAST: Previsão de Chuva - Rionowcast",
+    code_owners=[
+        "paty",
+    ],
+) as wf_previsao_chuva_rionowcast:
 
-    # Tasks
-    greet_task = greet(name)
+    # Data parameters
+    # start_date = Parameter("start_date", default=None, required=False)
+    # end_date = Parameter("end_date", default=None, required=False)
+    # weather_dateset_info = Parameter(
+    #     "weather_dataset_info",
+    #     default={
+    #         "dataset_id": "clima_estacao_meteorologica",
+    #         "table_id": "meteorologia_inmet",
+    #         "filename": "weather_station_bq"
+    #     },
+    #     required=False
+    # )
+    # pluviometer_dataset_info = Parameter(
+    #     "pluviometer_dataset_info",
+    #     default={
+    #         "dataset_id": "clima_pluviometer",
+    #         "table_id": "taxa_precipitacao_alertario",
+    #         "filename": "gauge_station_bq",
+    #     },
+    #     required=False
+    # )
+    start_date, end_date = "2024-02-02", "2024-02-03"
 
+    weather_dataset_info = {
+        "dataset_id": "clima_estacao_meteorologica",
+        "table_id": "meteorologia_inmet",
+        "filename": "weather_station_bq",
+    }
 
-# Storage and run configs
-exemplo__nome_do_objetivo__greet_flow.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-exemplo__nome_do_objetivo__greet_flow.run_config = KubernetesRun(image=constants.DOCKER_IMAGE.value)
+    pluviometer_dataset_info = {
+        "dataset_id": "clima_pluviometer",
+        "table_id": "taxa_precipitacao_alertario",
+        "filename": "gauge_station_bq",
+    }
+
+    # Gypscie parameters
+    project_name = "rionowcast_precipitation"
+    processor_name = "etl_alertario20"
+    environment_id = 1
+    domain_id = 1
+    project_id = 1
+
+    api = access_api()
+
+    # Get processor information on gypscie
+    dataset_processor_response, dataset_processor_id = get_dataset_processor_info(
+        api, processor_name
+    )
+
+    # # Download pluviometric and meteorological data
+    # if weather_dataset_info:
+    #     print("Downloading Meteorological Data")
+    #     meteorological_path = get_stations_or_historical_data(
+    #       weather_dataset_info, "historical", start_date, end_date)
+    #     print(f"Meteorological Data saved on {meteorological_path}")
+    #     meteorological_dataset_response = register_dataset(api, meteorological_path, domain_id)
+
+    #     meteorological_processor_parameters = {
+    #                     "dataset1": str(pluviometrical_path).split("/")[-1],
+    #                     "station_type": "rain_gauge",
+    #                     }
+    #     # # Send data to be processed and treated
+    #     task_id = execute_dataset_processor(
+    #         api,
+    #         processor_id=dataset_processor_id,
+    #         dataset_id=[meteorological_dataset_response["id"]],
+    #         environment_id=environment_id,
+    #         project_id=project_id,
+    #         parameters=meteorological_processor_parameters,
+    #     )
+
+    #     task_response = wait_task_run(api, task_id)
+    #     task_response
+
+    if pluviometer_dataset_info:
+        pluviometrical_path = get_stations_or_historical_data(
+            pluviometer_dataset_info, "historical", start_date, end_date
+        )
+        # pluviometrical_path = Path('data/input/rain_gauge_station_20240625111229.csv')
+        print(f"Pluviometer Data saved on {pluviometrical_path}")
+        pluviometrical_dataset_response = register_dataset(api, pluviometrical_path, domain_id)
+
+        pluviometrical_processor_parameters = {
+            "dataset1": str(pluviometrical_path).rsplit('/', maxsplit=1)[-1],
+            "station_type": "rain_gauge",
+        }
+        # Send data to be processed and treated
+        task_id = execute_dataset_processor(
+            api,
+            processor_id=dataset_processor_id,
+            dataset_id=[pluviometrical_dataset_response["id"]],
+            environment_id=environment_id,
+            project_id=project_id,
+            parameters=pluviometrical_processor_parameters,
+        )
+
+        task_response = wait_task_run(api, task_id)
+
+wf_previsao_chuva_rionowcast.state_handlers = [
+    handler_inject_bd_credentials,
+    handler_initialize_sentry,
+]
+wf_previsao_chuva_rionowcast.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+wf_previsao_chuva_rionowcast.run_config = KubernetesRun(
+    image=constants.DOCKER_IMAGE.value,
+    labels=[constants.WEATHER_FORECAST_AGENT_LABEL.value],
+)
+wf_previsao_chuva_rionowcast.schedule = update_schedule
+
+# https://github.com/prefeitura-rio/pipelines_rj_escritorio/blob/2433238db27adb1213059832f238495b9ecb5043/pipelines/deteccao_alagamento_cameras/flooding_detection/flows.py#L112
+# https://linen.prefect.io/t/13543083/how-do-i-run-the-same-subflow-concurrently-for-items-in-a-li
