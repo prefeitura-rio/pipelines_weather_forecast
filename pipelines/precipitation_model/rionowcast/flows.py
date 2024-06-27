@@ -4,7 +4,7 @@
 Download meteorological data, treat then, integrate and predict
 """
 
-# from prefect import case, Parameter
+from prefect import Parameter
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 
@@ -74,7 +74,7 @@ with Flow(
 
     # Gypscie parameters
     project_name = "rionowcast_precipitation"
-    processor_name = "etl_alertario20"
+    processor_name = Parameter("processor_name", default="etl_alertario21", required=True)
     environment_id = 1
     domain_id = 1
     project_id = 1
