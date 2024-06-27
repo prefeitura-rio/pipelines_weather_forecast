@@ -1,3 +1,9 @@
+# -*- coding: utf-8 -*-
+# pylint: disable= invalid-name, inconsistent-return-statements, broad-except
+"""
+ADD
+"""
+
 import fsspec
 
 
@@ -8,12 +14,13 @@ def make_path(path):
         path (str): Path to create, e.g. 'data/raw'
     """
     try:
-        fs = fsspec.filesystem('file')
+        fs = fsspec.filesystem("file")
         fs.mkdir(path)
-    except:
+    except Exception as error:
+        print(error)
         raise
 
-    
+
 def destroy_path(path, recursive=False):
     """Remove path in local filesystem
 
@@ -22,7 +29,8 @@ def destroy_path(path, recursive=False):
         recursive (bool, optional): If True, removes subdirectories recursively. Defaults to False.
     """
     try:
-        fs = fsspec.filesystem('file')
+        fs = fsspec.filesystem("file")
         fs.rm(path, recursive=recursive)
-    except:
+    except Exception as error:
+        print(error)
         raise
