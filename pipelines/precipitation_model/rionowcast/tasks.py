@@ -14,10 +14,11 @@ import basedosdados as bd
 import pendulum
 from prefect import task
 
-from pipelines.constants import constants
-from pipelines.precipitation_model.rionowcast.utils import bq_project, GypscieApi
 from prefeitura_rio.pipelines_utils.infisical import get_secret
 from prefeitura_rio.pipelines_utils.logging import log
+from pipelines.constants import constants
+from pipelines.precipitation_model.rionowcast.utils import bq_project, GypscieApi
+
 
 
 @task()
@@ -32,10 +33,8 @@ def access_api():
     log("\n\n[DEBUG]: username from infisical: {username} {type(username)} ")
     log("\n\n[DEBUG]: password from infisical: {password}")
     # info = json.loads(base64.b64decode(secret))
-
     # secret_name = f"DISCORD_WEBHOOK_URL_{monitor_slug.upper()}"
     # webhook_url = get_secret(secret_name=secret_name, environment=environment).get(secret_name)
-
     api = GypscieApi(username=username, password=password)
 
     return api
