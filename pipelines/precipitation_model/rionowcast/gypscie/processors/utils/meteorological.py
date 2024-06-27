@@ -1,3 +1,9 @@
+# -*- coding: utf-8 -*-
+# pylint: disable= invalid-name, inconsistent-return-statements, broad-except
+"""
+ADD
+"""
+
 import numpy as np
 import pandas as pd
 from metpy.units import units
@@ -11,7 +17,8 @@ def cyclic_time_encoding(s: pd.Series):
         s (pd.Series): a pandas series with datetime values
 
     Returns:
-        tuple(pandas.Series, pandas.Series): a tuple of two pandas series with the sine and cosine encoding of the time of day
+        tuple(pandas.Series, pandas.Series): a tuple of two
+        pandas series with the sine and cosine encoding of the time of day
     """
     hour_float = s.dt.hour + s.dt.minute / 60.0
     return cyclic_encoding(hour_float, 24.0)
@@ -24,7 +31,8 @@ def cyclic_month_encoding(s: pd.Series):
         s (pd.Series): a pandas series with datetime values
 
     Returns:
-        tuple(pandas.Series, pandas.Series): a tuple of two pandas series with the sine and cosine encoding of the month of year
+        tuple(pandas.Series, pandas.Series): a tuple of two pandas series
+         with the sine and cosine encoding of the month of year
     """
     month_float = s.dt.month.astype("float")
     return cyclic_encoding(month_float, 12.0)
@@ -37,7 +45,8 @@ def cyclic_encoding(s: pd.Series, max_value):
         s (pd.Series): a pandas series with values
 
     Returns:
-        tuple(pandas.Series, pandas.Series): a tuple of two pandas series with the sine and cosine encoding
+        tuple(pandas.Series, pandas.Series): a tuple of two
+                pandas series with the sine and cosine encoding
     """
     s_float = s.astype("float")
     s_sin = np.sin(2.0 * np.pi * s_float / max_value)
@@ -54,7 +63,8 @@ def cyclic_wind_encoding(wind_speed: pd.Series, wind_direction: pd.Series):
         wind_direction (pd.Series): wind direction series
 
     Returns:
-        tuple(numpy.ndarray, numpy.ndarray): a tuple of two numpy.ndarray with U and V wind components
+        tuple(numpy.ndarray, numpy.ndarray): a tuple of two numpy.ndarray
+        with U and V wind components
     """
     wind_u, wind_v = wind_components(
         wind_speed.to_numpy() * units.meter_per_second, wind_direction.to_numpy() * units.deg
