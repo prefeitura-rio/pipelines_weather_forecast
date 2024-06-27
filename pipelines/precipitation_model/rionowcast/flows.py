@@ -8,6 +8,7 @@ from prefect import Parameter
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 
+from prefeitura_rio.pipelines_utils.custom import Flow
 from prefeitura_rio.pipelines_utils.state_handlers import (
     handler_initialize_sentry,
     handler_inject_bd_credentials,
@@ -28,7 +29,6 @@ from pipelines.precipitation_model.rionowcast.tasks import (
     register_dataset,
     wait_task_run,
 )
-from pipelines.utils.decorators import Flow
 
 with Flow(
     name="WEATHER FORECAST: Previsão de Chuva - Rionowcast",
