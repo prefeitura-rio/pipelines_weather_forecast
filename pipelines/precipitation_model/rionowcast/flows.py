@@ -10,7 +10,6 @@ from prefect.storage import GCS
 
 from prefeitura_rio.pipelines_utils.custom import Flow
 from prefeitura_rio.pipelines_utils.state_handlers import (
-    handler_initialize_sentry,
     handler_inject_bd_credentials,
 )
 
@@ -135,10 +134,7 @@ with Flow(
 
         task_response = wait_task_run(api, task_id)
 
-wf_previsao_chuva_rionowcast.state_handlers = [
-    handler_inject_bd_credentials,
-    handler_initialize_sentry,
-]
+wf_previsao_chuva_rionowcast.state_handlers = [handler_inject_bd_credentials]
 wf_previsao_chuva_rionowcast.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 wf_previsao_chuva_rionowcast.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
