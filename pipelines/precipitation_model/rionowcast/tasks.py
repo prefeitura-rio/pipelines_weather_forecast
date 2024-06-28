@@ -25,8 +25,10 @@ def access_api():
     """
     infisical_username = constants.INFISICAL_USERNAME.value
     infisical_password = constants.INFISICAL_PASSWORD.value
-    username = get_secret(infisical_username, path="/gypscie")
-    password = get_secret(infisical_password, path="/gypscie")
+    log(f"[DEBUG] infisical_username {infisical_username}")
+    log(f"[DEBUG] infisical_password {infisical_password}")
+    username = get_secret(secret_name="USERNAME", path="/gypscie", environment="prod")
+    password = get_secret(secret_name="PASSWORD", path="/gypscie", environment="prod")
     log(f"[DEBUG] get_secret {username}")
     log(f"[DEBUG] get_secret {password}")
     username = get_secret(infisical_username, path="/gypscie")[infisical_username]
