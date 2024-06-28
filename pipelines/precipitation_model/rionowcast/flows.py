@@ -32,9 +32,9 @@ from pipelines.precipitation_model.rionowcast.tasks import (
 
 with Flow(
     name="WEATHER FORECAST: Previsão de Chuva - Rionowcast",
-    code_owners=[
-        "paty",
-    ],
+    # code_owners=[
+    #     "paty",
+    # ],
 ) as wf_previsao_chuva_rionowcast:
 
     # Data parameters
