@@ -17,15 +17,20 @@ from pipelines.constants import constants
 from pipelines.precipitation_model.rionowcast.utils import bq_project, GypscieApi
 
 # noqa E302, E303
+# pylint: disable=anomalous-backslash-in-string
 @task()
 def access_api():
-    """  # noqa E303
+    """# noqa E303
     Acess api and return it to be used in other requests
     """
     infisical_username = constants.INFISICAL_USERNAME.value
     infisical_password = constants.INFISICAL_PASSWORD.value
-    username = get_secret(infisical_username)[infisical_username]
-    password = get_secret(infisical_password)[infisical_password]
+    username = get_secret(infisical_username, path="\gypscie")
+    password = get_secret(infisical_password, path="\gypscie")
+    log(f"[DEBUG] get_secret {username}")
+    log(f"[DEBUG] get_secret {password}")
+    username = get_secret(infisical_username, path="\gypscie")[infisical_username]
+    password = get_secret(infisical_password, path="\gypscie")[infisical_password]
     log("\n\n[DEBUG]: username from infisical: {username} {type(username)} ")
     log("\n\n[DEBUG]: password from infisical: {password}")
     # info = json.loads(base64.b64decode(secret))

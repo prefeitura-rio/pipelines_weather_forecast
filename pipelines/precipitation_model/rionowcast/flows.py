@@ -114,6 +114,7 @@ with Flow(
         pluviometrical_path = get_stations_or_historical_data(
             pluviometer_dataset_info, "historical", start_date, end_date
         )
+        pluviometrical_path.set_upstream(api)
         # pluviometrical_path = Path('data/input/rain_gauge_station_20240625111229.csv')
         print(f"Pluviometer Data saved on {pluviometrical_path}")
         pluviometrical_dataset_response = register_dataset(api, pluviometrical_path, domain_id)
