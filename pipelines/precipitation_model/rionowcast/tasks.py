@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Dict  # Tuple, List
 
 # import basedosdados as bd
-from basedosdados.download.base import google_client
+# from basedosdados.download.base import google_client
 from basedosdados.upload.base import Base
 from google.cloud import bigquery
 import pandas as pd
@@ -73,14 +73,20 @@ def get_billing_project_id(
 
 def download_data_from_bigquery(query: str, billing_project_id: str) -> pd.DataFrame:
     """ADD"""
-    # pylint: disable=E1124
-    client = google_client(billing_project_id, from_file=True, reauth=False)
-    job_config = bigquery.QueryJobConfig()
-    # job_config.dry_run = True
+    # pylint: disable=E1124, protected-access
+    # client = google_client(billing_project_id, from_file=True, reauth=False)
+    # job_config = bigquery.QueryJobConfig()
+    # # job_config.dry_run = True
 
-    # Get data
-    log("Querying data from BigQuery")
-    job = client["bigquery"].query(query, job_config=job_config)
+    # # Get data
+    # log("Querying data from BigQuery")
+    # job = client["bigquery"].query(query, job_config=job_config)
+    # https://github.com/prefeitura-rio/pipelines_rj_iplanrio/blob/ecd21c727b6f99346ef84575608e560e5825dd38/pipelines/painel_obras/dump_data/tasks.py#L39
+    bq_client = bigquery.Client(
+        credentials=Base()._load_credentials(mode="prod"),
+        project=billing_project_id,
+    )
+    job = bq_client.query(query)
     while not job.done():
         sleep(1)
 
