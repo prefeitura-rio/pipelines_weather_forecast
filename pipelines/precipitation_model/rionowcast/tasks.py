@@ -8,13 +8,14 @@ from pathlib import Path
 from typing import Dict  # Tuple, List
 
 import basedosdados as bd
+from basedosdados.upload.base import Base
 import pendulum
 from prefect import task
 
 from prefeitura_rio.pipelines_utils.infisical import get_secret
 from prefeitura_rio.pipelines_utils.logging import log
 from pipelines.constants import constants
-from pipelines.precipitation_model.rionowcast.utils import bq_project, GypscieApi
+from pipelines.precipitation_model.rionowcast.utils import GypscieApi
 
 
 # noqa E302, E303
@@ -44,8 +45,32 @@ def access_api():
 
 
 @task()
+def get_billing_project_id(
+    bd_project_mode: str = "prod",
+    billing_project_id: str = None,
+) -> str:
+    """
+    Get billing project id
+    """
+    if not billing_project_id:
+        log("Billing project ID was not provided, trying to get it from environment variable")
+    try:
+        bd_base = Base()
+        billing_project_id = bd_base.config["gcloud-projects"][bd_project_mode]["name"]
+    except KeyError:
+        pass
+    if not billing_project_id:
+        raise ValueError(
+            "billing_project_id must be either provided or inferred from environment variables"
+        )
+    log(f"Billing project ID was inferred from environment variables: {billing_project_id}")
+    return billing_project_id
+
+
+@task()
 def get_stations_or_historical_data(
     dataset_info: dict,
+    billing_project_id: str,
     data_type: str = "historical",
     start_date: str = None,
     end_date: str = None,
@@ -83,8 +108,9 @@ def get_stations_or_historical_data(
         query += filter_query
 
     log(f"Query to be downloaded:\n{query}")
+
     log(f"Downloading data and saving on {savepath}")
-    bd.download(savepath=savepath, query=query, billing_project_id=bq_project())
+    bd.download(savepath=savepath, query=query, billing_project_id=billing_project_id)
 
     log(f"{dataset_info['table_id']} {type} data saved on {savepath}")
     return savepath
