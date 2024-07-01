@@ -60,7 +60,7 @@ with Flow(
     # )
     bd_project_mode = Parameter("bd_project_mode", default="prod", required=False)
     billing_project_id = Parameter("billing_project_id", default="rj-cor", required=False)
-
+    billing_project_id = "rj-cor"
     start_date, end_date = "2024-02-02", "2024-02-03"
 
     weather_dataset_info = {
@@ -89,7 +89,7 @@ with Flow(
         api, processor_name
     )
 
-    billing_project_id = get_billing_project_id(bd_project_mode)
+    billing_project_id = get_billing_project_id(bd_project_mode, billing_project_id)
     # # Download pluviometric and meteorological data
     # if weather_dataset_info:
     #     print("Downloading Meteorological Data")
