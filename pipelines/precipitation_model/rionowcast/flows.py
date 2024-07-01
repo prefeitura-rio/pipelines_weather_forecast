@@ -22,6 +22,7 @@ from pipelines.precipitation_model.rionowcast.schedules import (
 
 from pipelines.precipitation_model.rionowcast.tasks import (
     access_api,
+    get_billing_project_id,
     get_dataset_processor_info,
     get_stations_or_historical_data,
     execute_dataset_processor,
@@ -57,6 +58,9 @@ with Flow(
     #     },
     #     required=False
     # )
+    bd_project_mode = Parameter("bd_project_mode", default="prod", required=False)
+    billing_project_id = Parameter("billing_project_id", default=None, required=False)
+
     start_date, end_date = "2024-02-02", "2024-02-03"
 
     weather_dataset_info = {
@@ -85,6 +89,7 @@ with Flow(
         api, processor_name
     )
 
+    billing_project_id = get_billing_project_id(bd_project_mode)
     # # Download pluviometric and meteorological data
     # if weather_dataset_info:
     #     print("Downloading Meteorological Data")
@@ -112,7 +117,7 @@ with Flow(
 
     if pluviometer_dataset_info:
         pluviometrical_path = get_stations_or_historical_data(
-            pluviometer_dataset_info, "historical", start_date, end_date
+            pluviometer_dataset_info, billing_project_id, "historical", start_date, end_date
         )
         pluviometrical_path.set_upstream(api)
         # pluviometrical_path = Path('data/input/rain_gauge_station_20240625111229.csv')
