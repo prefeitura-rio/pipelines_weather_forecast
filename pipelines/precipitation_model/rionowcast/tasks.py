@@ -70,7 +70,6 @@ def get_billing_project_id(
     return billing_project_id
 
 
-@task()
 def download_data_from_bigquery(
     query: str, project_id: str, billing_project_id: str
 ) -> pd.DataFrame:
