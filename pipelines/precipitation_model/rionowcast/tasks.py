@@ -83,7 +83,7 @@ def download_data_from_bigquery(query: str, billing_project_id: str) -> pd.DataF
     # job = client["bigquery"].query(query, job_config=job_config)
     # https://github.com/prefeitura-rio/pipelines_rj_iplanrio/blob/ecd21c727b6f99346ef84575608e560e5825dd38/pipelines/painel_obras/dump_data/tasks.py#L39
     bq_client = bigquery.Client(
-        credentials=Base()._load_credentials(mode="prod"),
+        credentials=Base(bucket_name="rj-cor")._load_credentials(mode="prod"),
         project=billing_project_id,
     )
     job = bq_client.query(query)
