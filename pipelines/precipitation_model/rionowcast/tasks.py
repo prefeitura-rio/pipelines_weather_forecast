@@ -3,12 +3,15 @@
 Tasks
 """
 import os
-import time
+from time import sleep
 from pathlib import Path
 from typing import Dict  # Tuple, List
 
-import basedosdados as bd
+# import basedosdados as bd
+from basedosdados.download.base import google_client
 from basedosdados.upload.base import Base
+from google.cloud import bigquery
+import pandas as pd
 import pendulum
 from prefect import task
 
@@ -68,6 +71,35 @@ def get_billing_project_id(
 
 
 @task()
+def download_data_from_bigquery(
+    query: str, project_id: str, billing_project_id: str
+) -> pd.DataFrame:
+    """ADD"""
+    # pylint: disable=E1124
+    client = google_client(project_id, billing_project_id, from_file=True, reauth=False)
+    job_config = bigquery.QueryJobConfig()
+    job_config.dry_run = True
+
+    # Get data
+    log("Querying data from BigQuery")
+    job = client["bigquery"].query(query, job_config=job_config)
+    while not job.done():
+        sleep(1)
+
+    # Get data
+    # log("Querying data from BigQuery")
+    # job = client["bigquery"].query(query)
+    # while not job.done():
+    #     sleep(1)
+    log("Getting result from query")
+    results = job.result()
+    log("Converting result to pandas dataframe")
+    dfr = results.to_dataframe()
+    log("End download data from bigquery")
+    return dfr
+
+
+@task()
 def get_stations_or_historical_data(
     dataset_info: dict,
     billing_project_id: str,
@@ -109,8 +141,13 @@ def get_stations_or_historical_data(
 
     log(f"Query to be downloaded:\n{query}")
 
-    log(f"Downloading data and saving on {savepath}")
-    bd.download(savepath=savepath, query=query, billing_project_id=billing_project_id)
+    project_id = "rj-cor"
+    dfr = download_data_from_bigquery(
+        query=query, project_id=project_id, billing_project_id=billing_project_id
+    )
+    log(f"Saving data on {savepath}")
+    dfr.to_csv(savepath, index=False)
+    # bd.download(savepath=savepath, query=query, billing_project_id=billing_project_id)
 
     log(f"{dataset_info['table_id']} {type} data saved on {savepath}")
     return savepath
@@ -221,7 +258,7 @@ def wait_task_run(api, task_id) -> Dict:
     log(f"Response state: {response['state']}")
     while response["state"] == "STARTED":
         log("Transformation started")
-        time.sleep(5)
+        sleep(5)
         response = wait_task_run(api, task_id)
 
     if response["state"] != "SUCCESS":
