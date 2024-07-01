@@ -59,7 +59,7 @@ with Flow(
     #     required=False
     # )
     bd_project_mode = Parameter("bd_project_mode", default="prod", required=False)
-    billing_project_id = Parameter("billing_project_id", default=None, required=False)
+    billing_project_id = Parameter("billing_project_id", default="rj-cor", required=False)
 
     start_date, end_date = "2024-02-02", "2024-02-03"
 
