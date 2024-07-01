@@ -60,24 +60,23 @@ def get_billing_project_id(
     try:
         bd_base = Base()
         billing_project_id = bd_base.config["gcloud-projects"][bd_project_mode]["name"]
+        log(f"Billing project ID was inferred from environment variables: {billing_project_id}")
     except KeyError:
         pass
     if not billing_project_id:
         raise ValueError(
             "billing_project_id must be either provided or inferred from environment variables"
         )
-    log(f"Billing project ID was inferred from environment variables: {billing_project_id}")
+    log(f"Billing project ID: {billing_project_id}")
     return billing_project_id
 
 
-def download_data_from_bigquery(
-    query: str, project_id: str, billing_project_id: str
-) -> pd.DataFrame:
+def download_data_from_bigquery(query: str, billing_project_id: str) -> pd.DataFrame:
     """ADD"""
     # pylint: disable=E1124
-    client = google_client(project_id, billing_project_id, from_file=True, reauth=False)
+    client = google_client(billing_project_id, from_file=True, reauth=False)
     job_config = bigquery.QueryJobConfig()
-    job_config.dry_run = True
+    # job_config.dry_run = True
 
     # Get data
     log("Querying data from BigQuery")
@@ -140,10 +139,7 @@ def get_stations_or_historical_data(
 
     log(f"Query to be downloaded:\n{query}")
 
-    project_id = "rj-cor"
-    dfr = download_data_from_bigquery(
-        query=query, project_id=project_id, billing_project_id=billing_project_id
-    )
+    dfr = download_data_from_bigquery(query=query, billing_project_id=billing_project_id)
     log(f"Saving data on {savepath}")
     dfr.to_csv(savepath, index=False)
     # bd.download(savepath=savepath, query=query, billing_project_id=billing_project_id)
