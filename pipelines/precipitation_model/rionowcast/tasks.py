@@ -243,7 +243,8 @@ def execute_dataset_processor(
     return task_response.json()
 
 
-def predict(api, model_id: int, dataset_id: int, project_id: int):
+@task()
+def predict(api, model_id: int, dataset_id: int, project_id: int) -> dict:
     """
     Requisição de execução de um processo de Predição
     """
