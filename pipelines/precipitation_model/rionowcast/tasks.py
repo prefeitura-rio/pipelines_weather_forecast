@@ -18,7 +18,7 @@ from prefect import task
 from prefeitura_rio.pipelines_utils.infisical import get_secret
 from prefeitura_rio.pipelines_utils.logging import log
 from pipelines.constants import constants
-from pipelines.precipitation_model.rionowcast.utils import GypscieApi
+from pipelines.precipitation_model.rionowcast.utils import GypscieApi, wait_task_run
 
 
 # noqa E302, E303
@@ -29,19 +29,12 @@ def access_api():
     """
     infisical_username = constants.INFISICAL_USERNAME.value
     infisical_password = constants.INFISICAL_PASSWORD.value
-    log(f"[DEBUG] infisical_username {infisical_username}")
-    log(f"[DEBUG] infisical_password {infisical_password}")
-    username = get_secret(secret_name="USERNAME", path="/gypscie", environment="prod")
-    password = get_secret(secret_name="PASSWORD", path="/gypscie", environment="prod")
-    log(f"[DEBUG] get_secret {username}")
-    log(f"[DEBUG] get_secret {password}")
+
+    # username = get_secret(secret_name="USERNAME", path="/gypscie", environment="prod")
+    # password = get_secret(secret_name="PASSWORD", path="/gypscie", environment="prod")
+
     username = get_secret(infisical_username, path="/gypscie")[infisical_username]
     password = get_secret(infisical_password, path="/gypscie")[infisical_password]
-    log("\n\n[DEBUG]: username from infisical: {username} {type(username)} ")
-    log("\n\n[DEBUG]: password from infisical: {password}")
-    # info = json.loads(base64.b64decode(secret))
-    # secret_name = f"DISCORD_WEBHOOK_URL_{monitor_slug.upper()}"
-    # webhook_url = get_secret(secret_name=secret_name, environment=environment).get(secret_name)
     api = GypscieApi(username=username, password=password)
 
     return api
@@ -227,10 +220,10 @@ def execute_dataset_processor(
         },
     )
 
-    log(task_response.status_code)
-    log(task_response.json())
+    response = wait_task_run(api, task_response.json())
+
     log("\nFinish executing dataset processing")
-    return task_response.json()
+    return response.json()
 
 
 @task()
@@ -249,28 +242,3 @@ def predict(api, model_id: int, dataset_id: int, project_id: int) -> dict:
     )
     print(f"Prediction ended. Response: {response}, {response.json()}")
     return response.json()
-
-
-@task()
-def wait_task_run(api, task_id) -> Dict:
-    """
-    Force flow wait for the end of data processing
-    """
-    if "task_id" in task_id.keys():
-        _id = task_id.get("task_id")
-
-        # Requisição do resultado da task_id
-        response = api.get(
-            path="status_processor_run/" + _id,
-        )
-
-    log(f"Response state: {response['state']}")
-    while response["state"] == "STARTED":
-        log("Transformation started")
-        sleep(5)
-        response = wait_task_run(api, task_id)
-
-    if response["state"] != "SUCCESS":
-        log("Error processing this dataset. Stop flow or restart this task")
-    else:
-        return response
