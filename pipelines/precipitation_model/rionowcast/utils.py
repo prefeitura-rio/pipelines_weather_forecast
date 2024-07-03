@@ -143,11 +143,10 @@ def wait_task_run(api, task_id) -> Dict:
 
     log(f"Response state: {response['state']}")
     while response["state"] == "STARTED":
-        log("Transformation started")
         sleep(5)
         response = wait_task_run(api, task_id)
 
     if response["state"] != "SUCCESS":
         log("Error processing this dataset. Stop flow or restart this task")
-    else:
-        return response
+
+    return response
