@@ -215,16 +215,6 @@ def execute_dataset_processor(
     Requisição de execução de um DatasetProcessor
     """
     log("\nStarting executing dataset processing")
-    log(
-        "processor_id",
-        processor_id,
-        "dataset_id",
-        dataset_id,
-        "environment_id",
-        environment_id,
-        "project_id",
-        project_id,
-    )
 
     task_response = api.post(
         path="processor_run",
