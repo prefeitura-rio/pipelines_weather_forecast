@@ -30,7 +30,7 @@ from pipelines.precipitation_model.rionowcast.tasks import (
     execute_dataset_processor,
     predict,
     register_dataset,
-    wait_task_run,
+    # wait_task_run,
 )
 
 with Flow(
@@ -82,7 +82,7 @@ with Flow(
 
     # Gypscie parameters
     project_name = "rionowcast_precipitation"
-    processor_name = Parameter("processor_name", default="etl_alertario21", required=True)
+    processor_name = Parameter("processor_name", default="etl_alertario22", required=True)
     environment_id = 1
     domain_id = 1
     project_id = 1
@@ -159,9 +159,10 @@ with Flow(
             parameters=pluviometrical_processor_parameters,
         )
 
-        task_response = wait_task_run(api, task_id)
+        # task_response = wait_task_run(api, task_id)
 
         # na verdade tem que trabalhar o dataset de entrada
+        # na verdade tem que vir depois do execute_dataset_processor
         response = predict(
             api=api,
             model_id=model_id,
