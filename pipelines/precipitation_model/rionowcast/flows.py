@@ -8,7 +8,7 @@ from prefect import Parameter
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 
-from google.api_core.exceptions import Forbidden
+# from google.api_core.exceptions import Forbidden
 from prefeitura_rio.pipelines_utils.custom import Flow
 from prefeitura_rio.pipelines_utils.state_handlers import (
     handler_inject_bd_credentials,
@@ -61,6 +61,8 @@ with Flow(
     #     },
     #     required=False
     # )
+
+    data_type = Parameter("data_type", default=None, required=False)
     bd_project_mode = Parameter("bd_project_mode", default="prod", required=False)
     billing_project_id = Parameter("billing_project_id", default="rj-cor", required=False)
     billing_project_id = "rj-cor"
@@ -120,16 +122,16 @@ with Flow(
     #     task_response
 
     if pluviometer_dataset_info:
-        try:
+        if data_type == "historical":
             pluviometrical_path = get_stations_or_historical_data(
-                pluviometer_dataset_info, billing_project_id, "historical", start_date, end_date
+                pluviometer_dataset_info, billing_project_id, data_type, start_date, end_date
             )
             pluviometrical_path.set_upstream(api)
             # pluviometrical_path = Path('data/input/rain_gauge_station_20240625111229.csv')
             print(f"Pluviometer Data saved on {pluviometrical_path}")
             pluviometrical_dataset_response = register_dataset(api, pluviometrical_path, domain_id)
-        except Forbidden as error:
-            log(f"\n\n[DEBUG]: erro {error}")
+        else:
+            log("\n\n[DEBUG]: erro ao acessar bq")
             pluviometrical_path = "data/input/rain_gauge_station_20240702121633.csv"
             pluviometrical_dataset_response = {
                 "domain": {
