@@ -5,7 +5,7 @@ Tasks
 import os
 from time import sleep
 from pathlib import Path
-from typing import Dict  # Tuple, List
+from typing import Dict, List  # Tuple
 
 # import basedosdados as bd
 # from basedosdados.download.base import google_client
@@ -14,6 +14,8 @@ from google.cloud import bigquery
 import pandas as pd
 import pendulum
 from prefect import task
+from prefect.engine.signals import ENDRUN
+from prefect.engine.state import Failed
 
 from prefeitura_rio.pipelines_utils.infisical import get_secret
 from prefeitura_rio.pipelines_utils.logging import log
@@ -203,7 +205,7 @@ def execute_dataset_processor(
     project_id: int,
     parameters: dict
     # adicionar campos do dataset_processor
-) -> Dict:
+) -> List:
     """
     Requisição de execução de um DatasetProcessor
     """
@@ -222,8 +224,15 @@ def execute_dataset_processor(
 
     response = wait_task_run(api, task_response.json())
 
-    log("\nFinish executing dataset processing")
-    return response.json()
+    if response["state"] != "SUCCESS":
+        failed_message = "Error processing this dataset. Stop flow or restart this task"
+        log(failed_message)
+        task_state = Failed(failed_message)
+        raise ENDRUN(state=task_state)
+
+    output_datasets = response["result"]["output_datasets"]  # returns a list with datasets
+    log(f"\nFinish executing dataset processing, we have {len(output_datasets)} datasets")
+    return output_datasets
 
 
 @task()
