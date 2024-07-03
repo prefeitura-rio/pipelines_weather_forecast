@@ -243,6 +243,23 @@ def execute_dataset_processor(
     return task_response.json()
 
 
+def predict(api, model_id: int, dataset_id: int, project_id: int):
+    """
+    Requisição de execução de um processo de Predição
+    """
+    print("Starting prediction")
+    response = api.post(
+        path="predict",
+        data={
+            "model_id": model_id,
+            "dataset_id": dataset_id,
+            "project_id": project_id,
+        },
+    )
+    print(f"Prediction ended. Response: {response}, {response.json()}")
+    return response.json()
+
+
 @task()
 def wait_task_run(api, task_id) -> Dict:
     """
