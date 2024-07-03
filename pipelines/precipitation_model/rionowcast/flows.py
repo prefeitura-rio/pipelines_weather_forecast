@@ -8,10 +8,12 @@ from prefect import Parameter
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 
+from google.api_core.exceptions import Forbidden
 from prefeitura_rio.pipelines_utils.custom import Flow
 from prefeitura_rio.pipelines_utils.state_handlers import (
     handler_inject_bd_credentials,
 )
+from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.constants import constants
 from pipelines.precipitation_model.rionowcast.schedules import (
@@ -26,6 +28,7 @@ from pipelines.precipitation_model.rionowcast.tasks import (
     get_dataset_processor_info,
     get_stations_or_historical_data,
     execute_dataset_processor,
+    predict,
     register_dataset,
     wait_task_run,
 )
@@ -70,7 +73,7 @@ with Flow(
     }
 
     pluviometer_dataset_info = {
-        "dataset_id": "clima_pluviometer",
+        "dataset_id": "clima_pluviometro",
         "table_id": "taxa_precipitacao_alertario",
         "filename": "gauge_station_bq",
     }
@@ -81,6 +84,7 @@ with Flow(
     environment_id = 1
     domain_id = 1
     project_id = 1
+    model_id = 2
 
     api = access_api()
 
@@ -116,13 +120,28 @@ with Flow(
     #     task_response
 
     if pluviometer_dataset_info:
-        pluviometrical_path = get_stations_or_historical_data(
-            pluviometer_dataset_info, billing_project_id, "historical", start_date, end_date
-        )
-        pluviometrical_path.set_upstream(api)
-        # pluviometrical_path = Path('data/input/rain_gauge_station_20240625111229.csv')
-        print(f"Pluviometer Data saved on {pluviometrical_path}")
-        pluviometrical_dataset_response = register_dataset(api, pluviometrical_path, domain_id)
+        try:
+            pluviometrical_path = get_stations_or_historical_data(
+                pluviometer_dataset_info, billing_project_id, "historical", start_date, end_date
+            )
+            pluviometrical_path.set_upstream(api)
+            # pluviometrical_path = Path('data/input/rain_gauge_station_20240625111229.csv')
+            print(f"Pluviometer Data saved on {pluviometrical_path}")
+            pluviometrical_dataset_response = register_dataset(api, pluviometrical_path, domain_id)
+        except Forbidden as error:
+            log(f"\n\n[DEBUG]: erro {error}")
+            pluviometrical_path = "data/input/rain_gauge_station_20240702121633.csv"
+            pluviometrical_dataset_response = {
+                "domain": {
+                    "description": "This project has the objective to create nowcasting models.",
+                    "id": 1,
+                    "name": "rionowcast_precipitation",
+                },
+                "file_type": "csv",
+                "id": 16,
+                "name": "gauge_station_bq_20240702121633",
+                "register": "2024-07-02T15:16:43.944547",
+            }
 
         pluviometrical_processor_parameters = {
             "dataset1": str(pluviometrical_path).rsplit("/", maxsplit=1)[-1],
@@ -139,6 +158,14 @@ with Flow(
         )
 
         task_response = wait_task_run(api, task_id)
+
+        # na verdade tem que trabalhar o dataset de entrada
+        response = predict(
+            api=api,
+            model_id=model_id,
+            dataset_id=pluviometrical_dataset_response["id"],
+            project_id=project_id,
+        )
 
 wf_previsao_chuva_rionowcast.state_handlers = [handler_inject_bd_credentials]
 wf_previsao_chuva_rionowcast.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
