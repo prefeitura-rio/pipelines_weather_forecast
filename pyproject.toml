@@ -13,6 +13,15 @@ prefeitura-rio = { git = "https://github.com/prefeitura-rio/prefeitura-rio.git",
     "pipelines",
     "pipelines-templates",
 ] }
+geopandas = "^0.14.1"
+numpy = "^1.26.2"
+pandas = "^2.1.4"
+pendulum = "^3.0.0"
+requests = "^2.31.0"
+shapely = "^2.0.2"
+h3 = "^3.7.6"
+google-cloud-asset = "^3.24.1"
+google-cloud-logging = "^3.10.0"
 
 [tool.poetry.group.dev]
 optional = true
