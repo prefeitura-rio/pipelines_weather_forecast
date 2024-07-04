@@ -150,7 +150,7 @@ with Flow(
             "station_type": "rain_gauge",
         }
         # Send data to be processed and treated
-        task_id = execute_dataset_processor(
+        output_datasets = execute_dataset_processor(
             api,
             processor_id=dataset_processor_id,
             dataset_id=[pluviometrical_dataset_response["id"]],
@@ -166,7 +166,7 @@ with Flow(
         response = predict(
             api=api,
             model_id=model_id,
-            dataset_id=pluviometrical_dataset_response["id"],
+            dataset_id=pluviometrical_dataset_response["id"],  # output_datasets
             project_id=project_id,
         )
 
