@@ -151,9 +151,9 @@ dmypy.json
 # MLflow
 **/mlruns/**
 *.csv
-/gypscie/*
-!/gypscie/MLproject
-!/gypscie/etl_alertario.py
-!/gypscie/conda.yaml
+**/gypscie/processors/**
+!/gypscie/**/MLproject
+!/gypscie/**/etl_alertario.py
+!/gypscie/**/conda.yaml
 /gypscie/utils/logging.py
-!/gypscie/utils/*
+!/gypscie/processors/utils/*
