@@ -335,8 +335,12 @@ class DataPreprocessor:
         dfr_stations = pd.read_csv(
             f"data/input/{self.station_type}_station.csv", usecols=columns_stations
         )
+        dfr_stations["id_estacao"] = dfr_stations["id_estacao"].astype(str)
+        dfr["id_estacao"] = dfr["id_estacao"].astype(str)
+
         dfr = dfr.merge(dfr_stations, on="id_estacao", how="left")
-        dfr = dfr.drop(columns=["id_estacao"])
+        dfr = dfr.drop(columns=["id_estacao"]).rename(columns={"estacao": "station"})
+        print(dfr.columns)
         return dfr
 
     # def _df_to_arrow(self, df: pd.DataFrame):
@@ -401,6 +405,11 @@ class WeatherStationDataPreprocessor(DataPreprocessor):
         ]
         self._columns_rename_map = {
             "acumulado_chuva_1_h": "precipitation",
+            "velocidade_vento": "wind_speed",
+            "temperatura": "temperature",
+            "pressao": "pressure",
+            "umidade": "humidity",
+            "direcao_vento": "wind_dir",
         }
         self._variable_limits = self._build_variable_limits()
         self.variables = self._build_variables()
@@ -447,7 +456,7 @@ class WeatherStationDataPreprocessor(DataPreprocessor):
 
             print("Encoding cyclic wind")
             dfr["wind_u"], dfr["wind_v"] = cyclic_wind_encoding(
-                dfr["velocidade_vento"], dfr["direcao_vento"]
+                dfr["wind_speed"], dfr["wind_dir"]
             )
             # self._logger.info('Encoding cyclic time')
 
@@ -477,9 +486,9 @@ class WeatherStationDataPreprocessor(DataPreprocessor):
             print(f"Failed to process {self.station_type}: {error}")
 
     def _remove_inconsistent_wind_dir(self, dfr: pd.DataFrame):
-        c_1 = dfr["direcao_vento"].notna()
-        c_2 = dfr["velocidade_vento"].isna()
-        dfr.loc[c_1 & c_2, "direcao_vento"] = np.nan
+        c_1 = dfr["wind_dir"].notna()
+        c_2 = dfr["wind_speed"].isna()
+        dfr.loc[c_1 & c_2, "wind_dir"] = np.nan
         return dfr
 
     def _build_variable_limits(self):
@@ -488,23 +497,23 @@ class WeatherStationDataPreprocessor(DataPreprocessor):
                 "min": 0.0,
                 "max": 70.0,
             },
-            "direcao_vento": {
+            "wind_dir": {
                 "min": 0.0,
                 "max": 360.0,
             },
-            "velocidade_vento": {
+            "wind_speed": {
                 "min": 0.0,
                 "max": 120.0,
             },
-            "temperatura": {
+            "temperature": {
                 "min": 0.0,
                 "max": 50.0,
             },
-            "pressao": {
+            "pressure": {
                 "min": 800.0,
                 "max": 1200.0,
             },
-            "umidade": {
+            "humidity": {
                 "min": 0.0,
                 "max": 100.0,
             },
