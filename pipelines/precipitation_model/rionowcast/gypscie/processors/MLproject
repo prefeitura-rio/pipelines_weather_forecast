@@ -1,4 +1,4 @@
-name: data-integrator
+name: data-transformer
 conda_env: conda.yaml
 entry_points:
   main:
