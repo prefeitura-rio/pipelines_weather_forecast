@@ -105,57 +105,6 @@ def download_data_from_bigquery(query: str, billing_project_id: str) -> pd.DataF
 
 
 @task()
-def get_stations_or_historical_data(
-    dataset_info: dict,
-    billing_project_id: str,
-    data_type: str = "historical",
-    start_date: str = None,
-    end_date: str = None,
-) -> Path:
-    """
-    Download data from stations or historical data changing param data_type.
-    data_type: str = "historical" or "station,
-    """
-    log(f"Start downloading {dataset_info['table_id']} {data_type} Data")
-
-    directory_path = Path("data/input/")
-    if not os.path.exists(directory_path):
-        os.makedirs(directory_path)
-
-    actual_timestamp = pendulum.now("America/Sao_Paulo").format("YYYYMMDDhhmmss")
-    savepath = directory_path / f"{dataset_info['filename']}_{actual_timestamp}.csv"
-
-    # pylint: disable=consider-using-f-string
-    query = """
-        SELECT
-            *
-        FROM rj-cor.{}.{}
-        """.format(
-        dataset_info["dataset_id"],
-        dataset_info["table_id"],
-    )
-
-    # pylint: disable=consider-using-f-string
-    if data_type == "historical":
-        filter_query = """
-            WHERE data_particao BETWEEN '{}' AND '{}'
-        """.format(
-            start_date, end_date
-        )
-        query += filter_query
-
-    log(f"Query to be downloaded:\n{query}")
-
-    dfr = download_data_from_bigquery(query=query, billing_project_id=billing_project_id)
-    log(f"Saving data on {savepath}")
-    dfr.to_csv(savepath, index=False)
-    # bd.download(savepath=savepath, query=query, billing_project_id=billing_project_id)
-
-    log(f"{dataset_info['table_id']} {type} data saved on {savepath}")
-    return savepath
-
-
-@task()
 def register_dataset_on_gypscie(api, filepath: Path, domain_id: int = 1) -> Dict:
     """
     Register dataset on gypscie and return its informations like id
@@ -305,7 +254,6 @@ def query_data_from_gcp(  # pylint: disable=too-many-arguments
 
     savepath = directory_path / f"{dataset_id}_{table_id}"
 
-    # pylint: disable=consider-using-f-string
     # pylint: disable=consider-using-f-string
     query = """
         SELECT
@@ -563,3 +511,38 @@ def create_image(data):
     save_image_path = "image.png"
 
     return save_image_path
+
+
+@task
+def get_dataset_info(station_type: str, source: str) -> Dict:
+    """
+    Inputs:
+        station_type: str ["rain_gauge", "weather_station", "radar"]
+        source: str ["alertario", "inmet", "mendanha"]
+    """
+
+    if station_type == "rain_gauge":
+        dataset_info = {
+            "dataset_id": "clima_pluviometro",
+            "filename": "gauge_station_bq",
+        }
+        if source == "alertario":
+            dataset_info["table_id"] = "taxa_precipitacao_alertario"
+            dataset_info["destination_table_id"] = "preprocessamento_pluviometro_alertario"
+    elif station_type == "weather_station":
+        dataset_info = {
+            "dataset_id": "clima_pluviometro",
+            "filename": "weather_station_bq",
+        }
+        if source == "alertario":
+            dataset_info["table_id"] = "meteorologia_inmet"
+            dataset_info["destination_table_id"] = "preprocessamento_estacao_meteorologica_inmet"
+    else:
+        dataset_info = {
+        "dataset_id": "clima_radar",
+        }
+        if source == "mendanha":
+            dataset_info["storage_path"] = ""
+            dataset_info["destination_table_id"] = "preprocessamento_radar_mendanha"    
+    return dataset_info
+    
