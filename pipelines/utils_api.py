@@ -5,18 +5,16 @@ Utils file
 
 # from concurrent.futures import ThreadPoolExecutor, as_completed, wait
 from datetime import datetime, timedelta
-from time import sleep
 from typing import Callable, Dict, Tuple  # , List
+
 import requests
-
-import basedosdados as bd
-
 from prefeitura_rio.pipelines_utils.logging import log
 
 
-class GypscieApi:
+# pylint: disable=too-many-arguments, too-many-instance-attributes
+class Api:
     """
-    GypscieApi
+    Api
     """
 
     def __init__(
@@ -24,14 +22,16 @@ class GypscieApi:
         username: str = None,
         password: str = None,
         base_url: str = None,
+        header_type: str = None,
         token_callback: Callable[[str, datetime], None] = lambda *_: None,
     ) -> None:
         if username is None or password is None:
             raise ValueError("Must be set refresh token or username with password")
 
-        self._base_url = base_url or "https://gypscie.dados.rio/api/"
+        self._base_url = base_url
         self._username = username
         self._password = password
+        self._header_type = header_type
         self._token_callback = token_callback
         self._headers, self._token, self._expires_at = self._get_headers()
 
@@ -47,14 +47,24 @@ class GypscieApi:
                 "password": self._password,
             },
         )
+        log(f"Status code: {response.status_code}\nResponse:{response.content}")
         if response.status_code == 200:
-            token = response.json()["token"]
+            response_json = response.json()
+            token_word = [i for i in response_json.keys() if "token" in i.lower()][0]
+            token = response_json[token_word]
             # now + expires_in_seconds - 10 minutes
-            expires_at = datetime.now() + timedelta(seconds=30 * 60)
+            expires_word = [i for i in response_json.keys() if "expires" in i.lower()]
+            expires_at = (
+                datetime.now() + timedelta(seconds=30 * 60)
+                if len(expires_word) == 0
+                else datetime.now() + timedelta(seconds=int(response_json[expires_word[0]]))
+            )
+            log(f"Token {token[:10]} expires at {expires_at}")
         else:
-            log(f"Status code: {response.status_code}\nResponse:{response.content}")
             raise Exception()
 
+        if self._header_type == "token":
+            return {"token": f"{token}"}, token, expires_at
         return {"Authorization": f"Bearer {token}"}, token, expires_at
 
     def _refresh_token_if_needed(self) -> None:
@@ -66,6 +76,7 @@ class GypscieApi:
         """
         refresh
         """
+        self._expires_at = datetime.now()
         self._refresh_token_if_needed()
 
     def get_token(self):
@@ -73,8 +84,9 @@ class GypscieApi:
         get token
         """
         self._refresh_token_if_needed()
-
-        return self._headers["Authorization"].split(" ")[1]
+        if "Authorization" in self._headers.keys():
+            return self._headers["Authorization"].split(" ")[1]
+        return self._headers["token"]
 
     def expires_at(self):
         """
@@ -113,45 +125,3 @@ class GypscieApi:
         )
         # response = requests.post(f"{self._base_url}{path}", headers=self._headers, json=json_data)
         return response
-
-
-def bq_project(kind: str = "bigquery_prod"):
-    """Get the set BigQuery project_id
-
-    Args:
-        kind (str, optional): Which client to get the project name from.
-        Options are 'bigquery_staging', 'bigquery_prod' and 'storage_staging'
-        Defaults to 'bigquery_prod'.
-
-    Returns:
-        str: the requested project_id
-    """
-    return bd.upload.base.Base().client[kind].project
-
-
-def wait_task_run(api, task_response, flow_type: str = "dataflow") -> Dict:
-    """
-    Force flow wait for the end of data processing
-    flow_type: dataflow or processor
-    """
-    if "task_id" in task_response.keys():
-        _id = task_response.get("task_id")
-    else:
-        log(f"Error processing: task_id not found on response:{task_response}")
-        # TODO: stop flow here
-
-    # Requisição do resultado da task_id
-    path_flow_type = "status_workflow_run" if flow_type == "dataflow" else "status_processor_run"
-    response = api.get(
-        path=f"{path_flow_type}/" + _id,
-    )
-
-    log(f"Response state: {response['state']}")
-    while response["state"] == "STARTED":
-        sleep(5)
-        response = wait_task_run(api, task_response)
-
-    if response["state"] != "SUCCESS":
-        log("Error processing this dataset. Stop flow or restart this task")
-
-    return response
