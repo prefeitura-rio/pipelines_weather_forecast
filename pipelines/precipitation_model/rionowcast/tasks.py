@@ -2,15 +2,18 @@
 """
 Tasks
 """
+import datetime
 import os
 from time import sleep
 from pathlib import Path
 from typing import Dict, List  # Tuple
+from requests.exceptions import HTTPError
 
 # import basedosdados as bd
 # from basedosdados.download.base import google_client
 from basedosdados.upload.base import Base
 from google.cloud import bigquery
+import numpy as np
 import pandas as pd
 import pendulum
 from prefect import task
@@ -19,8 +22,11 @@ from prefect.engine.state import Failed
 
 from prefeitura_rio.pipelines_utils.infisical import get_secret
 from prefeitura_rio.pipelines_utils.logging import log
-from pipelines.constants import constants
-from pipelines.precipitation_model.rionowcast.utils import GypscieApi, wait_task_run
+from pipelines.constants import constants  # pylint: disable=E0611, E0401
+from pipelines.precipitation_model.rionowcast.utils import (  # pylint: disable=E0611, E0401
+    GypscieApi,
+    wait_task_run,
+)
 
 
 # noqa E302, E303
@@ -150,9 +156,23 @@ def get_stations_or_historical_data(
 
 
 @task()
-def register_dataset(api, filepath: Path, domain_id: int = 1) -> Dict:
+def register_dataset_on_gypscie(api, filepath: Path, domain_id: int = 1) -> Dict:
     """
     Register dataset on gypscie and return its informations like id
+    Return:
+    {
+        'domain':
+        {
+            'description': 'This project has the objective to create nowcasting models.',
+            'id': 1,
+            'name': 'rionowcast_precipitation'
+        },
+        'file_type': 'csv',
+        'id': 18,
+        'name': 'rain_gauge_to_model',
+        'register': '2024-07-02T19:20:32.507744',
+        'uri': 'http://gypscie.dados.rio/api/download/datasets/rain_gauge_to_model.zip'
+    }
     """
     log(f"\nStart registring dataset by sending {filepath} Data to Gypscie")
 
@@ -251,3 +271,295 @@ def predict(api, model_id: int, dataset_id: int, project_id: int) -> dict:
     )
     print(f"Prediction ended. Response: {response}, {response.json()}")
     return response.json()
+
+
+def calculate_start_and_end_date(
+    hours_from_past: int,
+) -> tuple[datetime.datetime, datetime.datetime]:
+    """
+    Calculates the start and end date based on the hours from past
+    """
+    end_date = datetime.datetime.now()
+    start_date = end_date - datetime.timedelta(hours=hours_from_past)
+    return start_date, end_date
+
+
+@task()
+def query_data_from_gcp(  # pylint: disable=too-many-arguments
+    dataset_id: str,
+    table_id: str,
+    billing_project_id: str,
+    start_date: str = None,
+    end_date: str = None,
+    save_format: str = "csv",
+) -> Path:
+    """
+    Download historical data from source.
+    format: csv or parquet
+    """
+    log(f"Start downloading {dataset_id}.{table_id} data")
+
+    directory_path = Path("data/input/")
+    if not os.path.exists(directory_path):
+        os.makedirs(directory_path)
+
+    savepath = directory_path / f"{dataset_id}_{table_id}"
+
+    # pylint: disable=consider-using-f-string
+    # pylint: disable=consider-using-f-string
+    query = """
+        SELECT
+            *
+        FROM rj-cor.{}.{}
+        """.format(
+        dataset_id,
+        table_id,
+    )
+
+    # pylint: disable=consider-using-f-string
+    if start_date:
+        filter_query = """
+            WHERE data_particao BETWEEN '{}' AND '{}'
+        """.format(
+            start_date, end_date
+        )
+        query += filter_query
+
+    log(f"Query used to download data:\n{query}")
+
+    dfr = download_data_from_bigquery(query=query, billing_project_id=billing_project_id)
+    if save_format == "csv":
+        dfr.to_csv(f"{savepath}.csv", index=False)
+    elif save_format == "parquet":
+        dfr.to_parquet(f"{savepath}.parquet", index=False)
+    # bd.download(savepath=savepath, query=query, billing_project_id=billing_project_id)
+
+    log(f"{table_id} data saved on {savepath}")
+    return savepath
+
+
+@task()
+def execute_prediction_on_gypscie(
+    api,
+    model_params,
+    # hours_to_predict,
+):
+    """
+    Requisição de execução de um processo de Predição
+    """
+    log("Starting prediction")
+    task_response = api.post(
+        path="workflow_run",
+        json=model_params,
+    )
+    # data={
+    #             "model_id": model_id,
+    #             "dataset_id": dataset_id,
+    #             "project_id": project_id,
+    #         },
+    response = wait_task_run(api, task_response.json())
+
+    if response["state"] != "SUCCESS":
+        failed_message = "Error processing this dataset. Stop flow or restart this task"
+        log(failed_message)
+        task_state = Failed(failed_message)
+        raise ENDRUN(state=task_state)
+
+    print(f"Prediction ended. Response: {response}, {response.json()}")
+    # TODO: retorna a predição? o id da do dataset?
+
+    return response.json().get("task_id")  # response.json().get('task_id')
+
+
+@task
+def get_dataflow_params(  # pylint: disable=too-many-arguments
+    workflow_id,
+    environment_id,
+    project_id,
+    load_data_funtion_id,
+    pre_processing_function_id,
+    model_function_id,
+    radar_data_id,
+    rain_gauge_data_id,
+    grid_data_id,
+    model_data_id,
+) -> List:
+    """
+    Return parameters for the model
+
+    {
+        "workflow_id": 36,
+        "environment_id": 1,
+        "parameters": [
+            {
+                "function_id":42,
+                "params": {"radar_data_path":178, "rain_gauge_data_path":179, "grid_data_path":177}
+            },
+            {
+                "function_id":43
+            },
+            {
+                "function_id":45,
+                "params": {"model_path":191}  # model was registered on Gypscie as a dataset
+            }
+        ],
+        "project_id": 1
+    }
+    """
+    return {
+        "workflow_id": workflow_id,
+        "environment_id": environment_id,
+        "parameters": [
+            {
+                "function_id": load_data_funtion_id,
+                "params": {
+                    "radar_data_path": radar_data_id,
+                    "rain_gauge_data_path": rain_gauge_data_id,
+                    "grid_data_path": grid_data_id,
+                },
+            },
+            {
+                "function_id": pre_processing_function_id,
+            },
+            {"function_id": model_function_id, "params": {"model_path": model_data_id}},
+        ],
+        "project_id": project_id,
+    }
+
+
+@task()
+def get_prediction_dataset_ids_on_gypscie(
+    api,
+    task_id,
+) -> List:
+    """
+    Get output files id with predictions
+    """
+    try:
+        response = api.get(path="status_workflow_run/" + task_id)
+        response = response.json()
+    except HTTPError as err:
+        if err.response.status_code == 404:
+            print(f"Task {os.environ['DATAFLOW_TASK_ID']} not found")
+            return []
+
+    return response.get("output_datasets")
+
+
+@task()
+def get_prediction_on_gypscie(
+    api,
+    prediction_dataset_ids,
+):
+    """
+    Get output files with predictions
+    """
+    datasets = []
+    for i in prediction_dataset_ids:
+        response = api.get(path="status_workflow_run/" + i)  # TODO change path
+
+        datasets.append(response.json()["result"].get("output_datasets"))  # TODO change get
+
+    return datasets
+
+
+@task
+def desnormalize_data(array: np.numpy):
+    """
+    Desnormalize data
+
+    Inputs:
+        array: numpy array
+    Returns:
+        a numpy array with the values desnormalized
+    """
+    return array
+
+
+@task
+def geolocalize_data(prediction_datasets: np.numpy, now_datetime: str) -> pd.DataFrame:
+    """
+    Geolocalize data using grid and add timestamp
+
+    Inputs:
+        prediction_datasets: numpy array
+        now_datetime: string in format YYYY_MM_DD__H_M_S
+    Returns:
+        a pandas dataframe to be saved on GCP
+    Expected columns: latitude, longitude, janela_predicao,
+    valor_predicao, data_predicao (timestamp em que foi realizada a previsão)
+    """
+    return prediction_datasets
+
+
+@task
+def create_image(data):
+    """
+    Create image using Geolocalized data or the numpy array from desnormalized_data function
+    Exemplo de código que usei pra gerar uma imagem vindo de um xarray:
+
+    def create_and_save_image(data: xr.xarray, variable) -> Path:
+        plt.figure(figsize=(10, 10))
+
+        # Use the Geostationary projection in cartopy
+        axis = plt.axes(projection=ccrs.PlateCarree())
+
+        lat_max, lon_max = (
+            -21.708288842894145,
+            -42.36573106186053,
+        )  # canto superior direito
+        lat_min, lon_min = (
+            -23.793855217170343,
+            -45.04488171189226,
+        )  # canto inferior esquerdo
+
+        extent = [lon_min, lat_min, lon_max, lat_max]
+        img_extent = [extent[0], extent[2], extent[1], extent[3]]
+
+        # Define the color scale based on the channel
+        colormap = "jet"  # White to black for IR channels
+
+        # Plot the image
+        img = axis.imshow(data, origin="upper", extent=img_extent, cmap=colormap, alpha=0.8)
+
+        # Add coastlines, borders and gridlines
+        axis.coastlines(resolution='10m', color='black', linewidth=0.8)
+        axis.add_feature(cartopy.feature.BORDERS, edgecolor='white', linewidth=0.5)
+
+
+        grdln = axis.gridlines(
+            crs=ccrs.PlateCarree(),
+            color="gray",
+            alpha=0.7,
+            linestyle="--",
+            linewidth=0.7,
+            xlocs=np.arange(-180, 180, 1),
+            ylocs=np.arange(-90, 90, 1),
+            draw_labels=True,
+        )
+        grdln.top_labels = False
+        grdln.right_labels = False
+
+        plt.colorbar(
+            img,
+            label=variable.upper(),
+            extend="both",
+            orientation="horizontal",
+            pad=0.05,
+            fraction=0.05,
+        )
+
+        output_image_path = Path(os.getcwd()) / "output" / "images"
+
+        save_image_path = output_image_path / (f"{variable}.png")
+
+        if not output_image_path.exists():
+            output_image_path.mkdir(parents=True, exist_ok=True)
+
+        plt.savefig(save_image_path, bbox_inches="tight", pad_inches=0, dpi=300)
+        plt.show()
+        return save_image_path
+    """
+    save_image_path = "image.png"
+
+    return save_image_path

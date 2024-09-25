@@ -231,7 +231,6 @@ class AlertaRioRG(Instrument):
 
 
 class InmetWS(Instrument):
-
     def __init__(
         self,
     ) -> None:
@@ -280,7 +279,6 @@ class InmetWS(Instrument):
 
 
 class ConstantHandler:
-
     @staticmethod
     def handle_features(df: pd.DataFrame, all_features: set, constant_value=None):
         columns = set(df.columns)
@@ -291,21 +289,18 @@ class ConstantHandler:
 
 
 class NoneHandlerStrategy:
-
     @staticmethod
     def handle_features(df: pd.DataFrame, all_features: set):
         return ConstantHandler.handle_features(df, all_features, constant_value=None)
 
 
 class ZeroHandlerStrategy:
-
     @staticmethod
     def handle_features(df: pd.DataFrame, all_features: set):
         return ConstantHandler.handle_features(df, all_features, constant_value=0)
 
 
 class ZeroWithFlagHandlerStrategy:
-
     @staticmethod
     def handle_features(df: pd.DataFrame, all_features: set):
         columns = set(df.columns)
@@ -320,7 +315,6 @@ class ZeroWithFlagHandlerStrategy:
 
 
 class DataIntegrator:
-
     def __init__(self) -> None:
         self._logger = Logger.get_logger()
         # self._dl = DataLakeHandler()
