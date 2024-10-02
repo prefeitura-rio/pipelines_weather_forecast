@@ -40,11 +40,11 @@ from pipelines.precipitation_model.rionowcast.tasks import (  # pylint: disable=
     geolocalize_data,
     get_dataset_processor_info,
     get_dataflow_params,
-    get_prediction_dataset_ids_on_gypscie,
+    get_output_dataset_ids_on_gypscie,
     get_prediction_on_gypscie,
     query_data_from_gcp,
     register_dataset_on_gypscie,
-    # wait_task_run,
+    task_wait_run,
 )
 from pipelines.tasks import (  # pylint: disable=E0611, E0401
     task_create_partitions,
@@ -53,28 +53,6 @@ from pipelines.tasks import (  # pylint: disable=E0611, E0401
 with Flow(
     name="WEATHER FORECAST: Pré-processamento dos dados - Rionowcast",
 ) as preprocessing_previsao_chuva_rionowcast:
-
-    # Data parameters
-    # start_date = Parameter("start_date", default=None, required=False)
-    # end_date = Parameter("end_date", default=None, required=False)
-    # weather_dateset_info = Parameter(
-    #     "weather_dataset_info",
-    #     default={
-    #         "dataset_id": "clima_estacao_meteorologica",
-    #         "table_id": "meteorologia_inmet",
-    #         "filename": "weather_station_bq"
-    #     },
-    #     required=False
-    # )
-    # pluviometer_dataset_info = Parameter(
-    #     "pluviometer_dataset_info",
-    #     default={
-    #         "dataset_id": "clima_pluviometer",
-    #         "table_id": "taxa_precipitacao_alertario",
-    #         "filename": "gauge_station_bq",
-    #     },
-    #     required=False
-    # )
 
     # Parameters to run a query on Bigquery
     bd_project_mode = Parameter("bd_project_mode", default="prod", required=False)
@@ -146,7 +124,7 @@ with Flow(
             "station_type": station_type,
         }
 
-    treated_datasets = execute_dataset_processor(
+    dataset_processor_task_id = execute_dataset_processor(
         api,
         processor_id=dataset_processor_id,
         dataset_id=[dataset_response["id"]],
@@ -154,6 +132,9 @@ with Flow(
         project_id=project_id,
         parameters=processor_parameters,
     )
+    task_wait_run(api, task_response, flow_type)
+    output_datasets_id = get_output_dataset_ids_on_gypscie(api, dataset_processor_task_id)
+
     # TODO: criar função para adicionar a coluna de update_date
     # Save pre-treated data on local file with partitions
     now_datetime = get_now_datetime()
@@ -298,7 +279,7 @@ with Flow(
         api,
         model_params,
     )
-    prediction_dataset_ids = get_prediction_dataset_ids_on_gypscie(api, task_id)
+    prediction_dataset_ids = get_output_dataset_ids_on_gypscie(api, task_id)
     prediction_datasets = get_prediction_on_gypscie(api, prediction_dataset_ids)
     desnormalized_prediction_datasets = desnormalize_data(prediction_datasets)
     now_datetime = get_now_datetime()

@@ -340,27 +340,27 @@ def bq_project(kind: str = "bigquery_prod"):
     return bd.upload.base.Base().client[kind].project
 
 
-def wait_task_run(api, task_id) -> Dict:
-    """
-    Force flow wait for the end of data processing
-    """
-    if "task_id" in task_id.keys():
-        _id = task_id.get("task_id")
+# def wait_task_run(api, task_id) -> Dict:
+#     """
+#     Force flow wait for the end of data processing
+#     """
+#     if "task_id" in task_id.keys():
+#         _id = task_id.get("task_id")
 
-        # Requisição do resultado da task_id
-        response = api.get(
-            path="status_processor_run/" + _id,
-        )
+#         # Requisição do resultado da task_id
+#         response = api.get(
+#             path="status_processor_run/" + _id,
+#         )
 
-    print(f"Response state: {response['state']}")
-    while response["state"] == "STARTED":
-        sleep(5)
-        response = wait_task_run(api, task_id)
+#     print(f"Response state: {response['state']}")
+#     while response["state"] == "STARTED":
+#         sleep(5)
+#         response = wait_task_run(api, task_id)
 
-    if response["state"] != "SUCCESS":
-        print("Error processing this dataset. Stop flow or restart this task")
+#     if response["state"] != "SUCCESS":
+#         print("Error processing this dataset. Stop flow or restart this task")
 
-    return response
+#     return response
 
 
 ###############
