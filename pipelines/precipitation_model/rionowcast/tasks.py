@@ -25,7 +25,7 @@ from prefeitura_rio.pipelines_utils.logging import log
 from pipelines.constants import constants  # pylint: disable=E0611, E0401
 from pipelines.precipitation_model.rionowcast.utils import (  # pylint: disable=E0611, E0401
     GypscieApi,
-    wait_task_run,
+    wait_run,
 )
 
 
@@ -127,7 +127,7 @@ def register_dataset_on_gypscie(api, filepath: Path, domain_id: int = 1) -> Dict
 
     data = {
         "domain_id": domain_id,
-        "name": str(filepath).split("/")[-1].split(".csv")[0],  # pylint: disable=use-maxsplit-arg
+        "name": str(filepath).split("/")[-1].split(".csv")[0],  # pylint: disable=use-maxsplit-arg # TODO: nome tem que ser único
     }
     log(type(data), data)
     files = {
@@ -190,18 +190,20 @@ def execute_dataset_processor(
             "project_id": project_id,
         },
     )
+    # task_response = {'task_id': '227e74bc-0057-4e63-a30f-8374604e442b'}
 
-    response = wait_task_run(api, task_response.json())
+    # response = wait_run(api, task_response.json())
 
-    if response["state"] != "SUCCESS":
-        failed_message = "Error processing this dataset. Stop flow or restart this task"
-        log(failed_message)
-        task_state = Failed(failed_message)
-        raise ENDRUN(state=task_state)
+    # if response["state"] != "SUCCESS":
+    #     failed_message = "Error processing this dataset. Stop flow or restart this task"
+    #     log(failed_message)
+    #     task_state = Failed(failed_message)
+    #     raise ENDRUN(state=task_state)
 
-    output_datasets = response["result"]["output_datasets"]  # returns a list with datasets
-    log(f"\nFinish executing dataset processing, we have {len(output_datasets)} datasets")
-    return output_datasets
+    # output_datasets = response["result"]["output_datasets"]  # returns a list with datasets
+    # log(f"\nFinish executing dataset processing, we have {len(output_datasets)} datasets")
+    # return output_datasets
+    return task_response.json(["task_id"])
 
 
 @task()
@@ -252,7 +254,7 @@ def query_data_from_gcp(  # pylint: disable=too-many-arguments
     if not os.path.exists(directory_path):
         os.makedirs(directory_path)
 
-    savepath = directory_path / f"{dataset_id}_{table_id}"
+    savepath = directory_path / f"{dataset_id}_{table_id}" ### TODO: 
 
     # pylint: disable=consider-using-f-string
     query = """
@@ -289,11 +291,12 @@ def query_data_from_gcp(  # pylint: disable=too-many-arguments
 @task()
 def execute_prediction_on_gypscie(
     api,
-    model_params,
+    model_params: dict,
     # hours_to_predict,
-):
+) -> str:
     """
     Requisição de execução de um processo de Predição
+    Return task_id
     """
     log("Starting prediction")
     task_response = api.post(
@@ -305,7 +308,7 @@ def execute_prediction_on_gypscie(
     #             "dataset_id": dataset_id,
     #             "project_id": project_id,
     #         },
-    response = wait_task_run(api, task_response.json())
+    response = wait_run(api, task_response.json())
 
     if response["state"] != "SUCCESS":
         failed_message = "Error processing this dataset. Stop flow or restart this task"
@@ -317,6 +320,10 @@ def execute_prediction_on_gypscie(
     # TODO: retorna a predição? o id da do dataset?
 
     return response.json().get("task_id")  # response.json().get('task_id')
+
+@task
+def task_wait_run(api, task_response, flow_type: str = "dataflow") -> Dict:
+    return wait_run(api, task_response, flow_type)
 
 
 @task
@@ -376,7 +383,7 @@ def get_dataflow_params(  # pylint: disable=too-many-arguments
 
 
 @task()
-def get_prediction_dataset_ids_on_gypscie(
+def get_output_dataset_ids_on_gypscie(
     api,
     task_id,
 ) -> List:
@@ -388,14 +395,14 @@ def get_prediction_dataset_ids_on_gypscie(
         response = response.json()
     except HTTPError as err:
         if err.response.status_code == 404:
-            print(f"Task {os.environ['DATAFLOW_TASK_ID']} not found")
+            print(f"Task {task_id} not found")
             return []
 
     return response.get("output_datasets")
 
 
 @task()
-def get_prediction_on_gypscie(
+def get_output_dataset_on_gypscie(
     api,
     prediction_dataset_ids,
 ):
