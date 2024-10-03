@@ -4,25 +4,36 @@
 Download sattelite goes 16 data, treat then and predict
 """
 
-from prefect import Parameter, case
+from prefect import Parameter
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 
 # from google.api_core.exceptions import Forbidden
 from prefeitura_rio.pipelines_utils.custom import Flow  # pylint: disable=E0611, E0401
-from prefeitura_rio.pipelines_utils.logging import log
-from prefeitura_rio.pipelines_utils.state_handlers import handler_inject_bd_credentials
-from prefeitura_rio.pipelines_utils.tasks import (  # pylint: disable=E0611, E0401
-    create_table_and_upload_to_gcs,
-    get_now_datetime,
-    task_run_dbt_model_task,
+# from prefeitura_rio.pipelines_utils.logging import log
+from prefeitura_rio.pipelines_utils.state_handlers import (
+    handler_initialize_sentry,
+    handler_inject_bd_credentials,
 )
+# from prefeitura_rio.pipelines_utils.tasks import (  # pylint: disable=E0611, E0401
+#     create_table_and_upload_to_gcs,
+#     get_now_datetime,
+#     task_run_dbt_model_task,
+# )
 
 from pipelines.constants import constants  # pylint: disable=E0611, E0401
 from pipelines.precipitation_model.impa.schedules import (  # pylint: disable=E0611, E0401
     prediction_schedule,
 )
-from pipelines.tasks import task_create_partitions  # pylint: disable=E0611, E0401
+from pipelines.precipitation_model.impa.tasks import (  # pylint: disable=E0611, E0401
+    download_files_from_s3,
+    get_predictions,
+    get_relevant_dates_informations,
+    get_start_datetime,
+    process_data,
+)
+
+# from pipelines.tasks import task_create_partitions  # pylint: disable=E0611, E0401
 
 # from pipelines.precipitation_model.impa.tasks import (  # pylint: disable=E0611, E0401
 # access_api,
@@ -35,6 +46,12 @@ from pipelines.tasks import task_create_partitions  # pylint: disable=E0611, E04
 
 with Flow(
     name="WEATHER FORECAST: Previsão de Chuva - IMPA",
+    state_handlers=[
+        handler_initialize_sentry,
+        handler_inject_bd_credentials,
+    ],
+    parallelism=10,
+    skip_if_running=False,
 ) as prediction_previsao_chuva_impa:
 
     #########################
@@ -42,70 +59,76 @@ with Flow(
     #########################
 
     # Model parameters
-    hours_from_past = Parameter("hours_from_past", required=True, default=6)
-    start_date = Parameter("start_date", default=None, required=False)
-    end_date = Parameter("end_date", default=None, required=False)
-
-    # Gypscie parameters
-    environment_id = Parameter("environment_id", default=1, required=False)
-    domain_id = Parameter("domain_id", default=1, required=False)
-    project_id = Parameter("project_id", default=1, required=False)
-    workflow_id = Parameter("workflow_id", default=36, required=False)
-    pre_processing_function_id = Parameter("pre_processing_function_id", default=43, required=False)
-    load_data_function_id = Parameter("load_data_function_id", default=42, required=False)
-    post_processing_function_id = Parameter(
-        "post_processing_function_id", default=18, required=False
+    start_datetime = Parameter(
+        "start_datetime",
+        default=None,
+        required=False,
+        description="Datetime in YYYY-MM-dd HH:mm:ss format, UTC timezone",
     )
-    model_id = Parameter("model_id", default=18, required=False)
-    # radar_data_id = Parameter("radar_data_id", default=178, required=False)
-    # rain_gauge_data_id = Parameter("rain_gauge_data_id", default=179, required=False)
-    grid_data_id = Parameter("grid_data_id", default=177, required=False)
+    num_workers = Parameter(
+        "num_workers",
+        default=8,
+        required=False,
+        description="Number of workers to use for parallel processing",
+    )
+    cuda = Parameter("cuda", default=False, required=False, description="Use CUDA for prediction")
 
     # Parameters for saving data on GCP
     materialize_after_dump = Parameter("materialize_after_dump", default=False, required=False)
     dump_mode = Parameter("dump_mode", default=False, required=False)
-    dataset_id = mode_redis = Parameter("dataset_id", default="clima_rionowcast", required=False)
-    table_id = Parameter("table_id", default="predicao_precipitacao", required=False)()
+    dataset_id = mode_redis = Parameter(
+        "dataset_id", default="clima_previsao_chuva", required=False
+    )
+    table_id = Parameter("table_id", default="modelo_satelite_goes_16_impa", required=False)
 
     #########################
     #  Start flow           #
     #########################
 
-    with case(start_date, None):
-        start_date, end_date = calculate_start_and_end_date(hours_from_past)
+    # Input arguments (These can be passed via Prefect Parameters or CLI)
+    dt = get_start_datetime(start_datetime)
+    relevant_dts, days_of_year, years = get_relevant_dates_informations(dt)
 
-    image_path = create_image(geolocalized_prediction_datasets)
-    # Save prediction on file
-    prediction_data_path = task_create_partitions(
-        geolocalized_prediction_datasets,
-        partition_date_column="data_predicao",  # TODO: change column name
-        # partition_columns=["ano_particao", "mes_particao", "data_particao"],
-        savepath="model_prediction",
-        suffix=now_datetime,
-    )
+    # Download data from s3
+    download_files_from_s3(relevant_dts, days_of_year, years)
 
-    ##############################
-    #  Save predictions on GCP   #
-    ##############################
+    # Process and predict for the latest day
+    process_data(years[0], days_of_year[0], num_workers, dt, cuda)
 
-    # Upload data to BigQuery
-    create_table = create_table_and_upload_to_gcs(
-        data_path=prediction_data_path,
-        dataset_id=dataset_id,
-        table_id=table_id,
-        dump_mode=dump_mode,
-        biglake_table=False,
-    )
+    get_predictions(num_workers, cuda)
 
-    # Trigger DBT flow run
-    with case(materialize_after_dump, True):
-        run_dbt = task_run_dbt_model_task(
-            dataset_id=dataset_id,
-            table_id=table_id,
-            # mode=materialization_mode,
-            # materialize_to_datario=materialize_to_datario,
-        )
-        run_dbt.set_upstream(create_table)
+    # image_path = create_image(geolocalized_prediction_datasets)
+    # # Save prediction on file
+    # prediction_data_path = task_create_partitions(
+    #     geolocalized_prediction_datasets,
+    #     partition_date_column="data_predicao",  # TODO: change column name
+    #     # partition_columns=["ano_particao", "mes_particao", "data_particao"],
+    #     savepath="model_prediction",
+    #     suffix=now_datetime,
+    # )
+
+    # ##############################
+    # #  Save predictions on GCP   #
+    # ##############################
+
+    # # Upload data to BigQuery
+    # create_table = create_table_and_upload_to_gcs(
+    #     data_path=prediction_data_path,
+    #     dataset_id=dataset_id,
+    #     table_id=table_id,
+    #     dump_mode=dump_mode,
+    #     biglake_table=False,
+    # )
+
+    # # Trigger DBT flow run
+    # with case(materialize_after_dump, True):
+    #     run_dbt = task_run_dbt_model_task(
+    #         dataset_id=dataset_id,
+    #         table_id=table_id,
+    #         # mode=materialization_mode,
+    #         # materialize_to_datario=materialize_to_datario,
+    #     )
+    #     run_dbt.set_upstream(create_table)
 
 
 ##############################
