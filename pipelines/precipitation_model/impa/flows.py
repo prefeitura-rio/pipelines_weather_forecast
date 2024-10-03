@@ -4,16 +4,14 @@
 Download sattelite goes 16 data, treat then and predict
 """
 
-from prefect import case, Parameter
+from prefect import Parameter, case
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 
 # from google.api_core.exceptions import Forbidden
 from prefeitura_rio.pipelines_utils.custom import Flow  # pylint: disable=E0611, E0401
-from prefeitura_rio.pipelines_utils.state_handlers import (
-    handler_inject_bd_credentials,
-)
 from prefeitura_rio.pipelines_utils.logging import log
+from prefeitura_rio.pipelines_utils.state_handlers import handler_inject_bd_credentials
 from prefeitura_rio.pipelines_utils.tasks import (  # pylint: disable=E0611, E0401
     create_table_and_upload_to_gcs,
     get_now_datetime,
@@ -23,20 +21,17 @@ from prefeitura_rio.pipelines_utils.tasks import (  # pylint: disable=E0611, E04
 from pipelines.constants import constants  # pylint: disable=E0611, E0401
 from pipelines.precipitation_model.impa.schedules import (  # pylint: disable=E0611, E0401
     prediction_schedule,
-    # update_schedule,
 )
+from pipelines.tasks import task_create_partitions  # pylint: disable=E0611, E0401
 
 # from pipelines.precipitation_model.impa.tasks import (  # pylint: disable=E0611, E0401
-    # access_api,
-    # calculate_start_and_end_date,
-    # create_image,
-    # query_data_from_gcp,
-    # register_dataset_on_gypscie,
-    # task_wait_run,
+# access_api,
+# calculate_start_and_end_date,
+# create_image,
+# query_data_from_gcp,
+# register_dataset_on_gypscie,
+# task_wait_run,
 
-from pipelines.tasks import (  # pylint: disable=E0611, E0401
-    task_create_partitions,
-)
 
 with Flow(
     name="WEATHER FORECAST: Previsão de Chuva - IMPA",
@@ -72,7 +67,6 @@ with Flow(
     dataset_id = mode_redis = Parameter("dataset_id", default="clima_rionowcast", required=False)
     table_id = Parameter("table_id", default="predicao_precipitacao", required=False)()
 
-
     #########################
     #  Start flow           #
     #########################
@@ -80,7 +74,6 @@ with Flow(
     with case(start_date, None):
         start_date, end_date = calculate_start_and_end_date(hours_from_past)
 
-    
     image_path = create_image(geolocalized_prediction_datasets)
     # Save prediction on file
     prediction_data_path = task_create_partitions(
