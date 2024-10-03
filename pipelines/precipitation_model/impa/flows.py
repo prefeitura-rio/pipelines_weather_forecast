@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=invalid-name
 """
-Download meteorological data, treat then, integrate and predict
+Download sattelite goes 16 data, treat then and predict
 """
 
 from prefect import case, Parameter
@@ -21,7 +21,7 @@ from prefeitura_rio.pipelines_utils.tasks import (  # pylint: disable=E0611, E04
 )
 
 from pipelines.constants import constants  # pylint: disable=E0611, E0401
-from pipelines.precipitation_model.rionowcast.schedules import (  # pylint: disable=E0611, E0401
+from pipelines.precipitation_model.impa.schedules import (  # pylint: disable=E0611, E0401
     prediction_schedule,
     # update_schedule,
 )
