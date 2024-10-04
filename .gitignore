@@ -1,12 +1,12 @@
 # Folders that Git should ignore
 *.ipynb_checkpoints/
-/data
-/docs
-/eval
-/models
-/personal
-/radar_cal
-/lightning_logs
+**/data/
+**/docs/
+**/eval/
+**/models/
+**/personal/
+**/radar_cal/
+**/lightning_logs/
 
 # User-defined
 .replit
