@@ -11,6 +11,7 @@ test/*.csv
 setup.py
 .vscode/*
 *.hdf
+**/gypscie/**
 
 
 
@@ -147,3 +148,13 @@ dmypy.json
 
 # VSCode project settings
 .vscode/
+
+# MLflow
+**/mlruns/**
+*.csv
+**/gypscie/processors/**
+!/gypscie/**/MLproject
+!/gypscie/**/etl_alertario.py
+!/gypscie/**/conda.yaml
+/gypscie/utils/logging.py
+!/gypscie/processors/utils/*
