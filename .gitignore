@@ -7,6 +7,7 @@
 **/personal/
 **/radar_cal/
 **/lightning_logs/
+pipelines/precipitation_model/impa/models/
 
 # User-defined
 .replit
