@@ -1,8 +1,10 @@
+# -*- coding: utf-8 -*-
 import numpy as np
 import pytorch_lightning as pl
 import torch
-
-from src.models.context_LDM_concat_new.autoencoder.distributions import DiagonalGaussianDistribution
+from src.models.context_LDM_concat_new.autoencoder.distributions import (
+    DiagonalGaussianDistribution,
+)
 from src.models.context_LDM_concat_new.autoencoder.loss import LPIPSWithDiscriminator
 from src.models.context_LDM_concat_new.autoencoder.modules import Decoder, Encoder
 
@@ -29,7 +31,7 @@ class AutoencoderKL(pl.LightningModule):
         double_z = True
         self.image_key = image_key
         self.n_before = n_before
-        ch_mult = [2 ** i for i in range(int(np.log2(reduc_factor)) + 1)]
+        ch_mult = [2**i for i in range(int(np.log2(reduc_factor)) + 1)]
         self.channels = 128
         self.encoder = Encoder(
             double_z=double_z,

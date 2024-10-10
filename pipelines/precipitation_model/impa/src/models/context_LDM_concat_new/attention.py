@@ -1,11 +1,12 @@
-from inspect import isfunction
+# -*- coding: utf-8 -*-
 import math
+from inspect import isfunction
+
 import torch
 import torch.nn.functional as F
-from torch import nn, einsum
 from einops import rearrange, repeat
-
 from src.models.context_LDM_concat_new.utils import checkpoint
+from torch import einsum, nn
 
 
 def exists(val):
@@ -101,7 +102,7 @@ class CrossAttention(nn.Module):
         inner_dim = dim_head * heads
         context_dim = default(context_dim, query_dim)
 
-        self.scale = dim_head ** -0.5
+        self.scale = dim_head**-0.5
         self.heads = heads
 
         self.to_q = nn.Linear(query_dim, inner_dim, bias=False)
@@ -217,7 +218,7 @@ class TemporalAttention(nn.Module):
         self.head_dim = head_dim
         self.num_heads = num_heads
         self.inner_dim = head_dim * num_heads
-        self.attn_scale = self.head_dim ** -0.5
+        self.attn_scale = self.head_dim**-0.5
         if channels % num_heads:
             raise ValueError("channels must be divisible by num_heads")
         self.KV = nn.Linear(context_channels, self.inner_dim * 2)

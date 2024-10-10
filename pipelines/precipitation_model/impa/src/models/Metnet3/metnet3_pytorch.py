@@ -266,7 +266,7 @@ class ResnetBlocks(Module):
 class RMSNorm(Module):
     def __init__(self, dim, *, heads):
         super().__init__()
-        self.scale = dim ** 0.5
+        self.scale = dim**0.5
         self.gamma = nn.Parameter(torch.ones(heads, 1, dim))
 
     def forward(self, x):
@@ -457,7 +457,7 @@ class Attention(Module):
 
         dim_inner = dim_head * heads
         self.heads = heads
-        self.scale = dim_head ** -0.5
+        self.scale = dim_head**-0.5
 
         self.has_cond = exists(cond_dim)
 
@@ -573,7 +573,7 @@ class MaxViT(Module):
 
         num_stages = len(depth)
 
-        dims = tuple(map(lambda i: (2 ** i) * dim, range(num_stages)))
+        dims = tuple(map(lambda i: (2**i) * dim, range(num_stages)))
         dim_pairs = tuple(zip(dims[:-1], dims[1:]))
 
         self.layers = nn.ModuleList([])

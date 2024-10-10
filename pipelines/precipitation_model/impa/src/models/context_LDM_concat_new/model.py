@@ -1,6 +1,8 @@
+# -*- coding: utf-8 -*-
 import math
-import torch
+
 import numpy as np
+import torch
 
 
 def cosine_beta_schedule(timesteps, s=0.008):
@@ -24,7 +26,7 @@ def linear_beta_schedule(timesteps, max):
 def quadratic_beta_schedule(timesteps):
     beta_start = 0.0001
     beta_end = 0.02
-    return torch.linspace(beta_start ** 0.5, beta_end ** 0.5, timesteps) ** 2
+    return torch.linspace(beta_start**0.5, beta_end**0.5, timesteps) ** 2
 
 
 def sigmoid_beta_schedule(timesteps):

@@ -19,7 +19,11 @@ DropPath.__repr__ = lambda self: f"timm.DropPath({self.drop_prob})"
 
 # triton cross scan, 2x speed than pytorch implementation =========================
 
-from src.models.mamba.csm_triton import CrossMergeTriton, CrossScanTriton, CrossScanTriton1b1
+from src.models.mamba.csm_triton import (
+    CrossMergeTriton,
+    CrossScanTriton,
+    CrossScanTriton1b1,
+)
 
 # except:
 #     from csm_triton import CrossScanTriton, CrossMergeTriton, CrossScanTriton1b1
@@ -1201,7 +1205,7 @@ class SS2D(nn.Module):
         dt_proj = nn.Linear(dt_rank, d_inner, bias=True, **factory_kwargs)
 
         # Initialize special dt projection to preserve variance at initialization
-        dt_init_std = dt_rank ** -0.5 * dt_scale
+        dt_init_std = dt_rank**-0.5 * dt_scale
         if dt_init == "constant":
             nn.init.constant_(dt_proj.weight, dt_init_std)
         elif dt_init == "random":
@@ -1692,7 +1696,7 @@ class VSSM(nn.Module):
         self.num_classes = num_classes
         self.num_layers = len(depths)
         if isinstance(dims, int):
-            dims = [int(dims * 2 ** i_layer) for i_layer in range(self.num_layers)]
+            dims = [int(dims * 2**i_layer) for i_layer in range(self.num_layers)]
         self.num_features = dims[-1]
         self.dims = dims
         dpr = [

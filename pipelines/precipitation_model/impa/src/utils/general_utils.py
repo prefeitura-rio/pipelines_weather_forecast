@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 def print_error(
     message: str = "ERROR",
     verbose: bool = True,

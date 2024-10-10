@@ -1,7 +1,7 @@
+# -*- coding: utf-8 -*-
 import torch
 from einops import rearrange
 from pytorch_lightning import LightningModule
-
 from src.models.mamba.vmamba import VSSM
 from src.utils.data_utils import data_modification_options
 
@@ -84,15 +84,15 @@ class Vmamba_lightning(LightningModule):
     def process_input(self, batch):
         x, y, metadata = batch
         x = rearrange(x, "b h w c -> b c h w")
-        x_small = x[:, :2 * self.n_before:2]
-        x_large = x[:, 1:2 * self.n_before + 1:2]
+        x_small = x[:, : 2 * self.n_before : 2]
+        x_large = x[:, 1 : 2 * self.n_before + 1 : 2]
         x = torch.cat([x_small, x_large], dim=1)
 
         if self.predict_context:
             y = rearrange(y, "b h w c -> b c h w")
         else:
             y = rearrange(y, "b h w c -> b c h w")
-            y = y[:, :2 * self.n_after:2]
+            y = y[:, : 2 * self.n_after : 2]
 
         metadata = rearrange(metadata, "b h w r -> b r h w")
         elev, latlon, date = metadata[:, :2], metadata[:, 2:6], metadata[:, 6:]

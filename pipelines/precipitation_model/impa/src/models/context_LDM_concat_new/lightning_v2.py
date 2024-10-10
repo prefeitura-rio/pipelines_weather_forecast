@@ -1,17 +1,20 @@
+# -*- coding: utf-8 -*-
 import numpy as np
 import torch
 import torch.nn.functional as F
 from einops import rearrange
 from pytorch_lightning import LightningModule
-from tqdm import tqdm
-
 from src.models.context_LDM_concat_new.autoenc_v2 import AutoencoderKL
 
 # from src.models.context_LDM_concat.autoencoder.autoenc_old import AutoencoderKL
 from src.models.context_LDM_concat_new.ddim import DDIMSampler
-from src.models.context_LDM_concat_new.model import get_named_beta_schedule, linear_beta_schedule
+from src.models.context_LDM_concat_new.model import (
+    get_named_beta_schedule,
+    linear_beta_schedule,
+)
 from src.models.context_LDM_concat_new.openaimodel import UNetModel
 from src.utils.data_utils import data_modification_options
+from tqdm import tqdm
 
 
 def extract(a, t, x_shape):
@@ -198,8 +201,8 @@ class Diffusion_Model(LightningModule):
         x_before, _, metadata = batch
         n_after = _.shape[3]
         x = rearrange(x_before, "b h w c -> b c h w")
-        x_small = x[:, :2 * self.n_before:2]
-        x_large = x[:, 1:2 * self.n_before + 1:2]
+        x_small = x[:, : 2 * self.n_before : 2]
+        x_large = x[:, 1 : 2 * self.n_before + 1 : 2]
         x_before = torch.cat([x_small, x_large], dim=1)
 
         x_before = self.autoencoder_obs.encode(x_before).sample()

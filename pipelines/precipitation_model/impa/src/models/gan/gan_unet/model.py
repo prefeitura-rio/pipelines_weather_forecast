@@ -1,13 +1,13 @@
+# -*- coding: utf-8 -*-
 import torch
 import torch.nn as nn
-from torch.nn.utils import spectral_norm
-
 from src.models.gan.gan_unet.unet_parts import DoubleConv, Down, OutConv, S, Up, Up2
 from src.models.gan.parts_gan import AvgPool, L2_Block, L3_Block, Noise_Projector
 from src.models.nowcasting.layers.generation.generative_network import (
     Generative_Decoder,
     Generative_Encoder,
 )
+from torch.nn.utils import spectral_norm
 
 ni = 192  # size of image
 ndf = 32  # size of discriminator feature map
@@ -354,7 +354,7 @@ class GeneratorPre(nn.Module):
         # The extra avg pool and concat to the decoder.
 
     def forward(self, x, z):
-        pred = x[:, -self.n_after:, :, :]
+        pred = x[:, -self.n_after :, :, :]
         x1 = self.inc(x)
         x2 = self.down1(x1)
         x3 = self.down2(x2)
@@ -451,7 +451,7 @@ class NowcasnetGenerator(nn.Module):
         self.deeptospace = nn.PixelShuffle(4)
 
     def forward(self, x, z):
-        pred = x[:, -self.n_after:, :, :]
+        pred = x[:, -self.n_after :, :, :]
         batch, time, height, width = x.size()
 
         x_encoded = self.gen_encoder(x)
