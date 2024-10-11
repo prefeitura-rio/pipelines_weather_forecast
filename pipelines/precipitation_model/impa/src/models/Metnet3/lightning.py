@@ -1,7 +1,6 @@
+# -*- coding: utf-8 -*-
 import torch
 import torch.nn as nn
-from torch.nn import Sequential
-
 from src.models.lightning_module import LModule
 from src.models.Metnet3.Max_Vit.Max_Vit import MaxViT
 from src.models.Metnet3.metnet3_pytorch import (
@@ -11,6 +10,7 @@ from src.models.Metnet3.metnet3_pytorch import (
     ResnetBlocks,
     Upsample2x,
 )
+from torch.nn import Sequential
 
 
 class model(LModule):
@@ -158,25 +158,25 @@ class model(LModule):
                 if self.dm_option["No_satellite"]:
                     x_in = x
                 else:
-                    x_in = x[:, 0:4 * self.n_before:2]
+                    x_in = x[:, 0 : 4 * self.n_before : 2]
             else:
-                x_in = x[:, 0:2 * self.n_before:2]
+                x_in = x[:, 0 : 2 * self.n_before : 2]
 
             if not self.old or self.merge:
                 if not self.dm_option["No_satellite"]:
-                    x_in_2 = x[:, 1:2 * self.n_before + 1:2]
+                    x_in_2 = x[:, 1 : 2 * self.n_before + 1 : 2]
         else:
             if self.merge:
                 if self.dm_option["No_satellite"]:
                     x_in = x
                 else:
-                    x_in = x[:, :2 * self.n_before]
+                    x_in = x[:, : 2 * self.n_before]
             else:
                 x_in = x[:, : self.n_before]
 
             if not self.old or self.merge:
                 if not self.dm_option["No_satellite"]:
-                    x_in_2 = x[:, -self.n_before:]
+                    x_in_2 = x[:, -self.n_before :]
 
         if self.cond:
             assert lead_times is not None

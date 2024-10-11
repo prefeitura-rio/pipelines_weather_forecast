@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # triton cross scan, 2x speed than pytorch implementation =========================
 import torch
 import triton

@@ -1,5 +1,5 @@
+# -*- coding: utf-8 -*-
 import torch
-
 from src.models.Evolution_Network.evolution_network import Evolution_Encoder_Decoder
 from src.models.Evolution_Network.utils import make_grid, warp
 from src.models.lightning_module import LModule

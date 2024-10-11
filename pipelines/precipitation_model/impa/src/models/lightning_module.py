@@ -1,7 +1,7 @@
+# -*- coding: utf-8 -*-
 import torch
 from einops import rearrange
 from pytorch_lightning import LightningModule
-
 from src.utils.data_utils import data_modification_options
 
 
@@ -107,7 +107,7 @@ class LModule(LightningModule):
             x = rearrange(x, "b h w c -> b c h w")
 
             if self.needs_prediction:
-                x = torch.cat([x[:, :2 * self.n_before:2], x[:, -self.n_after:]], axis=1)
+                x = torch.cat([x[:, : 2 * self.n_before : 2], x[:, -self.n_after :]], axis=1)
 
             if self.merge:
                 # Transform the radar data with log1p

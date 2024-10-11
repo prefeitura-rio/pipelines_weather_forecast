@@ -1,17 +1,19 @@
-from argparse import ArgumentParser
+# -*- coding: utf-8 -*-
 import datetime
+import pathlib
+from argparse import ArgumentParser
+from concurrent import futures
+from concurrent.futures import ProcessPoolExecutor
+from functools import partial
+
 import boto3
 from botocore import UNSIGNED
 from botocore.config import Config
-
-from src.data.process.process_satellite import process_satellite
-from src.data.process.build_dataframe import build_dataframe
-from src.eval.predict_real_time import predict
-import pathlib
 from joblib import Parallel, delayed
-from functools import partial
-from concurrent import futures
-from concurrent.futures import ProcessPoolExecutor
+from src.data.process.build_dataframe import build_dataframe
+from src.data.process.process_satellite import process_satellite
+from src.eval.predict_real_time import predict
+
 # from itertools import product
 
 

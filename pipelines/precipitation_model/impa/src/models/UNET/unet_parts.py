@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """ Parts of the U-Net model """
 
 import torch

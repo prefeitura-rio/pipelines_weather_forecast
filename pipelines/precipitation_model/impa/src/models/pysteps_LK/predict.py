@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import pathlib
 from functools import partial
 
@@ -6,7 +7,6 @@ import torch
 from joblib import Parallel, delayed
 from pysteps import motion, nowcasts
 from pysteps.utils import conversion, transformation
-
 from src.data.HDFDatasetLocations import HDFDatasetLocations
 from src.utils.general_utils import print_ok
 from src.utils.hdf_utils import array_to_pred_hdf

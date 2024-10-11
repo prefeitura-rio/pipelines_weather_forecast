@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from src.data.HDFDataset2 import HDFDataset2
 from src.data.HDFDatasetLocations import HDFDatasetLocations
 from src.data.HDFDatasetMerged import HDFDatasetMerged

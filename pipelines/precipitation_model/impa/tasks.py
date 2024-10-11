@@ -8,11 +8,8 @@ import datetime
 import boto3
 from botocore import UNSIGNED
 from botocore.config import Config
-
 from prefect import task
-
 from prefeitura_rio.pipelines_utils.logging import log
-
 from src.data.process.build_dataframe import build_dataframe
 from src.data.process.process_satellite import process_satellite
 from src.eval.predict_real_time import predict

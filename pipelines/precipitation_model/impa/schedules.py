@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 
 # -*- coding: utf-8 -*-
 """
@@ -10,7 +11,6 @@ from prefect.schedules import Schedule
 from prefect.schedules.clocks import IntervalClock
 
 from pipelines.constants import constants
-
 
 prediction_schedule = Schedule(
     clocks=[

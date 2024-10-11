@@ -10,16 +10,12 @@ from prefect.storage import GCS
 
 # from google.api_core.exceptions import Forbidden
 from prefeitura_rio.pipelines_utils.custom import Flow  # pylint: disable=E0611, E0401
+
 # from prefeitura_rio.pipelines_utils.logging import log
 from prefeitura_rio.pipelines_utils.state_handlers import (
     handler_initialize_sentry,
     handler_inject_bd_credentials,
 )
-# from prefeitura_rio.pipelines_utils.tasks import (  # pylint: disable=E0611, E0401
-#     create_table_and_upload_to_gcs,
-#     get_now_datetime,
-#     task_run_dbt_model_task,
-# )
 
 from pipelines.constants import constants  # pylint: disable=E0611, E0401
 from pipelines.precipitation_model.impa.schedules import (  # pylint: disable=E0611, E0401
@@ -32,6 +28,13 @@ from pipelines.precipitation_model.impa.tasks import (  # pylint: disable=E0611,
     get_start_datetime,
     process_data,
 )
+
+# from prefeitura_rio.pipelines_utils.tasks import (  # pylint: disable=E0611, E0401
+#     create_table_and_upload_to_gcs,
+#     get_now_datetime,
+#     task_run_dbt_model_task,
+# )
+
 
 # from pipelines.tasks import task_create_partitions  # pylint: disable=E0611, E0401
 

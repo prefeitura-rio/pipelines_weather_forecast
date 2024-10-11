@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # SPADE Module and Block are adapted from Nvidia SPADE project (https://github.com/NVlabs/SPADE).
 
 import torch.nn as nn
