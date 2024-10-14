@@ -2,11 +2,12 @@
 import numpy as np
 import pytorch_lightning as pl
 import torch
-from src.models.context_LDM_concat_new.autoencoder.distributions import (
-    DiagonalGaussianDistribution,
-)
-from src.models.context_LDM_concat_new.autoencoder.loss import LPIPSWithDiscriminator
-from src.models.context_LDM_concat_new.autoencoder.modules import Decoder, Encoder
+from src.models.context_LDM_concat_new.autoencoder.distributions import \
+    DiagonalGaussianDistribution
+from src.models.context_LDM_concat_new.autoencoder.loss import \
+    LPIPSWithDiscriminator
+from src.models.context_LDM_concat_new.autoencoder.modules import (Decoder,
+                                                                   Encoder)
 
 
 class AutoencoderKL(pl.LightningModule):
@@ -57,7 +58,10 @@ class AutoencoderKL(pl.LightningModule):
             dropout=0.2,
         )
         self.loss = LPIPSWithDiscriminator(
-            disc_start=50001, kl_weight=0.00001, disc_weight=0.5, disc_in_channels=n_before
+            disc_start=50001,
+            kl_weight=0.00001,
+            disc_weight=0.5,
+            disc_in_channels=n_before,
         )
         assert double_z
         self.quant_conv = torch.nn.Conv2d(2 * z_channels, 2 * embed_dim, 1)

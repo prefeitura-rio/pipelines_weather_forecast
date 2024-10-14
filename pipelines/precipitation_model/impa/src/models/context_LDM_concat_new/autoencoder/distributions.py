@@ -41,10 +41,14 @@ class DiagonalGaussianDistribution(object):
         self.std = torch.exp(0.5 * self.logvar)
         self.var = torch.exp(self.logvar)
         if self.deterministic:
-            self.var = self.std = torch.zeros_like(self.mean, device=self.parameters.device)
+            self.var = self.std = torch.zeros_like(
+                self.mean, device=self.parameters.device
+            )
 
     def sample(self):
-        x = self.mean + self.std * torch.randn(self.mean.shape, device=self.parameters.device)
+        x = self.mean + self.std * torch.randn(
+            self.mean.shape, device=self.parameters.device
+        )
         return x
 
     def kl(self, other=None):
@@ -53,7 +57,8 @@ class DiagonalGaussianDistribution(object):
         else:
             if other is None:
                 return 0.5 * torch.sum(
-                    torch.pow(self.mean, 2) + self.var - 1.0 - self.logvar, dim=[1, 2, 3]
+                    torch.pow(self.mean, 2) + self.var - 1.0 - self.logvar,
+                    dim=[1, 2, 3],
                 )
             else:
                 return 0.5 * torch.sum(
@@ -70,7 +75,8 @@ class DiagonalGaussianDistribution(object):
             return torch.Tensor([0.0])
         logtwopi = np.log(2.0 * np.pi)
         return 0.5 * torch.sum(
-            logtwopi + self.logvar + torch.pow(sample - self.mean, 2) / self.var, dim=dims
+            logtwopi + self.logvar + torch.pow(sample - self.mean, 2) / self.var,
+            dim=dims,
         )
 
     def mode(self):
@@ -94,7 +100,8 @@ def normal_kl(mean1, logvar1, mean2, logvar2):
     # Force variances to be Tensors. Broadcasting helps convert scalars to
     # Tensors, but it does not work for torch.exp().
     logvar1, logvar2 = [
-        x if isinstance(x, torch.Tensor) else torch.tensor(x).to(tensor) for x in (logvar1, logvar2)
+        x if isinstance(x, torch.Tensor) else torch.tensor(x).to(tensor)
+        for x in (logvar1, logvar2)
     ]
 
     return 0.5 * (

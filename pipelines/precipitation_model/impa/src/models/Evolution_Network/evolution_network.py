@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 import torch
 import torch.nn as nn
-from src.models.Evolution_Network.model_parts import DoubleConv, Down, OutConv, Up
+from src.models.Evolution_Network.model_parts import (DoubleConv, Down,
+                                                      OutConv, Up)
 
 
 class Evolution_Encoder_Decoder(nn.Module):

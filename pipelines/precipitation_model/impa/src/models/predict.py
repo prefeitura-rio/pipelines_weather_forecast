@@ -244,7 +244,9 @@ def main(args_dict, parameters_dict):
             # ni = ds[0][0].shape[1]
 
             predictions = pl.Trainer(
-                accelerator=args_dict["accelerator"], logger=False, enable_checkpointing=False
+                accelerator=args_dict["accelerator"],
+                logger=False,
+                enable_checkpointing=False,
             ).predict(pipe, test_dataloader)
 
             predictions = torch.cat(predictions, axis=0)
@@ -256,7 +258,9 @@ def main(args_dict, parameters_dict):
                 predictions = rearrange(predictions, "(b c) w i -> b c w i", c=n_after)
 
             predictions = inv_transform(predictions, mean=0, std=1, sat=True)
-            array_to_pred_hdf(predictions, ds.keys, ds.future_keys, output_predict_filepaths[i])
+            array_to_pred_hdf(
+                predictions, ds.keys, ds.future_keys, output_predict_filepaths[i]
+            )
     else:
         ds, _ = get_ds(
             dataframe_filepath,
@@ -289,13 +293,17 @@ def main(args_dict, parameters_dict):
         )
 
         predictions = pl.Trainer(
-            accelerator=args_dict["accelerator"], logger=False, enable_checkpointing=False
+            accelerator=args_dict["accelerator"],
+            logger=False,
+            enable_checkpointing=False,
         ).predict(pipe, test_dataloader)
         predictions = torch.cat(predictions, axis=0)
 
         predictions = inv_transform(predictions, mean=mean_data, std=std_data, sat=sat)
 
-        array_to_pred_hdf(predictions, ds.keys, ds.future_keys, output_predict_filepaths[0])
+        array_to_pred_hdf(
+            predictions, ds.keys, ds.future_keys, output_predict_filepaths[0]
+        )
 
     ok_message = "OK: Saved predictions successfully."
     print_ok(ok_message)

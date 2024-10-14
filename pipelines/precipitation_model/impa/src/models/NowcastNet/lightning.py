@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import torch
-from src.models.gan.gan_unet.model import NowcasnetGenerator, TemporalDiscriminator
+from src.models.gan.gan_unet.model import (NowcasnetGenerator,
+                                           TemporalDiscriminator)
 from src.models.lightning_module import LModule
 
 
@@ -83,7 +84,9 @@ class model(LModule):
 
     def forward(self, x):
         # sample noise, is just the prediction.
-        z = torch.randn(x.shape[0], self.hparams.latent_dim, self.h_dim_noise, self.h_dim_noise)
+        z = torch.randn(
+            x.shape[0], self.hparams.latent_dim, self.h_dim_noise, self.h_dim_noise
+        )
         z = z.type_as(x)
         return self.generator(x, z)
 

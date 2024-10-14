@@ -31,7 +31,13 @@ def predict(num_workers=8, cuda=False):
                 with open(info["params_filepath"], "r") as json_file:
                     params = json.load(json_file)
                 args |= params
-                if model_name in ["UNET", "EVONET", "NowcastNet", "MetNet3", "MetNet_lead_time"]:
+                if model_name in [
+                    "UNET",
+                    "EVONET",
+                    "NowcastNet",
+                    "MetNet3",
+                    "MetNet_lead_time",
+                ]:
                     args["model"] = args["model_name"]
                 del params["model_name"]
                 predict_func(args, params)
@@ -62,7 +68,13 @@ def predict(num_workers=8, cuda=False):
             params = json.load(json_file)
         args |= params
         ##################################
-        if model_name in ["UNET", "EVONET", "NowcastNet", "MetNet3", "MetNet_lead_time"]:
+        if model_name in [
+            "UNET",
+            "EVONET",
+            "NowcastNet",
+            "MetNet3",
+            "MetNet_lead_time",
+        ]:
             args["model"] = args["model_name"]
         ##################################
         del args["model_name"]

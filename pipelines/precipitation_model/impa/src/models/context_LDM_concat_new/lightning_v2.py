@@ -5,13 +5,10 @@ import torch.nn.functional as F
 from einops import rearrange
 from pytorch_lightning import LightningModule
 from src.models.context_LDM_concat_new.autoenc_v2 import AutoencoderKL
-
 # from src.models.context_LDM_concat.autoencoder.autoenc_old import AutoencoderKL
 from src.models.context_LDM_concat_new.ddim import DDIMSampler
-from src.models.context_LDM_concat_new.model import (
-    get_named_beta_schedule,
-    linear_beta_schedule,
-)
+from src.models.context_LDM_concat_new.model import (get_named_beta_schedule,
+                                                     linear_beta_schedule)
 from src.models.context_LDM_concat_new.openaimodel import UNetModel
 from src.utils.data_utils import data_modification_options
 from tqdm import tqdm
@@ -130,9 +127,13 @@ class Diffusion_Model(LightningModule):
         )
 
         if self.scheduler == "cosine":
-            self.register_buffer("betas", get_named_beta_schedule(self.scheduler, self.timesteps))
+            self.register_buffer(
+                "betas", get_named_beta_schedule(self.scheduler, self.timesteps)
+            )
         else:
-            self.register_buffer("betas", linear_beta_schedule(self.timesteps, self.max))
+            self.register_buffer(
+                "betas", linear_beta_schedule(self.timesteps, self.max)
+            )
 
         # define alphas
         self.register_buffer("alphas", 1.0 - self.betas)
@@ -144,7 +145,9 @@ class Diffusion_Model(LightningModule):
 
         # calculations forward diffusion q(x_t | x_{t-1})
         self.register_buffer("sqrt_alphas_cumprod", torch.sqrt(self.alphas_cumprod))
-        self.register_buffer("sqrt_one_minus_alphas_cumprod", torch.sqrt(1.0 - self.alphas_cumprod))
+        self.register_buffer(
+            "sqrt_one_minus_alphas_cumprod", torch.sqrt(1.0 - self.alphas_cumprod)
+        )
 
         # calculations x0 conditional backward q(x_{t-1} | x_t, x_0)
         self.register_buffer(
@@ -158,7 +161,9 @@ class Diffusion_Model(LightningModule):
     @torch.no_grad()
     def p_sample(self, model, x, t, t_index, cond=None):
         betas_t = extract(self.betas, t, x.shape)
-        sqrt_one_minus_alphas_cumprod_t = extract(self.sqrt_one_minus_alphas_cumprod, t, x.shape)
+        sqrt_one_minus_alphas_cumprod_t = extract(
+            self.sqrt_one_minus_alphas_cumprod, t, x.shape
+        )
         sqrt_recip_alphas_t = extract(self.sqrt_recip_alphas, t, x.shape)
 
         model_mean = sqrt_recip_alphas_t * (
@@ -181,10 +186,16 @@ class Diffusion_Model(LightningModule):
         imgs = []
 
         for i in tqdm(
-            reversed(range(0, self.timesteps)), desc="sampling loop time step", total=self.timesteps
+            reversed(range(0, self.timesteps)),
+            desc="sampling loop time step",
+            total=self.timesteps,
         ):
             img = self.p_sample(
-                model, img, torch.full((b,), i, device=self.device, dtype=torch.long), i, cond=cond
+                model,
+                img,
+                torch.full((b,), i, device=self.device, dtype=torch.long),
+                i,
+                cond=cond,
             )
             imgs.append(img.cpu().numpy())
         return imgs

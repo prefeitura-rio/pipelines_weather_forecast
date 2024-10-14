@@ -161,7 +161,9 @@ def task_lag(lag: int):
             ax.imshow(imgs[len(preds) * i + j])
             if j == 0:
                 ax.set_facecolor((0.1, 0.2, 0.5))
-                ax.tick_params(bottom=False, labelbottom=False, left=False, labelleft=False)
+                ax.tick_params(
+                    bottom=False, labelbottom=False, left=False, labelleft=False
+                )
             else:
                 ax.axis("off")
             ax.axis("tight")

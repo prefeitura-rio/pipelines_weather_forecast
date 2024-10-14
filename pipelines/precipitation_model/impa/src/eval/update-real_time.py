@@ -34,7 +34,10 @@ def download_data(s3, product, year, day_of_year, hour):
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument(
-        "--datetime", type=str, default=None, help="Datetime in ISO format, UTC timezone"
+        "--datetime",
+        type=str,
+        default=None,
+        help="Datetime in ISO format, UTC timezone",
     )
     parser.add_argument(
         "--num_workers",
@@ -63,7 +66,9 @@ if __name__ == "__main__":
     for i in range(4):
         day_of_year = days_of_year[i]
         year = years[i]
-        print(f"Downloading the latest data for {relevant_dts[i].strftime('%Y-%m-%d')}...")
+        print(
+            f"Downloading the latest data for {relevant_dts[i].strftime('%Y-%m-%d')}..."
+        )
         for hour in hours:
             download_data(s3, "ABI-L2-RRQPEF", year, day_of_year, hour)
             download_data(s3, "ABI-L2-ACHAF", year, day_of_year, hour)
@@ -71,10 +76,16 @@ if __name__ == "__main__":
     # process data
     print("Processing satellite data...")
     process_satellite(
-        year=years[0], day=days_of_year[0], num_workers=args.num_workers, product="ABI-L2-RRQPEF"
+        year=years[0],
+        day=days_of_year[0],
+        num_workers=args.num_workers,
+        product="ABI-L2-RRQPEF",
     )
     process_satellite(
-        year=years[0], day=days_of_year[0], num_workers=args.num_workers, product="ABI-L2-ACHAF"
+        year=years[0],
+        day=days_of_year[0],
+        num_workers=args.num_workers,
+        product="ABI-L2-ACHAF",
     )
     build_dataframe(overwrite=True, num_workers=args.num_workers, dt=dt)
 

@@ -108,7 +108,9 @@ def make_pred(it: int, hdf, adv_scheme: str, motion_f: str, data_type: str) -> n
             )
 
             # Compute mean value from ensemble
-            precip_forecast_mean = torch.nanmean(torch.from_numpy(precip_forecast_ens), dim=0)
+            precip_forecast_mean = torch.nanmean(
+                torch.from_numpy(precip_forecast_ens), dim=0
+            )
 
             # Undo transformations made for STEPS model
 
@@ -180,13 +182,17 @@ def main(args_dict):
     for i, j in zip(chunk_indices, chunk_indices[1:]):
         chunk_iterable = range(i, j)
         # print(chunk_iterable)
-        predicts_list = Parallel(n_jobs=step)(delayed(task)(it) for it in chunk_iterable)
+        predicts_list = Parallel(n_jobs=step)(
+            delayed(task)(it) for it in chunk_iterable
+        )
 
         # Concatenate predictions
         predict = np.stack(predicts_list, axis=0)
 
         # Create hdf
-        array_to_pred_hdf(predict, ds.keys[i:j], ds.future_keys[i:j], output_predict_filepath)
+        array_to_pred_hdf(
+            predict, ds.keys[i:j], ds.future_keys[i:j], output_predict_filepath
+        )
 
     ok_message = "OK: Saved predictions successfully."
     print_ok(ok_message)

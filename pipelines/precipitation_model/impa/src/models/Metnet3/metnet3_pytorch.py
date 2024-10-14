@@ -73,7 +73,9 @@ def l2norm(t):
 
 
 def MaybeSyncBatchnorm2d(is_distributed=None):
-    is_distributed = default(is_distributed, dist.is_initialized() and dist.get_world_size() > 1)
+    is_distributed = default(
+        is_distributed, dist.is_initialized() and dist.get_world_size() > 1
+    )
     return nn.SyncBatchNorm if is_distributed else nn.BatchNorm2d
 
 
@@ -171,7 +173,9 @@ class CenterCrop(Module):
         cropped_height_start_idx = (height - crop_dim) // 2
         cropped_width_start_idx = (width - crop_dim) // 2
 
-        height_slice = slice(cropped_height_start_idx, cropped_height_start_idx + crop_dim)
+        height_slice = slice(
+            cropped_height_start_idx, cropped_height_start_idx + crop_dim
+        )
         width_slice = slice(cropped_width_start_idx, cropped_width_start_idx + crop_dim)
         return x[..., height_slice, width_slice]
 
@@ -333,11 +337,16 @@ class Dropsample(Module):
         if self.prob == 0.0 or (not self.training):
             return x
 
-        keep_mask = torch.FloatTensor((x.shape[0], 1, 1, 1), device=device).uniform_() > self.prob
+        keep_mask = (
+            torch.FloatTensor((x.shape[0], 1, 1, 1), device=device).uniform_()
+            > self.prob
+        )
         return x * keep_mask / (1 - self.prob)
 
 
-def MBConv(dim_in, dim_out, *, downsample, expansion_rate=4, shrinkage_rate=0.25, dropout=0.0):
+def MBConv(
+    dim_in, dim_out, *, downsample, expansion_rate=4, shrinkage_rate=0.25, dropout=0.0
+):
     hidden_dim = int(expansion_rate * dim_out)
     stride = 2 if downsample else 1
 
@@ -349,7 +358,9 @@ def MBConv(dim_in, dim_out, *, downsample, expansion_rate=4, shrinkage_rate=0.25
         batchnorm_klass(hidden_dim),
         nn.GELU(),
         # Deepwise Conv 3x3
-        nn.Conv2d(hidden_dim, hidden_dim, 3, stride=stride, padding=1, groups=hidden_dim),
+        nn.Conv2d(
+            hidden_dim, hidden_dim, 3, stride=stride, padding=1, groups=hidden_dim
+        ),
         batchnorm_klass(hidden_dim),
         nn.GELU(),
         # SE
@@ -413,7 +424,9 @@ class XCAttention(Module):
 
         self.attn_dropout = nn.Dropout(dropout)
 
-        self.to_out = Sequential(Rearrange("b h d n -> b n (h d)"), nn.Linear(dim_inner, dim))
+        self.to_out = Sequential(
+            Rearrange("b h d n -> b n (h d)"), nn.Linear(dim_inner, dim)
+        )
 
     def forward(self, x, cond: Optional[Tensor] = None):
         x = rearrange(x, "b c h w -> b h w c")
@@ -449,11 +462,20 @@ class XCAttention(Module):
 
 class Attention(Module):
     def __init__(
-        self, dim, cond_dim=None, heads=32, dim_head=32, dropout=0.0, window_size=8, num_registers=1
+        self,
+        dim,
+        cond_dim=None,
+        heads=32,
+        dim_head=32,
+        dropout=0.0,
+        window_size=8,
+        num_registers=1,
     ):
         super().__init__()
         assert num_registers > 0
-        assert (dim % dim_head) == 0, "dimension should be divisible by dimension per head"
+        assert (
+            dim % dim_head
+        ) == 0, "dimension should be divisible by dimension per head"
 
         dim_inner = dim_head * heads
         self.heads = heads
@@ -480,7 +502,9 @@ class Attention(Module):
 
         self.attend = nn.Sequential(nn.Softmax(dim=-1), nn.Dropout(dropout))
 
-        self.to_out = nn.Sequential(nn.Linear(dim_inner, dim, bias=False), nn.Dropout(dropout))
+        self.to_out = nn.Sequential(
+            nn.Linear(dim_inner, dim, bias=False), nn.Dropout(dropout)
+        )
 
         # relative positional bias
 
@@ -491,12 +515,16 @@ class Attention(Module):
         pos = torch.arange(window_size)
         grid = torch.stack(torch.meshgrid(pos, pos, indexing="ij"))
         grid = rearrange(grid, "c i j -> (i j) c")
-        rel_pos = rearrange(grid, "i ... -> i 1 ...") - rearrange(grid, "j ... -> 1 j ...")
+        rel_pos = rearrange(grid, "i ... -> i 1 ...") - rearrange(
+            grid, "j ... -> 1 j ..."
+        )
         rel_pos += window_size - 1
         rel_pos_indices = (rel_pos * torch.tensor([2 * window_size - 1, 1])).sum(dim=-1)
 
         self.rel_pos_indices = F.pad(
-            rel_pos_indices, (num_registers, 0, num_registers, 0), value=num_rel_pos_bias
+            rel_pos_indices,
+            (num_registers, 0, num_registers, 0),
+            value=num_rel_pos_bias,
         )
         self.register_buffer("rel_pos_indices", rel_pos_indices, persistent=False)
 
@@ -586,7 +614,9 @@ class MaxViT(Module):
 
         # iterate through stages
 
-        for ind, ((layer_dim_in, layer_dim), layer_depth) in enumerate(zip(dim_pairs, depth)):
+        for ind, ((layer_dim_in, layer_dim), layer_depth) in enumerate(
+            zip(dim_pairs, depth)
+        ):
             for stage_ind in range(layer_depth):
                 is_first = stage_ind == 0
                 stage_dim_in = layer_dim_in if is_first else layer_dim
@@ -619,7 +649,9 @@ class MaxViT(Module):
                     num_registers=num_register_tokens,
                 )
 
-                register_tokens = nn.Parameter(torch.randn(num_register_tokens, layer_dim))
+                register_tokens = nn.Parameter(
+                    torch.randn(num_register_tokens, layer_dim)
+                )
 
                 self.layers.append(ModuleList([conv, block_attn, grid_attn]))
 
@@ -642,7 +674,9 @@ class MaxViT(Module):
 
             # prepare register tokens
 
-            r = repeat(register_tokens, "n d -> b x y n d", b=b, x=x.shape[1], y=x.shape[2])
+            r = repeat(
+                register_tokens, "n d -> b x y n d", b=b, x=x.shape[1], y=x.shape[2]
+            )
             r, register_batch_ps = pack_one(r, "* n d")
 
             x, window_ps = pack_one(x, "b x y * d")
@@ -710,7 +744,9 @@ class MetNet3(Module):
         input_2496_channels=2 + 14 + 1 + 2 + 20,
         input_4996_channels=16 + 1,
         surface_and_hrrr_target_spatial_size=128,
-        precipitation_target_bins: Dict[str, int] = dict(mrms_rate=512, mrms_accumulation=512),
+        precipitation_target_bins: Dict[str, int] = dict(
+            mrms_rate=512, mrms_accumulation=512
+        ),
         surface_target_bins: Dict[str, int] = dict(
             omo_temperature=256,
             omo_dew_point=256,
@@ -738,15 +774,29 @@ class MetNet3(Module):
         _locals.pop("hrrr_norm_statistics", None)
         self._configs = pickle.dumps(_locals)
 
-        self.hrrr_input_2496_shape = (hrrr_channels, input_spatial_size, input_spatial_size)
-        self.input_2496_shape = (input_2496_channels, input_spatial_size, input_spatial_size)
-        self.input_4996_shape = (input_4996_channels, input_spatial_size, input_spatial_size)
+        self.hrrr_input_2496_shape = (
+            hrrr_channels,
+            input_spatial_size,
+            input_spatial_size,
+        )
+        self.input_2496_shape = (
+            input_2496_channels,
+            input_spatial_size,
+            input_spatial_size,
+        )
+        self.input_4996_shape = (
+            input_4996_channels,
+            input_spatial_size,
+            input_spatial_size,
+        )
 
         self.surface_and_hrrr_target_spatial_size = surface_and_hrrr_target_spatial_size
 
         self.surface_target_shape = (self.surface_and_hrrr_target_spatial_size,) * 2
         self.hrrr_target_shape = (hrrr_channels, *self.surface_target_shape)
-        self.precipitation_target_shape = (surface_and_hrrr_target_spatial_size * 4,) * 2
+        self.precipitation_target_shape = (
+            surface_and_hrrr_target_spatial_size * 4,
+        ) * 2
 
         self.lead_time_embedding = nn.Embedding(num_lead_times, lead_time_embed_dim)
 
@@ -755,7 +805,10 @@ class MetNet3(Module):
         self.to_skip_connect_4km = CenterCrop(crop_size_post_16km * 4)
 
         self.resnet_blocks_down_4km = ResnetBlocks(
-            dim=dim, dim_in=dim_in_4km, cond_dim=lead_time_embed_dim, depth=resnet_block_depth
+            dim=dim,
+            dim_in=dim_in_4km,
+            cond_dim=lead_time_embed_dim,
+            depth=resnet_block_depth,
         )
 
         self.linear_attn_4km = XCAttention(
@@ -766,12 +819,17 @@ class MetNet3(Module):
             dropout=attn_dropout,
         )
 
-        self.downsample_and_pad_to_8km = Sequential(Downsample2x(), CenterPad(input_spatial_size))
+        self.downsample_and_pad_to_8km = Sequential(
+            Downsample2x(), CenterPad(input_spatial_size)
+        )
 
         dim_in_8km = input_4996_channels + dim
 
         self.resnet_blocks_down_8km = ResnetBlocks(
-            dim=dim, dim_in=dim_in_8km, cond_dim=lead_time_embed_dim, depth=resnet_block_depth
+            dim=dim,
+            dim_in=dim_in_8km,
+            cond_dim=lead_time_embed_dim,
+            depth=resnet_block_depth,
         )
 
         self.downsample_to_16km = Downsample2x()
@@ -795,7 +853,10 @@ class MetNet3(Module):
         self.to_skip_connect_8km = CenterCrop(crop_size_post_16km * 2)
 
         self.resnet_blocks_up_8km = ResnetBlocks(
-            dim=dim, dim_in=dim + dim_in_8km, cond_dim=lead_time_embed_dim, depth=resnet_block_depth
+            dim=dim,
+            dim_in=dim + dim_in_8km,
+            cond_dim=lead_time_embed_dim,
+            depth=resnet_block_depth,
         )
 
         self.linear_attn_8km = XCAttention(dim=dim, cond_dim=lead_time_embed_dim)
@@ -805,7 +866,10 @@ class MetNet3(Module):
         self.crop_post_4km = CenterCrop(surface_and_hrrr_target_spatial_size)
 
         self.resnet_blocks_up_4km = ResnetBlocks(
-            dim=dim, dim_in=dim + dim_in_4km, cond_dim=lead_time_embed_dim, depth=resnet_block_depth
+            dim=dim,
+            dim_in=dim + dim_in_4km,
+            cond_dim=lead_time_embed_dim,
+            depth=resnet_block_depth,
         )
 
         self.upsample_4x_to_1km = nn.ConvTranspose2d(dim, dim, kernel_size=4, stride=4)
@@ -836,7 +900,9 @@ class MetNet3(Module):
 
         # to hrrr channels for MSE loss
 
-        self.to_hrrr_pred = Sequential(ChanLayerNorm(dim), nn.Conv2d(dim, hrrr_channels, 1))
+        self.to_hrrr_pred = Sequential(
+            ChanLayerNorm(dim), nn.Conv2d(dim, hrrr_channels, 1)
+        )
 
         # they scale hrrr loss by 10. but also divided by number of channels
 
@@ -849,7 +915,9 @@ class MetNet3(Module):
         default_hrrr_statistics = torch.empty((2, hrrr_channels), dtype=torch.float32)
 
         if hrrr_norm_strategy == "none":
-            self.register_buffer("hrrr_norm_statistics", default_hrrr_statistics, persistent=False)
+            self.register_buffer(
+                "hrrr_norm_statistics", default_hrrr_statistics, persistent=False
+            )
 
         elif hrrr_norm_strategy == "precalculated":
             assert exists(
@@ -862,7 +930,9 @@ class MetNet3(Module):
             self.register_buffer("hrrr_norm_statistics", hrrr_norm_statistics)
 
         elif hrrr_norm_strategy == "sync_batchnorm":
-            self.register_buffer("hrrr_norm_statistics", default_hrrr_statistics, persistent=False)
+            self.register_buffer(
+                "hrrr_norm_statistics", default_hrrr_statistics, persistent=False
+            )
             self.batchnorm_hrrr = MaybeSyncBatchnorm2d()(hrrr_channels, affine=False)
 
         self.hrrr_norm_strategy = hrrr_norm_strategy
@@ -915,7 +985,10 @@ class MetNet3(Module):
         batch = lead_times.shape[0]
         # breakpoint()
         assert (
-            batch == hrrr_input_2496.shape[0] == input_2496.shape[0] == input_4996.shape[0]
+            batch
+            == hrrr_input_2496.shape[0]
+            == input_2496.shape[0]
+            == input_4996.shape[0]
         ), "batch size across all inputs must be the same"
 
         assert hrrr_input_2496.shape[1:] == self.hrrr_input_2496_shape
@@ -1002,12 +1075,17 @@ class MetNet3(Module):
 
         x = self.resnet_blocks_up_1km(x, cond=cond)
 
-        precipitation_bins = self.to_precipitation_bins(x).split(self.precipitation_bin_dims, dim=1)
+        precipitation_bins = self.to_precipitation_bins(x).split(
+            self.precipitation_bin_dims, dim=1
+        )
 
-        precipitation_preds = dict(zip(self.precipitation_bin_names, precipitation_bins))
+        precipitation_preds = dict(
+            zip(self.precipitation_bin_names, precipitation_bins)
+        )
 
         exist_targets = [
-            exists(target) for target in (surface_targets, hrrr_target, precipitation_targets)
+            exists(target)
+            for target in (surface_targets, hrrr_target, precipitation_targets)
         ]
 
         pred = Predictions(surface_preds, hrrr_pred, precipitation_preds)
@@ -1053,7 +1131,9 @@ class MetNet3(Module):
             assert precipitation_target.shape[1:] == self.precipitation_target_shape
 
             precipitation_pred = rearrange(precipitation_pred, "... h w -> ... (h w)")
-            precipitation_target = rearrange(precipitation_target, "... h w -> ... (h w)")
+            precipitation_target = rearrange(
+                precipitation_target, "... h w -> ... (h w)"
+            )
 
             precipition_loss = F.cross_entropy(precipitation_pred, precipitation_target)
 

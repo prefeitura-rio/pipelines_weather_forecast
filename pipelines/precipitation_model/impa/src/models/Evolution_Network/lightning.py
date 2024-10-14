@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import torch
-from src.models.Evolution_Network.evolution_network import Evolution_Encoder_Decoder
+from src.models.Evolution_Network.evolution_network import \
+    Evolution_Encoder_Decoder
 from src.models.Evolution_Network.utils import make_grid, warp
 from src.models.lightning_module import LModule
 
@@ -57,7 +58,9 @@ class model(LModule):
             (self.n_after, 1, 3, 3),
         )
 
-        self.evo_net = Evolution_Encoder_Decoder(self.channels_in, self.n_after, base_c=32)
+        self.evo_net = Evolution_Encoder_Decoder(
+            self.channels_in, self.n_after, base_c=32
+        )
 
         x_dim = self.ground_truth.shape[-2]
 
@@ -67,14 +70,21 @@ class model(LModule):
     def forward(self, x):
         intensity, motion = self.evo_net(torch.flip(x, dims=[1]))
         motion_ = motion.reshape(x.shape[0], self.n_after, 2, x.shape[2], x.shape[3])
-        intensity_ = intensity.reshape(x.shape[0], self.n_after, 1, x.shape[2], x.shape[3])
+        intensity_ = intensity.reshape(
+            x.shape[0], self.n_after, 1, x.shape[2], x.shape[3]
+        )
         series = []
         x_bili = []
         last_frames = x[:, 0:1, :, :].detach()
         grid = self.grid.repeat(x.shape[0], 1, 1, 1)
         for i in range(self.n_after):
             x_bili.append(
-                warp(last_frames, motion_[:, i], grid.to(self.device), padding_mode="border")
+                warp(
+                    last_frames,
+                    motion_[:, i],
+                    grid.to(self.device),
+                    padding_mode="border",
+                )
             )
             with torch.no_grad():
                 last_frames = warp(

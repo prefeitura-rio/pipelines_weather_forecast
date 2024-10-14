@@ -3,13 +3,9 @@ import torch
 import torch.nn as nn
 from src.models.lightning_module import LModule
 from src.models.Metnet3.Max_Vit.Max_Vit import MaxViT
-from src.models.Metnet3.metnet3_pytorch import (
-    CenterCrop,
-    CenterPad,
-    Downsample2x,
-    ResnetBlocks,
-    Upsample2x,
-)
+from src.models.Metnet3.metnet3_pytorch import (CenterCrop, CenterPad,
+                                                Downsample2x, ResnetBlocks,
+                                                Upsample2x)
 from torch.nn import Sequential
 
 
@@ -63,7 +59,9 @@ class model(LModule):
 
         self.weighted = self.hparams.weights
         self.depth = self.hparams.depth
-        self.cond = self.dm_option["Lead_time_cond"] and not self.dm_option["Add_lead_to_input"]
+        self.cond = (
+            self.dm_option["Lead_time_cond"] and not self.dm_option["Add_lead_to_input"]
+        )
 
         # The dimention throught the model.
         self.dim = self.hparams.dim
@@ -88,7 +86,9 @@ class model(LModule):
         self.cond_dim = self.lead_time_dim_embedding if self.cond else None
 
         if self.cond:
-            self.lead_time_embedding = nn.Embedding(self.n_after, self.lead_time_dim_embedding)
+            self.lead_time_embedding = nn.Embedding(
+                self.n_after, self.lead_time_dim_embedding
+            )
 
         self.resnet_blocks_down_1 = ResnetBlocks(
             dim=self.dim // 2,
@@ -99,12 +99,17 @@ class model(LModule):
 
         self.down_and_pad_1 = Sequential(Downsample2x(), CenterPad(256))
 
-        self.resnet_2_dim_in = self.dim // 2 if self.old else self.dim // 2 + self.n_before
+        self.resnet_2_dim_in = (
+            self.dim // 2 if self.old else self.dim // 2 + self.n_before
+        )
         if self.dm_option["No_satellite"]:
             self.resnet_2_dim_in -= self.n_before
 
         self.resnet_blocks_down_2 = ResnetBlocks(
-            dim=dim, dim_in=self.resnet_2_dim_in, cond_dim=self.cond_dim, depth=resnet_block_depth
+            dim=dim,
+            dim_in=self.resnet_2_dim_in,
+            cond_dim=self.cond_dim,
+            depth=resnet_block_depth,
         )
         # If we want to crop the output of the model
         # self.to_skip_connect_2 = CenterCrop(crop_size_post_16km * 2)

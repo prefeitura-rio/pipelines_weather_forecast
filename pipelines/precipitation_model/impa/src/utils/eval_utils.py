@@ -9,7 +9,8 @@ import pandas as pd
 import plotly.graph_objects as go
 from PIL import Image
 from src.eval.metrics.metrics import metrics_dict
-from src.models.context_LDM_concat_new.predict import main as latent_diffusion_predict
+from src.models.context_LDM_concat_new.predict import \
+    main as latent_diffusion_predict
 from src.models.mamba.predict import main as mamba_predict
 from src.models.predict import main as general_predict
 from src.models.pysteps_LK.predict import main as pysteps_predict
@@ -91,12 +92,18 @@ def get_img(
         lat=np.concatenate([latlons[:, :, 0].flatten()[~exclude_idx], np.array([0])]),
         lon=np.concatenate([latlons[:, :, 1].flatten()[~exclude_idx], np.array([0])]),
         mode="markers",
-        marker={**marker_dict, "color": np.concatenate([values[~exclude_idx], np.array([0])])},
+        marker={
+            **marker_dict,
+            "color": np.concatenate([values[~exclude_idx], np.array([0])]),
+        },
     )
     fig = go.Figure(trace)
     if metric_names is not None:
         metrics_text = "<br>".join(
-            [f"{metric_name}: {metric:.2E}" for metric_name, metric in zip(metric_names, metrics)]
+            [
+                f"{metric_name}: {metric:.2E}"
+                for metric_name, metric in zip(metric_names, metrics)
+            ]
         )
         fig.add_annotation(
             x=0.9975,

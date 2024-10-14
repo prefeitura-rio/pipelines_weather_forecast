@@ -14,7 +14,9 @@ def MSE(pred, truth):
 def logMSE(pred, truth):
     pred[np.logical_or(pred <= 0, ~np.isfinite(pred))] = 0
     truth[np.logical_or(truth <= 0, ~np.isfinite(truth))] = 0
-    return np.mean((np.log1p(np.nan_to_num(pred)) - np.log1p(np.nan_to_num(truth))) ** 2)
+    return np.mean(
+        (np.log1p(np.nan_to_num(pred)) - np.log1p(np.nan_to_num(truth))) ** 2
+    )
 
 
 def MAE(pred, truth):
@@ -26,7 +28,9 @@ def MAE(pred, truth):
 def logMAE(pred, truth):
     pred[np.logical_or(pred <= 0, ~np.isfinite(pred))] = 0
     truth[np.logical_or(truth <= 0, ~np.isfinite(truth))] = 0
-    return np.mean(np.abs(np.log1p(np.nan_to_num(pred)) - np.log1p(np.nan_to_num(truth))))
+    return np.mean(
+        np.abs(np.log1p(np.nan_to_num(pred)) - np.log1p(np.nan_to_num(truth)))
+    )
 
 
 # [0,1]
@@ -60,8 +64,12 @@ def csi_denominator_torch(pred, truth, threshold=2, dim=None):
     binary_pred = torch.nan_to_num(pred) > threshold
     binary_truth = torch.nan_to_num(truth) > threshold
     TP = torch.sum(torch.logical_and(binary_pred, binary_truth), dim=dim)
-    FN = torch.sum(torch.logical_and(torch.logical_not(binary_pred), binary_truth), dim=dim)
-    FP = torch.sum(torch.logical_and(binary_pred, torch.logical_not(binary_truth)), dim=dim)
+    FN = torch.sum(
+        torch.logical_and(torch.logical_not(binary_pred), binary_truth), dim=dim
+    )
+    FP = torch.sum(
+        torch.logical_and(binary_pred, torch.logical_not(binary_truth)), dim=dim
+    )
     return TP + FN + FP
 
 
