@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=import-error, invalid-name, missing-function-docstring
 """
 Tasks
 """
@@ -58,7 +59,7 @@ def get_relevant_dates_informations(dt):
 
 
 @task
-def download_files_from_s3(s3, relevant_dts, days_of_year, years):
+def download_files_from_s3(relevant_dts, days_of_year, years):
     # Initialize the S3 client
     s3 = boto3.client("s3", config=Config(signature_version=UNSIGNED))
 
@@ -73,7 +74,7 @@ def download_files_from_s3(s3, relevant_dts, days_of_year, years):
 
 
 @task
-def process_data(year, day_of_year, num_workers, dt, cuda):
+def process_data(year, day_of_year, num_workers, dt):
     # process data
     log("Processing satellite data...")
     process_satellite(year=year, day=day_of_year, num_workers=num_workers, product="ABI-L2-RRQPEF")

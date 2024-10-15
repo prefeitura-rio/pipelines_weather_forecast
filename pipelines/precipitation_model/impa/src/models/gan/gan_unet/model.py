@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# flake8: noqa: E203
+
 import torch
 import torch.nn as nn
 from src.models.gan.gan_unet.unet_parts import DoubleConv, Down, OutConv, S, Up, Up2

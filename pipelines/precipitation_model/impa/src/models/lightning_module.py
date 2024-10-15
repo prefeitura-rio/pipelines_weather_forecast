@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# flake8: noqa: E203
 import torch
 from einops import rearrange
 from pytorch_lightning import LightningModule

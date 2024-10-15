@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# flake8: noqa: E203
+
 import torch
 import torch.nn as nn
 from src.models.lightning_module import LModule
