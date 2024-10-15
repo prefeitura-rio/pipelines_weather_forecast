@@ -14,12 +14,8 @@ class GenBlock(nn.Module):
         self.double_conv = double_conv
 
         self.pad = nn.ReflectionPad2d(dilation)
-        self.conv_0 = nn.Conv2d(
-            fin, fmiddle, kernel_size=3, padding=0, dilation=dilation
-        )
-        self.conv_1 = nn.Conv2d(
-            fmiddle, fout, kernel_size=3, padding=0, dilation=dilation
-        )
+        self.conv_0 = nn.Conv2d(fin, fmiddle, kernel_size=3, padding=0, dilation=dilation)
+        self.conv_1 = nn.Conv2d(fmiddle, fout, kernel_size=3, padding=0, dilation=dilation)
 
         if self.learned_shortcut:
             self.conv_s = nn.Conv2d(fin, fout, kernel_size=1, bias=False)

@@ -6,9 +6,7 @@ import torch.nn as nn
 
 
 class ActNorm(nn.Module):
-    def __init__(
-        self, num_features, logdet=False, affine=True, allow_reverse_init=False
-    ):
+    def __init__(self, num_features, logdet=False, affine=True, allow_reverse_init=False):
         assert affine
         super().__init__()
         self.logdet = logdet

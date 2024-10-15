@@ -6,7 +6,10 @@
 import numpy as np
 import torch
 from src.models.context_LDM_concat_new.utils import (
-    make_ddim_sampling_parameters, make_ddim_timesteps, noise_like)
+    make_ddim_sampling_parameters,
+    make_ddim_timesteps,
+    noise_like,
+)
 from tqdm import tqdm
 
 
@@ -23,9 +26,7 @@ class DDIMSampler(object):
                 attr = attr.to(torch.device("cuda"))
         setattr(self, name, attr)
 
-    def make_schedule(
-        self, ddim_num_steps, ddim_discretize="uniform", ddim_eta=0.0, verbose=True
-    ):
+    def make_schedule(self, ddim_num_steps, ddim_discretize="uniform", ddim_eta=0.0, verbose=True):
         self.ddim_timesteps = make_ddim_timesteps(
             ddim_discr_method=ddim_discretize,
             num_ddim_timesteps=ddim_num_steps,
@@ -44,18 +45,10 @@ class DDIMSampler(object):
 
         # calculations for diffusion q(x_t | x_{t-1}) and others
         self.register_buffer("sqrt_alphas_cumprod", (torch.sqrt(alphas_cumprod)))
-        self.register_buffer(
-            "sqrt_one_minus_alphas_cumprod", (torch.sqrt(1.0 - alphas_cumprod))
-        )
-        self.register_buffer(
-            "log_one_minus_alphas_cumprod", (torch.log(1.0 - alphas_cumprod))
-        )
-        self.register_buffer(
-            "sqrt_recip_alphas_cumprod", (torch.sqrt(1.0 / alphas_cumprod))
-        )
-        self.register_buffer(
-            "sqrt_recipm1_alphas_cumprod", (torch.sqrt(1.0 / alphas_cumprod) - 1)
-        )
+        self.register_buffer("sqrt_one_minus_alphas_cumprod", (torch.sqrt(1.0 - alphas_cumprod)))
+        self.register_buffer("log_one_minus_alphas_cumprod", (torch.log(1.0 - alphas_cumprod)))
+        self.register_buffer("sqrt_recip_alphas_cumprod", (torch.sqrt(1.0 / alphas_cumprod)))
+        self.register_buffer("sqrt_recipm1_alphas_cumprod", (torch.sqrt(1.0 / alphas_cumprod) - 1))
 
         # ddim sampling parameters
         ddim_sigmas, ddim_alphas, ddim_alphas_prev = make_ddim_sampling_parameters(
@@ -67,9 +60,7 @@ class DDIMSampler(object):
         self.register_buffer("ddim_sigmas", ddim_sigmas)
         self.register_buffer("ddim_alphas", ddim_alphas)
         self.register_buffer("ddim_alphas_prev", ddim_alphas_prev)
-        self.register_buffer(
-            "ddim_sqrt_one_minus_alphas", torch.sqrt(1.0 - ddim_alphas)
-        )
+        self.register_buffer("ddim_sqrt_one_minus_alphas", torch.sqrt(1.0 - ddim_alphas))
         sigmas_for_original_sampling_steps = ddim_eta * torch.sqrt(
             (1 - self.alphas_cumprod_prev)
             / (1 - self.alphas_cumprod)
@@ -109,9 +100,7 @@ class DDIMSampler(object):
             if isinstance(conditioning, dict):
                 cbs = conditioning[list(conditioning.keys())[0]].shape[0]
                 if cbs != batch_size:
-                    print(
-                        f"Warning: Got {cbs} conditionings but batch-size is {batch_size}"
-                    )
+                    print(f"Warning: Got {cbs} conditionings but batch-size is {batch_size}")
             else:
                 if conditioning.shape[0] != batch_size:
                     print(
@@ -173,26 +162,17 @@ class DDIMSampler(object):
             img = x_T
 
         if timesteps is None:
-            timesteps = (
-                self.ddpm_num_timesteps
-                if ddim_use_original_steps
-                else self.ddim_timesteps
-            )
+            timesteps = self.ddpm_num_timesteps if ddim_use_original_steps else self.ddim_timesteps
         elif timesteps is not None and not ddim_use_original_steps:
             subset_end = (
-                int(
-                    min(timesteps / self.ddim_timesteps.shape[0], 1)
-                    * self.ddim_timesteps.shape[0]
-                )
+                int(min(timesteps / self.ddim_timesteps.shape[0], 1) * self.ddim_timesteps.shape[0])
                 - 1
             )
             timesteps = self.ddim_timesteps[:subset_end]
 
         intermediates = {"x_inter": [img], "pred_x0": [img]}
         time_range = (
-            reversed(range(0, timesteps))
-            if ddim_use_original_steps
-            else np.flip(timesteps)
+            reversed(range(0, timesteps)) if ddim_use_original_steps else np.flip(timesteps)
         )
         total_steps = timesteps if ddim_use_original_steps else timesteps.shape[0]
         # print(f"Running DDIM Sampling with {total_steps} timesteps")
@@ -205,9 +185,7 @@ class DDIMSampler(object):
 
             if mask is not None:
                 assert x0 is not None
-                img_orig = self.model.q_sample(
-                    x0, ts
-                )  # TODO: deterministic forward pass?
+                img_orig = self.model.q_sample(x0, ts)  # TODO: deterministic forward pass?
                 img = img_orig * mask + (1.0 - mask) * img
 
             outs = self.p_sample_ddim(
@@ -261,22 +239,16 @@ class DDIMSampler(object):
             x_in = torch.cat([x] * 2)
             t_in = torch.cat([t] * 2)
             c_in = torch.cat([unconditional_conditioning.to(c.device), c])
-            e_t_uncond, e_t = self.model.model(
-                x_in, t_in, c_in, class_free_guide=False
-            ).chunk(2)
+            e_t_uncond, e_t = self.model.model(x_in, t_in, c_in, class_free_guide=False).chunk(2)
             e_t = e_t_uncond + unconditional_guidance_scale * (e_t - e_t_uncond)
 
         if score_corrector is not None:
             assert self.model.parameterization == "eps"
-            e_t = score_corrector.modify_score(
-                self.model, e_t, x, t, c, **corrector_kwargs
-            )
+            e_t = score_corrector.modify_score(self.model, e_t, x, t, c, **corrector_kwargs)
 
         alphas = self.model.alphas_cumprod if use_original_steps else self.ddim_alphas
         alphas_prev = (
-            self.model.alphas_cumprod_prev
-            if use_original_steps
-            else self.ddim_alphas_prev
+            self.model.alphas_cumprod_prev if use_original_steps else self.ddim_alphas_prev
         )
         sqrt_one_minus_alphas = (
             self.model.sqrt_one_minus_alphas_cumprod
@@ -292,9 +264,7 @@ class DDIMSampler(object):
         a_t = torch.full((b, 1, 1, 1), alphas[index], device=device)
         a_prev = torch.full((b, 1, 1, 1), alphas_prev[index], device=device)
         sigma_t = torch.full((b, 1, 1, 1), sigmas[index], device=device)
-        sqrt_one_minus_at = torch.full(
-            (b, 1, 1, 1), sqrt_one_minus_alphas[index], device=device
-        )
+        sqrt_one_minus_at = torch.full((b, 1, 1, 1), sqrt_one_minus_alphas[index], device=device)
 
         # current prediction for x_0
         pred_x0 = (x - sqrt_one_minus_at * e_t) / a_t.sqrt()

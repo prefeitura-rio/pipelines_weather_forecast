@@ -258,9 +258,7 @@ def main(args_dict, parameters_dict):
                 predictions = rearrange(predictions, "(b c) w i -> b c w i", c=n_after)
 
             predictions = inv_transform(predictions, mean=0, std=1, sat=True)
-            array_to_pred_hdf(
-                predictions, ds.keys, ds.future_keys, output_predict_filepaths[i]
-            )
+            array_to_pred_hdf(predictions, ds.keys, ds.future_keys, output_predict_filepaths[i])
     else:
         ds, _ = get_ds(
             dataframe_filepath,
@@ -301,9 +299,7 @@ def main(args_dict, parameters_dict):
 
         predictions = inv_transform(predictions, mean=mean_data, std=std_data, sat=sat)
 
-        array_to_pred_hdf(
-            predictions, ds.keys, ds.future_keys, output_predict_filepaths[0]
-        )
+        array_to_pred_hdf(predictions, ds.keys, ds.future_keys, output_predict_filepaths[0])
 
     ok_message = "OK: Saved predictions successfully."
     print_ok(ok_message)

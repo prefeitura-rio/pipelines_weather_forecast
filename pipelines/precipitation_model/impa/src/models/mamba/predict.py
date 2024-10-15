@@ -82,12 +82,8 @@ def main(args_dict, parameters_dict):
             n_before=n_before,
             leadtime_conditioning=leadtime_conditioning,
         )
-        ds.x_transform = partial(
-            transform2, mean=MEAN, std=STD, std_fac=args_dict["std_fac"]
-        )
-        ds.y_transform = partial(
-            transform2, mean=MEAN, std=STD, std_fac=args_dict["std_fac"]
-        )
+        ds.x_transform = partial(transform2, mean=MEAN, std=STD, std_fac=args_dict["std_fac"])
+        ds.y_transform = partial(transform2, mean=MEAN, std=STD, std_fac=args_dict["std_fac"])
         test_dataloader = DataLoader(
             ds, batch_size=batch_size, num_workers=args_dict["num_workers"]
         )
@@ -96,20 +92,16 @@ def main(args_dict, parameters_dict):
         ni = ds[0][0].shape[1]
         array_pre = torch.zeros((n_predict, s2, n_after, ni, ni))
         for i in range(n_predict):
-            predictions = pl.Trainer(
-                devices=[0], logger=False, enable_checkpointing=False
-            ).predict(model, test_dataloader)
+            predictions = pl.Trainer(devices=[0], logger=False, enable_checkpointing=False).predict(
+                model, test_dataloader
+            )
             predictions = torch.cat(predictions, axis=0)
             predictions = predictions.squeeze(1)
             array_pre[i, :, :, :, :] = predictions
 
         predictions = torch.mean(array_pre, 0)
-        predictions = inv_transform(
-            predictions, mean=MEAN, std=STD, std_fac=args_dict["std_fac"]
-        )
-        array_to_pred_hdf(
-            predictions, ds.keys, ds.future_keys, output_predict_filepaths[i]
-        )
+        predictions = inv_transform(predictions, mean=MEAN, std=STD, std_fac=args_dict["std_fac"])
+        array_to_pred_hdf(predictions, ds.keys, ds.future_keys, output_predict_filepaths[i])
 
     ok_message = "OK: Saved predictions successfully."
     print_ok(ok_message)

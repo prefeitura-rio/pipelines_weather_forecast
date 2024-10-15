@@ -4,7 +4,9 @@
 import torch
 import torch.nn.functional as F
 from src.models.context_LDM_concat_new.autoencoder.discriminator import (
-    NLayerDiscriminator, weights_init)
+    NLayerDiscriminator,
+    weights_init,
+)
 from torch import nn
 
 
@@ -98,12 +100,8 @@ class LPIPSWithDiscriminator(nn.Module):
             nll_grads = torch.autograd.grad(nll_loss, last_layer, retain_graph=True)[0]
             g_grads = torch.autograd.grad(g_loss, last_layer, retain_graph=True)[0]
         else:
-            nll_grads = torch.autograd.grad(
-                nll_loss, self.last_layer[0], retain_graph=True
-            )[0]
-            g_grads = torch.autograd.grad(
-                g_loss, self.last_layer[0], retain_graph=True
-            )[0]
+            nll_grads = torch.autograd.grad(nll_loss, self.last_layer[0], retain_graph=True)[0]
+            g_grads = torch.autograd.grad(g_loss, self.last_layer[0], retain_graph=True)[0]
 
         d_weight = torch.norm(nll_grads) / (torch.norm(g_grads) + 1e-4)
         d_weight = torch.clamp(d_weight, 0.0, 1e4).detach()
@@ -163,11 +161,7 @@ class LPIPSWithDiscriminator(nn.Module):
             disc_factor = adopt_weight(
                 self.disc_factor, global_step, threshold=self.discriminator_iter_start
             )
-            loss = (
-                weighted_nll_loss
-                + self.kl_weight * kl_loss
-                + d_weight * disc_factor * g_loss
-            )
+            loss = weighted_nll_loss + self.kl_weight * kl_loss + d_weight * disc_factor * g_loss
             # breakpoint()
             log = {
                 "{}/total_loss".format(split): loss.clone().detach().mean(),

@@ -2,12 +2,11 @@
 import numpy as np
 import pytorch_lightning as pl
 import torch
-from src.models.context_LDM_concat_new.autoencoder.distributions import \
-    DiagonalGaussianDistribution
-from src.models.context_LDM_concat_new.autoencoder.loss import \
-    LPIPSWithDiscriminator
-from src.models.context_LDM_concat_new.autoencoder.modules import (Decoder,
-                                                                   Encoder)
+from src.models.context_LDM_concat_new.autoencoder.distributions import (
+    DiagonalGaussianDistribution,
+)
+from src.models.context_LDM_concat_new.autoencoder.loss import LPIPSWithDiscriminator
+from src.models.context_LDM_concat_new.autoencoder.modules import Decoder, Encoder
 
 
 class AutoencoderKL(pl.LightningModule):

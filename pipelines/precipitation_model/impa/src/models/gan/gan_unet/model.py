@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 import torch
 import torch.nn as nn
-from src.models.gan.gan_unet.unet_parts import (DoubleConv, Down, OutConv, S,
-                                                Up, Up2)
-from src.models.gan.parts_gan import (AvgPool, L2_Block, L3_Block,
-                                      Noise_Projector)
+from src.models.gan.gan_unet.unet_parts import DoubleConv, Down, OutConv, S, Up, Up2
+from src.models.gan.parts_gan import AvgPool, L2_Block, L3_Block, Noise_Projector
 from src.models.nowcasting.layers.generation.generative_network import (
-    Generative_Decoder, Generative_Encoder)
+    Generative_Decoder,
+    Generative_Encoder,
+)
 from torch.nn.utils import spectral_norm
 
 ni = 192  # size of image
@@ -60,13 +60,9 @@ class Discriminator3D(nn.Module):
             # state size. ``(ndf*4) x 2 x 24 x 24``
         )
         if in_channel >= 16 and in_channel < 32:
-            self.tor2dim = L3_Block(
-                ndf * 4, ndf * 8, kernel_size, stride, padding, bias=False
-            )
+            self.tor2dim = L3_Block(ndf * 4, ndf * 8, kernel_size, stride, padding, bias=False)
         elif in_channel >= 8 and in_channel < 16:
-            self.tor2dim = L2_Block(
-                ndf * 4, ndf * 8, kernel_size, stride, padding, bias=False
-            )
+            self.tor2dim = L2_Block(ndf * 4, ndf * 8, kernel_size, stride, padding, bias=False)
         else:
             ValueError("Incorrect number of contex and predictions.")
             # After this the input should be transform to 2d
@@ -103,9 +99,7 @@ class TemporalDiscriminator(nn.Module):
         else:
             size = 12
         after_flatten = 64 + (in_channel - 3) * 4 + (in_channel // 4 + 1) * 8
-        self.conv2d = spectral_norm(
-            nn.Conv2d(in_channel, 64, kernel_size=9, stride=2, padding=4)
-        )
+        self.conv2d = spectral_norm(nn.Conv2d(in_channel, 64, kernel_size=9, stride=2, padding=4))
         self.conv3d_1 = spectral_norm(
             nn.Conv3d(1, 4, kernel_size=(4, 9, 9), stride=(1, 2, 2), padding=(0, 4, 4))
         )
@@ -119,9 +113,7 @@ class TemporalDiscriminator(nn.Module):
             # state size. ``(ndf*8) x 48 x 48``
             L2_Block(ndf * 8, ndf * 16, kernel_size, stride, padding, bias=False),
             # state size. ``(ndf*8) x 24 x 24``
-            L2_Block(
-                ndf * 16, ndf * 16, kernel_size - 1, stride - 1, padding, bias=False
-            ),
+            L2_Block(ndf * 16, ndf * 16, kernel_size - 1, stride - 1, padding, bias=False),
             # state size. ``(ndf*8) x 12 x 12``
             nn.BatchNorm2d(ndf * 16),
             spectral_norm(nn.Conv2d(ndf * 16, 1, kernel_size=3, padding=1, bias=False)),
@@ -151,9 +143,7 @@ class Join_Discriminator(nn.Module):
         self.beta = 1 - self.alpha
 
     def forward(self, input):
-        return self.alpha * self.dis2d(input) + self.beta * self.dis3d(
-            input[:, None, :, :, :]
-        )
+        return self.alpha * self.dis2d(input) + self.beta * self.dis3d(input[:, None, :, :, :])
 
 
 class Generator(nn.Module):

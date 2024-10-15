@@ -7,19 +7,27 @@ Download sattelite goes 16 data, treat then and predict
 from prefect import Parameter
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
+
 # from google.api_core.exceptions import Forbidden
-from prefeitura_rio.pipelines_utils.custom import \
-    Flow  # pylint: disable=E0611, E0401
+from prefeitura_rio.pipelines_utils.custom import Flow  # pylint: disable=E0611, E0401
+
 # from prefeitura_rio.pipelines_utils.logging import log
 from prefeitura_rio.pipelines_utils.state_handlers import (
-    handler_initialize_sentry, handler_inject_bd_credentials)
+    handler_initialize_sentry,
+    handler_inject_bd_credentials,
+)
 
 from pipelines.constants import constants  # pylint: disable=E0611, E0401
-from pipelines.precipitation_model.impa.schedules import \
-    prediction_schedule  # pylint: disable=E0611, E0401
+from pipelines.precipitation_model.impa.schedules import (  # pylint: disable=E0611, E0401
+    prediction_schedule,
+)
 from pipelines.precipitation_model.impa.tasks import (  # pylint: disable=E0611, E0401
-    download_files_from_s3, get_predictions, get_relevant_dates_informations,
-    get_start_datetime, process_data)
+    download_files_from_s3,
+    get_predictions,
+    get_relevant_dates_informations,
+    get_start_datetime,
+    process_data,
+)
 
 # from prefeitura_rio.pipelines_utils.tasks import (  # pylint: disable=E0611, E0401
 #     create_table_and_upload_to_gcs,
@@ -66,21 +74,15 @@ with Flow(
         required=False,
         description="Number of workers to use for parallel processing",
     )
-    cuda = Parameter(
-        "cuda", default=False, required=False, description="Use CUDA for prediction"
-    )
+    cuda = Parameter("cuda", default=False, required=False, description="Use CUDA for prediction")
 
     # Parameters for saving data on GCP
-    materialize_after_dump = Parameter(
-        "materialize_after_dump", default=False, required=False
-    )
+    materialize_after_dump = Parameter("materialize_after_dump", default=False, required=False)
     dump_mode = Parameter("dump_mode", default=False, required=False)
     dataset_id = mode_redis = Parameter(
         "dataset_id", default="clima_previsao_chuva", required=False
     )
-    table_id = Parameter(
-        "table_id", default="modelo_satelite_goes_16_impa", required=False
-    )
+    table_id = Parameter("table_id", default="modelo_satelite_goes_16_impa", required=False)
 
     #########################
     #  Start flow           #

@@ -43,8 +43,7 @@ def download_data(product, year, day_of_year, hour):
 def download_parallel_multiprocessing(time_tuples):
     with ProcessPoolExecutor() as executor:
         future_to_key = {
-            executor.submit(download_data, time_tuple): time_tuple
-            for time_tuple in time_tuples
+            executor.submit(download_data, time_tuple): time_tuple for time_tuple in time_tuples
         }
 
         for future in futures.as_completed(future_to_key):
@@ -97,18 +96,12 @@ if __name__ == "__main__":
     for i in range(4):
         day_of_year = days_of_year[i]
         year = years[i]
-        print(
-            f"Downloading the latest data for {relevant_dts[i].strftime('%Y-%m-%d')}..."
-        )
+        print(f"Downloading the latest data for {relevant_dts[i].strftime('%Y-%m-%d')}...")
 
         download_hour = partial(download_data, "ABI-L2-RRQPEF", year, day_of_year)
-        Parallel(n_jobs=args.num_workers)(
-            delayed(download_hour)(hour) for hour in hours
-        )
+        Parallel(n_jobs=args.num_workers)(delayed(download_hour)(hour) for hour in hours)
         download_hour = partial(download_data, "ABI-L2-ACHAF", year, day_of_year)
-        Parallel(n_jobs=args.num_workers)(
-            delayed(download_hour)(hour) for hour in hours
-        )
+        Parallel(n_jobs=args.num_workers)(delayed(download_hour)(hour) for hour in hours)
 
     # process data
     print("Processing satellite data...")

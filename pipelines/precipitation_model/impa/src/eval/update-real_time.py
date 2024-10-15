@@ -66,9 +66,7 @@ if __name__ == "__main__":
     for i in range(4):
         day_of_year = days_of_year[i]
         year = years[i]
-        print(
-            f"Downloading the latest data for {relevant_dts[i].strftime('%Y-%m-%d')}..."
-        )
+        print(f"Downloading the latest data for {relevant_dts[i].strftime('%Y-%m-%d')}...")
         for hour in hours:
             download_data(s3, "ABI-L2-RRQPEF", year, day_of_year, hour)
             download_data(s3, "ABI-L2-ACHAF", year, day_of_year, hour)

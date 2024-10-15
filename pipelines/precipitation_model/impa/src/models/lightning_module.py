@@ -107,9 +107,7 @@ class LModule(LightningModule):
             x = rearrange(x, "b h w c -> b c h w")
 
             if self.needs_prediction:
-                x = torch.cat(
-                    [x[:, : 2 * self.n_before : 2], x[:, -self.n_after :]], axis=1
-                )
+                x = torch.cat([x[:, : 2 * self.n_before : 2], x[:, -self.n_after :]], axis=1)
 
             if self.merge:
                 # Transform the radar data with log1p
@@ -157,13 +155,9 @@ class LModule(LightningModule):
 
     def forward_lead_time_all(self, x):
         assert self.dm_option["Lead_time_cond"]
-        out = torch.empty(
-            (x.shape[0], self.n_after, x.shape[-1], x.shape[-1]), device=self.device
-        )
+        out = torch.empty((x.shape[0], self.n_after, x.shape[-1], x.shape[-1]), device=self.device)
         for i in range(self.n_after):
-            lead_time = torch.ones(
-                (x.shape[0]), device=self.device, dtype=torch.int
-            ) * int(i)
+            lead_time = torch.ones((x.shape[0]), device=self.device, dtype=torch.int) * int(i)
             out[:, i] = self.forward(x, lead_time)[:, 0]
         return out
 

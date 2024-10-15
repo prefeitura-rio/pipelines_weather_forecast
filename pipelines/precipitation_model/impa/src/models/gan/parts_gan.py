@@ -79,9 +79,7 @@ class D3_Block(nn.Module):
 
 
 class D2_Block(nn.Module):
-    def __init__(
-        self, in_channel, out_channel, kernel_size=3, stride=1, padding=1, bias=False
-    ):
+    def __init__(self, in_channel, out_channel, kernel_size=3, stride=1, padding=1, bias=False):
         super(D2_Block, self).__init__()
         slope = 0.2
         self.double_conv = nn.Sequential(
@@ -223,9 +221,7 @@ class Noise_Projector(nn.Module):
             output_length = self.input_length * 32
         self.output_length = output_length
         self.conv_first = spectral_norm(
-            nn.Conv2d(
-                self.input_length, self.input_length * 2, kernel_size=3, padding=1
-            )
+            nn.Conv2d(self.input_length, self.input_length * 2, kernel_size=3, padding=1)
         )
         self.L1 = ProjBlock(self.input_length * 2, self.input_length * 4)
         self.L2 = ProjBlock(self.input_length * 4, self.input_length * 8)
@@ -250,9 +246,7 @@ class ProjBlock(nn.Module):
         self.double_conv = nn.Sequential(
             spectral_norm(nn.Conv2d(in_channel, out_channel, kernel_size=3, padding=1)),
             nn.ReLU(),
-            spectral_norm(
-                nn.Conv2d(out_channel, out_channel, kernel_size=3, padding=1)
-            ),
+            spectral_norm(nn.Conv2d(out_channel, out_channel, kernel_size=3, padding=1)),
         )
 
     def forward(self, x):
@@ -272,9 +266,7 @@ class AvgPool(nn.Module):
 
         self.avgpool = nn.Sequential(
             nn.AdaptiveAvgPool2d(output_size=output_size),
-            spectral_norm(
-                nn.Conv2d(in_channel, out_channel, kernel_size=3, padding=1, bias=False)
-            ),
+            spectral_norm(nn.Conv2d(in_channel, out_channel, kernel_size=3, padding=1, bias=False)),
             nn.BatchNorm2d(out_channel),
             nn.ReLU(inplace=True),
         )

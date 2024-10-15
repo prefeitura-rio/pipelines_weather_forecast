@@ -9,9 +9,7 @@ def get_dataset_keys(f):
             continue
         g = f[date]
         g.visit(
-            lambda key: keys.append(f"{date}/{key}")
-            if isinstance(g[key], h5py.Dataset)
-            else None
+            lambda key: keys.append(f"{date}/{key}") if isinstance(g[key], h5py.Dataset) else None
         )
     return keys
 

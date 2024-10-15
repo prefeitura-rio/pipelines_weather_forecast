@@ -67,9 +67,7 @@ def l2norm(t):
 
 
 def MaybeSyncBatchnorm2d(is_distributed=None):
-    is_distributed = default(
-        is_distributed, dist.is_initialized() and dist.get_world_size() > 1
-    )
+    is_distributed = default(is_distributed, dist.is_initialized() and dist.get_world_size() > 1)
     return nn.SyncBatchNorm if is_distributed else nn.BatchNorm2d
 
 
@@ -164,16 +162,11 @@ class Dropsample(Module):
         if self.prob == 0.0 or (not self.training):
             return x
 
-        keep_mask = (
-            torch.FloatTensor((x.shape[0], 1, 1, 1), device=device).uniform_()
-            > self.prob
-        )
+        keep_mask = torch.FloatTensor((x.shape[0], 1, 1, 1), device=device).uniform_() > self.prob
         return x * keep_mask / (1 - self.prob)
 
 
-def MBConv(
-    dim_in, dim_out, *, downsample, expansion_rate=4, shrinkage_rate=0.25, dropout=0.0
-):
+def MBConv(dim_in, dim_out, *, downsample, expansion_rate=4, shrinkage_rate=0.25, dropout=0.0):
     hidden_dim = int(expansion_rate * dim_out)
     stride = 2 if downsample else 1
 
@@ -185,9 +178,7 @@ def MBConv(
         batchnorm_klass(hidden_dim),
         nn.GELU(),
         # Deepwise Conv 3x3
-        nn.Conv2d(
-            hidden_dim, hidden_dim, 3, stride=stride, padding=1, groups=hidden_dim
-        ),
+        nn.Conv2d(hidden_dim, hidden_dim, 3, stride=stride, padding=1, groups=hidden_dim),
         batchnorm_klass(hidden_dim),
         nn.GELU(),
         # SE
@@ -217,9 +208,7 @@ class Attention(Module):
     ):
         super().__init__()
         assert num_registers > 0
-        assert (
-            dim % dim_head
-        ) == 0, "dimension should be divisible by dimension per head"
+        assert (dim % dim_head) == 0, "dimension should be divisible by dimension per head"
 
         dim_inner = dim_head * heads
         self.heads = heads
@@ -247,9 +236,7 @@ class Attention(Module):
 
         self.attend = nn.Sequential(nn.Softmax(dim=-1), nn.Dropout(dropout))
 
-        self.to_out = nn.Sequential(
-            nn.Linear(dim_inner, dim, bias=False), nn.Dropout(dropout)
-        )
+        self.to_out = nn.Sequential(nn.Linear(dim_inner, dim, bias=False), nn.Dropout(dropout))
 
         # relative positional bias
 
@@ -260,9 +247,7 @@ class Attention(Module):
         pos = torch.arange(window_size)
         grid = torch.stack(torch.meshgrid(pos, pos, indexing="ij"))
         grid = rearrange(grid, "c i j -> (i j) c")
-        rel_pos = rearrange(grid, "i ... -> i 1 ...") - rearrange(
-            grid, "j ... -> 1 j ..."
-        )
+        rel_pos = rearrange(grid, "i ... -> i 1 ...") - rearrange(grid, "j ... -> 1 j ...")
         rel_pos += window_size - 1
         rel_pos_indices = (rel_pos * torch.tensor([2 * window_size - 1, 1])).sum(dim=-1)
 
@@ -397,9 +382,7 @@ class MaxViT(Module):
 
         # iterate through stages
 
-        for ind, ((layer_dim_in, layer_dim), layer_depth) in enumerate(
-            zip(dim_pairs, depth)
-        ):
+        for ind, ((layer_dim_in, layer_dim), layer_depth) in enumerate(zip(dim_pairs, depth)):
             for stage_ind in range(layer_depth):
                 # is_first = stage_ind == 0
                 is_first = False
@@ -436,9 +419,7 @@ class MaxViT(Module):
                     block=False,
                 )
 
-                register_tokens = nn.Parameter(
-                    torch.randn(num_register_tokens, layer_dim)
-                )
+                register_tokens = nn.Parameter(torch.randn(num_register_tokens, layer_dim))
 
                 self.layers.append(ModuleList([conv, block_attn, grid_attn]))
 
@@ -462,18 +443,14 @@ class MaxViT(Module):
 
             # prepare register tokens
 
-            r = repeat(
-                register_tokens, "n d -> b x y n d", b=b, x=x.shape[1], y=x.shape[2]
-            )
+            r = repeat(register_tokens, "n d -> b x y n d", b=b, x=x.shape[1], y=x.shape[2])
             r, register_batch_ps = pack_one(r, "* n d")
 
             x, window_ps = pack_one(x, "b x y * d")
             x, batch_ps = pack_one(x, "* n d")
             # x, register_ps = pack([r, x], "b * d")
 
-            x, register_ps, x_i = block_attn(
-                x, r, cond=cond, x_size=xskip.shape[2], window_size=w
-            )
+            x, register_ps, x_i = block_attn(x, r, cond=cond, x_size=xskip.shape[2], window_size=w)
 
             x += x_i
 
@@ -499,9 +476,7 @@ class MaxViT(Module):
             x, batch_ps = pack_one(x, "* n d")
             # x, register_ps = pack([r, x], "b * d")
 
-            x, register_ps, x_i = grid_attn(
-                x, r, cond=cond, x_size=xskip.shape[2], window_size=w
-            )
+            x, register_ps, x_i = grid_attn(x, r, cond=cond, x_size=xskip.shape[2], window_size=w)
 
             x += x_i
 

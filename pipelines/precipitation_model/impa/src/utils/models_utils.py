@@ -41,9 +41,7 @@ options_pretrained = {
             # n_after = 10
             "UNET/f2768cd156f48152041f4a791c155d48",
         ],
-        "square-RADAR-d2CMAX-DBZH-heavy_rain": [
-            "UNET/f572a1c4d4db45e33eb04a5be15db840"
-        ],
+        "square-RADAR-d2CMAX-DBZH-heavy_rain": ["UNET/f572a1c4d4db45e33eb04a5be15db840"],
         "SAT-ABI-L2-RRQPEF-{location}-file=thr=0": [],
     },
     2: {
@@ -151,9 +149,9 @@ def get_ds(
                 if args_dict["predictions"] == 1 or args_dict["predictions"] == 2:
                     n_predictions = n_after
                     try:
-                        saved_predictions = options_pretrained[
-                            args_dict["predictions"]
-                        ][args_dict["dataframe"]][args_dict["predictions_option"] - 1]
+                        saved_predictions = options_pretrained[args_dict["predictions"]][
+                            args_dict["dataframe"]
+                        ][args_dict["predictions_option"] - 1]
                         print(f"Training using the prediction of {saved_predictions}")
                     except IndexError:
                         raise ValueError("Incorrect prediction option.")

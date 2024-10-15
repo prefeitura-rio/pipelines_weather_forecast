@@ -15,24 +15,18 @@ class DoubleConv(nn.Module):
             nn.BatchNorm2d(in_channels),
             nn.ReLU(inplace=True),
             spectral_norm(
-                nn.Conv2d(
-                    in_channels, mid_channels, kernel_size=kernel, padding=kernel // 2
-                )
+                nn.Conv2d(in_channels, mid_channels, kernel_size=kernel, padding=kernel // 2)
             ),
             nn.BatchNorm2d(mid_channels),
             nn.ReLU(inplace=True),
             spectral_norm(
-                nn.Conv2d(
-                    mid_channels, out_channels, kernel_size=kernel, padding=kernel // 2
-                )
+                nn.Conv2d(mid_channels, out_channels, kernel_size=kernel, padding=kernel // 2)
             ),
         )
         self.single_conv = nn.Sequential(
             nn.BatchNorm2d(in_channels),
             spectral_norm(
-                nn.Conv2d(
-                    in_channels, out_channels, kernel_size=kernel, padding=kernel // 2
-                )
+                nn.Conv2d(in_channels, out_channels, kernel_size=kernel, padding=kernel // 2)
             ),
         )
 
@@ -64,9 +58,7 @@ class Up(nn.Module):
                 in_channels, out_channels, kernel=kernel, mid_channels=in_channels // 2
             )
         else:
-            self.up = nn.ConvTranspose2d(
-                in_channels, in_channels // 2, kernel_size=2, stride=2
-            )
+            self.up = nn.ConvTranspose2d(in_channels, in_channels // 2, kernel_size=2, stride=2)
             self.conv = DoubleConv(in_channels, out_channels, kernel)
 
     def forward(self, x1, x2):
@@ -89,9 +81,7 @@ class Up_S(nn.Module):
                 in_channels, out_channels, kernel=kernel, mid_channels=in_channels
             )
         else:
-            self.up = nn.ConvTranspose2d(
-                in_channels, in_channels, kernel_size=2, stride=2
-            )
+            self.up = nn.ConvTranspose2d(in_channels, in_channels, kernel_size=2, stride=2)
             self.conv = DoubleConv(in_channels, out_channels, kernel)
 
     def forward(self, x):

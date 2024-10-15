@@ -19,8 +19,11 @@ DropPath.__repr__ = lambda self: f"timm.DropPath({self.drop_prob})"
 
 # triton cross scan, 2x speed than pytorch implementation =========================
 
-from src.models.mamba.csm_triton import (CrossMergeTriton, CrossScanTriton,
-                                         CrossScanTriton1b1)
+from src.models.mamba.csm_triton import (
+    CrossMergeTriton,
+    CrossScanTriton,
+    CrossScanTriton1b1,
+)
 
 # except:
 #     from csm_triton import CrossScanTriton, CrossMergeTriton, CrossScanTriton1b1
@@ -44,9 +47,9 @@ class CrossScan(torch.autograd.Function):
         B, C, H, W = ctx.shape
         L = H * W
         ys = ys[:, 0:2] + ys[:, 2:4].flip(dims=[-1]).view(B, 2, -1, L)
-        y = ys[:, 0] + ys[:, 1].view(B, -1, W, H).transpose(
-            dim0=2, dim1=3
-        ).contiguous().view(B, -1, L)
+        y = ys[:, 0] + ys[:, 1].view(B, -1, W, H).transpose(dim0=2, dim1=3).contiguous().view(
+            B, -1, L
+        )
         return y.view(B, -1, H, W)
 
 
@@ -57,9 +60,9 @@ class CrossMerge(torch.autograd.Function):
         ctx.shape = (H, W)
         ys = ys.view(B, K, D, -1)
         ys = ys[:, 0:2] + ys[:, 2:4].flip(dims=[-1]).view(B, 2, D, -1)
-        y = ys[:, 0] + ys[:, 1].view(B, -1, W, H).transpose(
-            dim0=2, dim1=3
-        ).contiguous().view(B, D, -1)
+        y = ys[:, 0] + ys[:, 1].view(B, -1, W, H).transpose(dim0=2, dim1=3).contiguous().view(
+            B, D, -1
+        )
         return y
 
     @staticmethod
@@ -172,9 +175,7 @@ def check_nan_inf(tag: str, x: torch.Tensor, enable=True):
 
 
 # fvcore flops =======================================
-def flops_selective_scan_fn(
-    B=1, L=256, D=768, N=16, with_D=True, with_Z=False, with_complex=False
-):
+def flops_selective_scan_fn(B=1, L=256, D=768, N=16, with_D=True, with_Z=False, with_complex=False):
     """
     u: r(B D L)
     delta: r(B D L)
@@ -240,13 +241,9 @@ def flops_selective_scan_ref(
 
     flops += get_flops_einsum([[B, D, L], [D, N]], "bdl,dn->bdln")
     if with_Group:
-        flops += get_flops_einsum(
-            [[B, D, L], [B, N, L], [B, D, L]], "bdl,bnl,bdl->bdln"
-        )
+        flops += get_flops_einsum([[B, D, L], [B, N, L], [B, D, L]], "bdl,bnl,bdl->bdln")
     else:
-        flops += get_flops_einsum(
-            [[B, D, L], [B, D, N, L], [B, D, L]], "bdl,bdnl,bdl->bdln"
-        )
+        flops += get_flops_einsum([[B, D, L], [B, D, N, L], [B, D, L]], "bdl,bdnl,bdl->bdln")
 
     in_for_flops = B * D * N
     if with_Group:
@@ -341,9 +338,7 @@ class SelectiveScanCore(torch.autograd.Function):
         oflex=True,
     ):
         ctx.delta_softplus = delta_softplus
-        out, x, *rest = selective_scan_cuda.fwd(
-            u, delta, A, B, C, D, delta_bias, delta_softplus, 1
-        )
+        out, x, *rest = selective_scan_cuda.fwd(u, delta, A, B, C, D, delta_bias, delta_softplus, 1)
         ctx.save_for_backward(u, delta, A, B, C, D, delta_bias, x)
         return out
 
@@ -502,9 +497,9 @@ def cross_selective_scan(
         Bs = Bs.to(torch.float)
         Cs = Cs.to(torch.float)
 
-    ys: torch.Tensor = selective_scan(
-        xs, dts, As, Bs, Cs, Ds, delta_bias, delta_softplus
-    ).view(B, K, -1, H, W)
+    ys: torch.Tensor = selective_scan(xs, dts, As, Bs, Cs, Ds, delta_bias, delta_softplus).view(
+        B, K, -1, H, W
+    )
 
     y: torch.Tensor = CrossMerge.apply(ys)
 
@@ -552,9 +547,7 @@ class Linear2d(nn.Linear):
         unexpected_keys,
         error_msgs,
     ):
-        state_dict[prefix + "weight"] = state_dict[prefix + "weight"].view(
-            self.weight.shape
-        )
+        state_dict[prefix + "weight"] = state_dict[prefix + "weight"].view(self.weight.shape)
         return super()._load_from_state_dict(
             state_dict,
             prefix,
@@ -569,9 +562,7 @@ class Linear2d(nn.Linear):
 class LayerNorm2d(nn.LayerNorm):
     def forward(self, x: torch.Tensor):
         x = x.permute(0, 2, 3, 1)
-        x = nn.functional.layer_norm(
-            x, self.normalized_shape, self.weight, self.bias, self.eps
-        )
+        x = nn.functional.layer_norm(x, self.normalized_shape, self.weight, self.bias, self.eps)
         x = x.permute(0, 3, 1, 2)
         return x
 
@@ -580,9 +571,7 @@ class PatchMerging2D(nn.Module):
     def __init__(self, dim, out_dim=-1, norm_layer=nn.LayerNorm):
         super().__init__()
         self.dim = dim
-        self.reduction = nn.Linear(
-            4 * dim, (2 * dim) if out_dim < 0 else out_dim, bias=False
-        )
+        self.reduction = nn.Linear(4 * dim, (2 * dim) if out_dim < 0 else out_dim, bias=False)
         self.norm = norm_layer(4 * dim)
 
     @staticmethod
@@ -817,9 +806,7 @@ class SS2D(nn.Module):
         del self.dt_projs
 
         # A, D =======================================
-        self.A_logs = self.A_log_init(
-            d_state, d_inner, copies=k_group, merge=True
-        )  # (K * D, N)
+        self.A_logs = self.A_log_init(d_state, d_inner, copies=k_group, merge=True)  # (K * D, N)
         self.Ds = self.D_init(d_inner, copies=k_group, merge=True)  # (K * D)
 
         # out proj =======================================
@@ -914,9 +901,7 @@ class SS2D(nn.Module):
                 force_fp32=(not self.disable_force32),
                 SelectiveScan=SelectiveScanCore,
             ),
-            v3=partial(
-                self.forward_corev2, force_fp32=False, SelectiveScan=SelectiveScanOflex
-            ),
+            v3=partial(self.forward_corev2, force_fp32=False, SelectiveScan=SelectiveScanOflex),
             v31d=partial(
                 self.forward_corev2,
                 force_fp32=False,
@@ -940,9 +925,7 @@ class SS2D(nn.Module):
                 CrossMerge=CrossMergeTriton,
             ),
             # ===============================
-            v1=partial(
-                self.forward_corev2, force_fp32=True, SelectiveScan=SelectiveScanOflex
-            ),
+            v1=partial(self.forward_corev2, force_fp32=True, SelectiveScan=SelectiveScanOflex),
         )
         self.forward_core = FORWARD_TYPES.get(forward_type, None)
         k_group = 4
@@ -1012,9 +995,7 @@ class SS2D(nn.Module):
             self.A_logs = nn.Parameter(
                 torch.randn((k_group * d_inner, d_state))
             )  # A == -A_logs.exp() < 0; # 0 < exp(A * dt) < 1
-            self.dt_projs_weight = nn.Parameter(
-                torch.randn((k_group, d_inner, dt_rank))
-            )
+            self.dt_projs_weight = nn.Parameter(torch.randn((k_group, d_inner, dt_rank)))
             self.dt_projs_bias = nn.Parameter(torch.randn((k_group, d_inner)))
         elif initialize in ["v2"]:
             # simple init dt_projs, A_logs, Ds
@@ -1022,9 +1003,7 @@ class SS2D(nn.Module):
             self.A_logs = nn.Parameter(
                 torch.zeros((k_group * d_inner, d_state))
             )  # A == -A_logs.exp() < 0; # 0 < exp(A * dt) < 1
-            self.dt_projs_weight = nn.Parameter(
-                0.1 * torch.rand((k_group, d_inner, dt_rank))
-            )
+            self.dt_projs_weight = nn.Parameter(0.1 * torch.rand((k_group, d_inner, dt_rank)))
             self.dt_projs_bias = nn.Parameter(0.1 * torch.rand((k_group, d_inner)))
 
     def __initxv__(
@@ -1279,9 +1258,7 @@ class SS2D(nn.Module):
             self.A_logs = nn.Parameter(
                 torch.randn((k_group * d_inner, d_state))
             )  # A == -A_logs.exp() < 0; # 0 < exp(A * dt) < 1
-            self.dt_projs_weight = nn.Parameter(
-                torch.randn((k_group, d_inner, dt_rank))
-            )
+            self.dt_projs_weight = nn.Parameter(torch.randn((k_group, d_inner, dt_rank)))
             self.dt_projs_bias = nn.Parameter(torch.randn((k_group, d_inner)))
         elif initialize in ["v2"]:
             # simple init dt_projs, A_logs, Ds
@@ -1289,9 +1266,7 @@ class SS2D(nn.Module):
             self.A_logs = nn.Parameter(
                 torch.zeros((k_group * d_inner, d_state))
             )  # A == -A_logs.exp() < 0; # 0 < exp(A * dt) < 1
-            self.dt_projs_weight = nn.Parameter(
-                0.1 * torch.rand((k_group, d_inner, dt_rank))
-            )
+            self.dt_projs_weight = nn.Parameter(0.1 * torch.rand((k_group, d_inner, dt_rank)))
             self.dt_projs_bias = nn.Parameter(0.1 * torch.rand((k_group, d_inner)))
 
         if forward_type.startswith("xv2"):
@@ -1321,8 +1296,7 @@ class SS2D(nn.Module):
 
         # Initialize dt bias so that F.softplus(dt_bias) is between dt_min and dt_max
         dt = torch.exp(
-            torch.rand(d_inner, **factory_kwargs)
-            * (math.log(dt_max) - math.log(dt_min))
+            torch.rand(d_inner, **factory_kwargs) * (math.log(dt_max) - math.log(dt_min))
             + math.log(dt_min)
         ).clamp(min=dt_init_floor)
         # Inverse of softplus: https://github.com/pytorch/pytorch/issues/72759
@@ -1469,9 +1443,7 @@ class SS2D(nn.Module):
         out = self.dropout(self.out_proj(y))
         return out
 
-    def forward_corev2(
-        self, x: torch.Tensor, cross_selective_scan=cross_selective_scan, **kwargs
-    ):
+    def forward_corev2(self, x: torch.Tensor, cross_selective_scan=cross_selective_scan, **kwargs):
         x_proj_weight = self.x_proj_weight
         dt_projs_weight = self.dt_projs_weight
         dt_projs_bias = self.dt_projs_bias
@@ -1548,9 +1520,7 @@ class SS2D(nn.Module):
         x = self.in_proj(x)
 
         if mode in ["xv1", "xv2", "xv3", "xv7"]:
-            print(
-                f"ERROR: MODE {mode} will be deleted in the future, use {mode}a instead."
-            )
+            print(f"ERROR: MODE {mode} will be deleted in the future, use {mode}a instead.")
 
         if mode in ["xv1"]:
             _us, dts, Bs, Cs = x.split(
@@ -1601,12 +1571,8 @@ class SS2D(nn.Module):
             _us = us
             us = CrossScanTriton.apply(us.contiguous()).view(B, 4, -1, L)
             dts = CrossScanTriton.apply(dts.contiguous()).view(B, 4, -1, L)
-            Bs = CrossScanTriton1b1.apply(Bs.view(B, 4, -1, H, W).contiguous()).view(
-                B, 4, -1, L
-            )
-            Cs = CrossScanTriton1b1.apply(Cs.view(B, 4, -1, H, W).contiguous()).view(
-                B, 4, -1, L
-            )
+            Bs = CrossScanTriton1b1.apply(Bs.view(B, 4, -1, H, W).contiguous()).view(B, 4, -1, L)
+            Cs = CrossScanTriton1b1.apply(Cs.view(B, 4, -1, H, W).contiguous()).view(B, 4, -1, L)
             dts = F.conv1d(
                 dts.contiguous().view(B, -1, L),
                 dt_projs_weight.view(K * self.d_inner, self.dt_rank, 1),
@@ -1622,12 +1588,8 @@ class SS2D(nn.Module):
             _us = us
             us = CrossScanTriton.apply(us.contiguous()).view(B, 4, -1, L)
             dts = CrossScanTriton.apply(dts.contiguous()).view(B, 4, -1, L)
-            Bs = CrossScanTriton1b1.apply(Bs.view(B, 4, -1, H, W).contiguous()).view(
-                B, 4, -1, L
-            )
-            Cs = CrossScanTriton1b1.apply(Cs.view(B, 4, -1, H, W).contiguous()).view(
-                B, 4, -1, L
-            )
+            Bs = CrossScanTriton1b1.apply(Bs.view(B, 4, -1, H, W).contiguous()).view(B, 4, -1, L)
+            Cs = CrossScanTriton1b1.apply(Cs.view(B, 4, -1, H, W).contiguous()).view(B, 4, -1, L)
             us, dts = us.contiguous().view(B, -1, L), dts.contiguous().view(B, -1, L)
         elif mode in ["xv3a"]:
             # us, dtBCs = x.split([self.d_inner, 4 * self.dt_rank + 4 * self.d_state + 4 * self.d_state], dim=1)
@@ -1644,15 +1606,9 @@ class SS2D(nn.Module):
             )
             _us = us
             us = CrossScanTriton.apply(us.contiguous()).view(B, 4, -1, L)
-            dts = CrossScanTriton1b1.apply(dts.view(B, 4, -1, H, W).contiguous()).view(
-                B, 4, -1, L
-            )
-            Bs = CrossScanTriton1b1.apply(Bs.view(B, 4, -1, H, W).contiguous()).view(
-                B, 4, -1, L
-            )
-            Cs = CrossScanTriton1b1.apply(Cs.view(B, 4, -1, H, W).contiguous()).view(
-                B, 4, -1, L
-            )
+            dts = CrossScanTriton1b1.apply(dts.view(B, 4, -1, H, W).contiguous()).view(B, 4, -1, L)
+            Bs = CrossScanTriton1b1.apply(Bs.view(B, 4, -1, H, W).contiguous()).view(B, 4, -1, L)
+            Cs = CrossScanTriton1b1.apply(Cs.view(B, 4, -1, H, W).contiguous()).view(B, 4, -1, L)
             dts = F.conv1d(
                 dts.contiguous().view(B, -1, L),
                 dt_projs_weight.view(K * self.d_inner, self.dt_rank, 1),
@@ -1672,9 +1628,9 @@ class SS2D(nn.Module):
         if force_fp32:
             us, dts, Bs, Cs = to_fp32(us, dts, Bs, Cs)
 
-        ys: torch.Tensor = selective_scan(
-            us, dts, As, Bs, Cs, Ds, delta_bias, delta_softplus
-        ).view(B, K, -1, H, W)
+        ys: torch.Tensor = selective_scan(us, dts, As, Bs, Cs, Ds, delta_bias, delta_softplus).view(
+            B, K, -1, H, W
+        )
 
         y: torch.Tensor = CrossMergeTriton.apply(ys)
         y = y.view(B, -1, H, W)
@@ -1973,9 +1929,7 @@ class VSSM(nn.Module):
         self.classifier = nn.Sequential(
             OrderedDict(
                 norm=norm_layer(self.num_features),  # B,H,W,C
-                permute=(
-                    Permute(0, 3, 1, 2) if not self.channel_first else nn.Identity()
-                ),
+                permute=(Permute(0, 3, 1, 2) if not self.channel_first else nn.Identity()),
                 avgpool=nn.AdaptiveAvgPool2d(1),
                 flatten=nn.Flatten(1),
                 head=nn.Linear(self.num_features, num_classes),
@@ -2066,17 +2020,9 @@ class VSSM(nn.Module):
         assert patch_size == 4
         return nn.Sequential(
             nn.Conv2d(in_chans, embed_dim // 2, kernel_size=3, stride=2, padding=1),
-            (
-                nn.Identity()
-                if (channel_first or (not patch_norm))
-                else Permute(0, 2, 3, 1)
-            ),
+            (nn.Identity() if (channel_first or (not patch_norm)) else Permute(0, 2, 3, 1)),
             (norm_layer(embed_dim // 2) if patch_norm else nn.Identity()),
-            (
-                nn.Identity()
-                if (channel_first or (not patch_norm))
-                else Permute(0, 3, 1, 2)
-            ),
+            (nn.Identity() if (channel_first or (not patch_norm)) else Permute(0, 3, 1, 2)),
             nn.GELU(),
             nn.Conv2d(embed_dim // 2, embed_dim, kernel_size=3, stride=2, padding=1),
             (nn.Identity() if channel_first else Permute(0, 2, 3, 1)),
@@ -2084,9 +2030,7 @@ class VSSM(nn.Module):
         )
 
     @staticmethod
-    def _make_downsample(
-        dim=96, out_dim=192, norm_layer=nn.LayerNorm, channel_first=False
-    ):
+    def _make_downsample(dim=96, out_dim=192, norm_layer=nn.LayerNorm, channel_first=False):
         # if channel first, then Norm and Output are both channel_first
         return nn.Sequential(
             (nn.Identity() if channel_first else Permute(0, 3, 1, 2)),
@@ -2096,9 +2040,7 @@ class VSSM(nn.Module):
         )
 
     @staticmethod
-    def _make_upsample(
-        dim=96, out_dim=192, norm_layer=nn.LayerNorm, channel_first=False
-    ):
+    def _make_upsample(dim=96, out_dim=192, norm_layer=nn.LayerNorm, channel_first=False):
         # if channel first, then Norm and Output are both channel_first
         return nn.Sequential(
             (nn.Identity() if channel_first else Permute(0, 3, 1, 2)),
@@ -2108,9 +2050,7 @@ class VSSM(nn.Module):
         )
 
     @staticmethod
-    def _make_downsample_v3(
-        dim=96, out_dim=192, norm_layer=nn.LayerNorm, channel_first=False
-    ):
+    def _make_downsample_v3(dim=96, out_dim=192, norm_layer=nn.LayerNorm, channel_first=False):
         # if channel first, then Norm and Output are both channel_first
         return nn.Sequential(
             (nn.Identity() if channel_first else Permute(0, 3, 1, 2)),
@@ -2210,9 +2150,7 @@ class VSSM(nn.Module):
 
         input = torch.randn((1, *shape), device=next(model.parameters()).device)
         params = parameter_count(model)[""]
-        Gflops, unsupported = flop_count(
-            model=model, inputs=(input,), supported_ops=supported_ops
-        )
+        Gflops, unsupported = flop_count(model=model, inputs=(input,), supported_ops=supported_ops)
 
         del model, input
         return sum(Gflops.values()) * 1e9
@@ -2257,12 +2195,8 @@ class VSSM(nn.Module):
         change_name("patch_embed.norm", "patch_embed.2")
         for i in range(100):
             for j in range(100):
-                change_name(
-                    f"layers.{i}.blocks.{j}.ln_1", f"layers.{i}.blocks.{j}.norm"
-                )
-                change_name(
-                    f"layers.{i}.blocks.{j}.self_attention", f"layers.{i}.blocks.{j}.op"
-                )
+                change_name(f"layers.{i}.blocks.{j}.ln_1", f"layers.{i}.blocks.{j}.norm")
+                change_name(f"layers.{i}.blocks.{j}.self_attention", f"layers.{i}.blocks.{j}.op")
         change_name("norm", "classifier.norm")
         change_name("head", "classifier.head")
 
@@ -2279,9 +2213,7 @@ class VSSM(nn.Module):
 
 # compatible with openmmlab
 class Backbone_VSSM(VSSM):
-    def __init__(
-        self, out_indices=(0, 1, 2, 3), pretrained=None, norm_layer="ln", **kwargs
-    ):
+    def __init__(self, out_indices=(0, 1, 2, 3), pretrained=None, norm_layer="ln", **kwargs):
         kwargs.update(norm_layer=norm_layer)
         super().__init__(**kwargs)
         self.channel_first = norm_layer.lower() in ["bn", "ln2d"]

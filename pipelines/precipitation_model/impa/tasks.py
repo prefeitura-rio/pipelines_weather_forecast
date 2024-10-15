@@ -66,9 +66,7 @@ def download_files_from_s3(s3, relevant_dts, days_of_year, years):
     for i in range(4):
         day_of_year = days_of_year[i]
         year = years[i]
-        print(
-            f"Downloading the latest data for {relevant_dts[i].strftime('%Y-%m-%d')}..."
-        )
+        print(f"Downloading the latest data for {relevant_dts[i].strftime('%Y-%m-%d')}...")
         for hour in hours:
             download_file_from_s3(s3, "ABI-L2-RRQPEF", year, day_of_year, hour)
             download_file_from_s3(s3, "ABI-L2-ACHAF", year, day_of_year, hour)
@@ -78,12 +76,8 @@ def download_files_from_s3(s3, relevant_dts, days_of_year, years):
 def process_data(year, day_of_year, num_workers, dt, cuda):
     # process data
     log("Processing satellite data...")
-    process_satellite(
-        year=year, day=day_of_year, num_workers=num_workers, product="ABI-L2-RRQPEF"
-    )
-    process_satellite(
-        year=year, day=day_of_year, num_workers=num_workers, product="ABI-L2-ACHAF"
-    )
+    process_satellite(year=year, day=day_of_year, num_workers=num_workers, product="ABI-L2-RRQPEF")
+    process_satellite(year=year, day=day_of_year, num_workers=num_workers, product="ABI-L2-ACHAF")
     build_dataframe(overwrite=True, num_workers=num_workers, dt=dt)
 
 
