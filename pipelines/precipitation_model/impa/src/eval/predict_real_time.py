@@ -5,6 +5,8 @@ import json
 import pathlib
 from argparse import ArgumentParser
 
+from prefeitura_rio.pipelines_utils.logging import log
+
 from pipelines.precipitation_model.impa.src.utils.eval_utils import predict_dict
 from pipelines.precipitation_model.impa.src.utils.general_utils import print_warning
 
@@ -49,6 +51,9 @@ def predict(num_workers=8, cuda=False):
         model_file = model_path / info["model_file"]
 
         output_predict_filepaths = [f"predictions/{model_name}.hdf"]
+        log(f"\nmodel_path: {model_path}")
+        log(f"model_file: {model_file}")
+        log(f"output_predict_filepaths: {output_predict_filepaths}\n")
 
         # Standard arguments
         args = {
@@ -79,6 +84,7 @@ def predict(num_workers=8, cuda=False):
         ##################################
         del args["model_name"]
         predict_func(args, params)
+    return output_predict_filepaths
 
 
 if __name__ == "__main__":

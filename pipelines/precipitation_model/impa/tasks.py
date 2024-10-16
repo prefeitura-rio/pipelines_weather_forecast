@@ -85,7 +85,7 @@ def process_data(year, day_of_year, num_workers, dt):
         num_workers (int): The number of workers to use for parallel processing.
         dt (datetime.datetime): The datetime object representing the date to process.
 
-    This function logs the processing activity, processes satellite data for specified 
+    This function logs the processing activity, processes satellite data for specified
     products using `process_satellite`, and then builds a dataframe with `build_dataframe`.
     """
     log("Processing satellite data...")
@@ -99,4 +99,4 @@ def get_predictions(num_workers, cuda):
     """
     get predictions
     """
-    predict(num_workers=num_workers, cuda=cuda)
+    return predict(num_workers=num_workers, cuda=cuda)

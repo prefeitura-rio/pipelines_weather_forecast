@@ -28,7 +28,10 @@ from pipelines.precipitation_model.impa.tasks import (  # pylint: disable=E0611,
     get_start_datetime,
     process_data,
 )
-
+from pipelines.tasks import (  # pylint: disable=E0611, E0401
+    get_storage_destination,
+    upload_files_to_storage,
+)
 # from prefeitura_rio.pipelines_utils.tasks import (  # pylint: disable=E0611, E0401
 #     create_table_and_upload_to_gcs,
 #     get_now_datetime,
@@ -66,15 +69,15 @@ with Flow(
         "start_datetime",
         default=None,
         required=False,
-        #description="Datetime in YYYY-MM-dd HH:mm:ss format, UTC timezone",
+        # description="Datetime in YYYY-MM-dd HH:mm:ss format, UTC timezone",
     )
     num_workers = Parameter(
         "num_workers",
         default=8,
         required=False,
-        #description="Number of workers to use for parallel processing",
+        # description="Number of workers to use for parallel processing",
     )
-    cuda = Parameter("cuda", default=False, required=False)  #, description="Use CUDA for prediction"
+    cuda = Parameter("cuda", default=False, required=False)  # description="UseCUDA for prediction"
 
     # Parameters for saving data on GCP
     materialize_after_dump = Parameter("materialize_after_dump", default=False, required=False)
@@ -96,9 +99,19 @@ with Flow(
     download_files_from_s3(relevant_dts, days_of_year, years)
 
     # Process and predict for the latest day
-    process_data(years[0], days_of_year[0], num_workers, dt, cuda)
+    process_data(years[0], days_of_year[0], num_workers, dt)
 
-    get_predictions(num_workers, cuda)
+    output_predict_filepaths = get_predictions(num_workers, cuda)
+
+    destination_folder_wb = get_storage_destination(
+        path="cor-clima-imagens/previsao_chuva/impa/modelos"
+    )
+    upload_files_to_storage(
+        project="datario",
+        bucket_name="datario-public",
+        destination_folder=destination_folder_wb,
+        source_file_names=output_predict_filepaths,
+    )
 
     # image_path = create_image(geolocalized_prediction_datasets)
     # # Save prediction on file
