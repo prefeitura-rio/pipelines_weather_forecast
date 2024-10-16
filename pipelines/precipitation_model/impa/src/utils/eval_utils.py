@@ -8,11 +8,11 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 from PIL import Image
-from src.eval.metrics.metrics import metrics_dict
-from src.models.context_LDM_concat_new.predict import main as latent_diffusion_predict
-from src.models.mamba.predict import main as mamba_predict
-from src.models.predict import main as general_predict
-from src.models.pysteps_LK.predict import main as pysteps_predict
+from pipelines.precipitation_model.impa.src.eval.metrics.metrics import metrics_dict
+from pipelines.precipitation_model.impa.src.models.context_LDM_concat_new.predict import main as latent_diffusion_predict
+from pipelines.precipitation_model.impa.src.models.mamba.predict import main as mamba_predict
+from pipelines.precipitation_model.impa.src.models.predict import main as general_predict
+from pipelines.precipitation_model.impa.src.models.pysteps_LK.predict import main as pysteps_predict
 
 MAP_CENTER = {"lat": -22.914550816555533, "lon": -43.502443050594596}
 ZOOM = 8

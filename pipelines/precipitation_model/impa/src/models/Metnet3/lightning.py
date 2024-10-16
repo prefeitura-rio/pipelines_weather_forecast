@@ -3,9 +3,9 @@
 
 import torch
 import torch.nn as nn
-from src.models.lightning_module import LModule
-from src.models.Metnet3.Max_Vit.Max_Vit import MaxViT
-from src.models.Metnet3.metnet3_pytorch import (
+from pipelines.precipitation_model.impa.src.models.lightning_module import LModule
+from pipelines.precipitation_model.impa.src.models.Metnet3.Max_Vit.Max_Vit import MaxViT
+from pipelines.precipitation_model.impa.src.models.Metnet3.metnet3_pytorch import (
     CenterCrop,
     CenterPad,
     Downsample2x,

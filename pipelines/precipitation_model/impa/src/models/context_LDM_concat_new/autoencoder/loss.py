@@ -3,7 +3,7 @@
 
 import torch
 import torch.nn.functional as F
-from src.models.context_LDM_concat_new.autoencoder.discriminator import (
+from pipelines.precipitation_model.impa.src.models.context_LDM_concat_new.autoencoder.discriminator import (
     NLayerDiscriminator,
     weights_init,
 )

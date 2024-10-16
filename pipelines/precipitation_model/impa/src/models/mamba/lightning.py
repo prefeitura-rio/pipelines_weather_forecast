@@ -3,8 +3,8 @@
 import torch
 from einops import rearrange
 from pytorch_lightning import LightningModule
-from src.models.mamba.vmamba import VSSM
-from src.utils.data_utils import data_modification_options
+from pipelines.precipitation_model.impa.src.models.mamba.vmamba import VSSM
+from pipelines.precipitation_model.impa.src.utils.data_utils import data_modification_options
 
 
 class Vmamba_lightning(LightningModule):

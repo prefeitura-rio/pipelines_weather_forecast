@@ -5,7 +5,7 @@ from inspect import isfunction
 import torch
 import torch.nn.functional as F
 from einops import rearrange, repeat
-from src.models.context_LDM_concat_new.utils import checkpoint
+from pipelines.precipitation_model.impa.src.models.context_LDM_concat_new.utils import checkpoint
 from torch import einsum, nn
 
 

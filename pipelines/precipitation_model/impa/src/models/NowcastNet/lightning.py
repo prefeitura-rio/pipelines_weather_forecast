@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import torch
-from src.models.gan.gan_unet.model import NowcasnetGenerator, TemporalDiscriminator
-from src.models.lightning_module import LModule
+from pipelines.precipitation_model.impa.src.models.gan.gan_unet.model import NowcasnetGenerator, TemporalDiscriminator
+from pipelines.precipitation_model.impa.src.models.lightning_module import LModule
 
 
 # define the LightningModule

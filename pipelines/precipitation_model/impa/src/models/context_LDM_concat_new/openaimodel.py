@@ -8,8 +8,8 @@ import numpy as np
 import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
-from src.models.context_LDM_concat_new.attention import SpatialTransformer
-from src.models.context_LDM_concat_new.utils import (
+from pipelines.precipitation_model.impa.src.models.context_LDM_concat_new.attention import SpatialTransformer
+from pipelines.precipitation_model.impa.src.models.context_LDM_concat_new.utils import (
     avg_pool_nd,
     checkpoint,
     conv_nd,

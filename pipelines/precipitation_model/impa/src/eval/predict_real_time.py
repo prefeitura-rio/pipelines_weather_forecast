@@ -5,8 +5,8 @@ import json
 import pathlib
 from argparse import ArgumentParser
 
-from src.utils.eval_utils import predict_dict
-from src.utils.general_utils import print_warning
+from pipelines.precipitation_model.impa.src.utils.eval_utils import predict_dict
+from pipelines.precipitation_model.impa.src.utils.general_utils import print_warning
 
 
 def predict(num_workers=8, cuda=False):

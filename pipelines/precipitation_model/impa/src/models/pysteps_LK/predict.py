@@ -7,9 +7,9 @@ import torch
 from joblib import Parallel, delayed
 from pysteps import motion, nowcasts
 from pysteps.utils import conversion, transformation
-from src.data.HDFDatasetLocations import HDFDatasetLocations
-from src.utils.general_utils import print_ok
-from src.utils.hdf_utils import array_to_pred_hdf
+from pipelines.precipitation_model.impa.src.data.HDFDatasetLocations import HDFDatasetLocations
+from pipelines.precipitation_model.impa.src.utils.general_utils import print_ok
+from pipelines.precipitation_model.impa.src.utils.hdf_utils import array_to_pred_hdf
 
 
 def r_to_z(value: int, a_z: float = 223.0, b_z: float = 1.56):

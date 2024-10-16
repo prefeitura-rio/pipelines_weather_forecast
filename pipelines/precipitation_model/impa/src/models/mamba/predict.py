@@ -4,10 +4,10 @@ from functools import partial
 
 import pytorch_lightning as pl
 import torch
-from src.data.HDFDatasetLocations import HDFDatasetLocations
-from src.models.mamba.lightning import Vmamba_lightning
-from src.utils.general_utils import print_ok
-from src.utils.hdf_utils import array_to_pred_hdf
+from pipelines.precipitation_model.impa.src.data.HDFDatasetLocations import HDFDatasetLocations
+from pipelines.precipitation_model.impa.src.models.mamba.lightning import Vmamba_lightning
+from pipelines.precipitation_model.impa.src.utils.general_utils import print_ok
+from pipelines.precipitation_model.impa.src.utils.hdf_utils import array_to_pred_hdf
 from torch.utils.data import DataLoader
 
 MEAN = 0.08

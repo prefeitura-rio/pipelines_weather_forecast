@@ -11,9 +11,9 @@ from botocore import UNSIGNED
 from botocore.config import Config
 from prefect import task
 from prefeitura_rio.pipelines_utils.logging import log
-from src.data.process.build_dataframe import build_dataframe
-from src.data.process.process_satellite import process_satellite
-from src.eval.predict_real_time import predict
+from pipelines.precipitation_model.impa.src.data.process.build_dataframe import build_dataframe
+from pipelines.precipitation_model.impa.src.data.process.process_satellite import process_satellite
+from pipelines.precipitation_model.impa.src.eval.predict_real_time import predict
 
 from pipelines.precipitation_model.impa.utils import download_file_from_s3
 
@@ -75,7 +75,19 @@ def download_files_from_s3(relevant_dts, days_of_year, years):
 
 @task
 def process_data(year, day_of_year, num_workers, dt):
-    # process data
+    """
+    Processes satellite data for a given year and day of the year using the specified
+    number of workers and datetime.
+
+    Args:
+        year (int): The year of the data to be processed.
+        day_of_year (int): The day of the year for which to process the data.
+        num_workers (int): The number of workers to use for parallel processing.
+        dt (datetime.datetime): The datetime object representing the date to process.
+
+    This function logs the processing activity, processes satellite data for specified 
+    products using `process_satellite`, and then builds a dataframe with `build_dataframe`.
+    """
     log("Processing satellite data...")
     process_satellite(year=year, day=day_of_year, num_workers=num_workers, product="ABI-L2-RRQPEF")
     process_satellite(year=year, day=day_of_year, num_workers=num_workers, product="ABI-L2-ACHAF")

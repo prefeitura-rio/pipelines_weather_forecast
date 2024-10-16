@@ -9,9 +9,9 @@ import h5py
 import numpy as np
 import pandas as pd
 import tqdm
-from src.eval.metrics.metrics import metrics_dict
-from src.utils.general_utils import print_warning
-from src.utils.hdf_utils import get_dataset_keys
+from pipelines.precipitation_model.impa.src.eval.metrics.metrics import metrics_dict
+from pipelines.precipitation_model.impa.src.utils.general_utils import print_warning
+from pipelines.precipitation_model.impa.src.utils.hdf_utils import get_dataset_keys
 
 parser = ArgumentParser()
 parser.add_argument("--num_workers", type=int, default=16)

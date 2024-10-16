@@ -10,9 +10,9 @@ import boto3
 from botocore import UNSIGNED
 from botocore.config import Config
 from joblib import Parallel, delayed
-from src.data.process.build_dataframe import build_dataframe
-from src.data.process.process_satellite import process_satellite
-from src.eval.predict_real_time import predict
+from pipelines.precipitation_model.impa.src.data.process.build_dataframe import build_dataframe
+from pipelines.precipitation_model.impa.src.data.process.process_satellite import process_satellite
+from pipelines.precipitation_model.impa.src.eval.predict_real_time import predict
 
 # from itertools import product
 

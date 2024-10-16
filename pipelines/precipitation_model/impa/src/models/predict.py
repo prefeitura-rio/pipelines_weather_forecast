@@ -7,12 +7,12 @@ import joblib
 import pytorch_lightning as pl
 import torch
 from einops import rearrange
-from src.data.HDFDatasetLocations import HDFDatasetLocations
-from src.data.PredHDFDatasetLocations import PredHDFDatasetLocations
-from src.utils.data_utils import sat_dataframe
-from src.utils.general_utils import print_ok
-from src.utils.hdf_utils import array_to_pred_hdf
-from src.utils.models_utils import get_ds, options_pretrained
+from pipelines.precipitation_model.impa.src.data.HDFDatasetLocations import HDFDatasetLocations
+from pipelines.precipitation_model.impa.src.data.PredHDFDatasetLocations import PredHDFDatasetLocations
+from pipelines.precipitation_model.impa.src.utils.data_utils import sat_dataframe
+from pipelines.precipitation_model.impa.src.utils.general_utils import print_ok
+from pipelines.precipitation_model.impa.src.utils.hdf_utils import array_to_pred_hdf
+from pipelines.precipitation_model.impa.src.utils.models_utils import get_ds, options_pretrained
 from torch.utils.data import DataLoader
 
 MEAN_LOG_SAT = 0.08
