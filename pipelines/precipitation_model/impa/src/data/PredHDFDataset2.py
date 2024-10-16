@@ -60,11 +60,11 @@ class PredHDFDataset2(data.Dataset):
         split = self.filepath.stem
         if ckpt_file is not None:
             self.predict_filepath = Path(
-                f"models/{model}/predictions/{dataset}/predict_{split}-ckpt={ckpt_file.replace('.ckpt','')}.hdf"
+                f"pipelines/precipitation_model/impa/src/models/{model}/predictions/{dataset}/predict_{split}-ckpt={ckpt_file.replace('.ckpt','')}.hdf"
             )
         else:
             self.predict_filepath = Path(
-                f"models/{model}/predictions/{dataset}/predict_{split}.hdf"
+                f"pipelines/precipitation_model/impa/src/models/{model}/predictions/{dataset}/predict_{split}.hdf"
             )
         self.n_predictions = n_predictions
         self.n_before = n_before

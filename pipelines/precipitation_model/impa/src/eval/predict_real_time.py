@@ -14,7 +14,7 @@ from pipelines.precipitation_model.impa.src.utils.general_utils import print_war
 def predict(num_workers=8, cuda=False):
     accelerator = "gpu" if cuda else "cpu"
 
-    config = pathlib.Path("src/eval/real_time_config.json")
+    config = pathlib.Path("pipelines/precipitation_model/impa/src/eval/real_time_config.json")
     with open(config, "r") as json_file:
         specs_dict = json.load(json_file)
 
@@ -47,7 +47,7 @@ def predict(num_workers=8, cuda=False):
                 predict_func(args)
             continue
 
-        model_path = pathlib.Path(f"models/{model_name}/")
+        model_path = pathlib.Path(f"pipelines/precipitation_model/impa/src/models/{model_name}/")
         model_file = model_path / info["model_file"]
 
         output_predict_filepaths = [f"predictions/{model_name}.hdf"]

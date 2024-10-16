@@ -64,7 +64,7 @@ If it is desired to make predictions for just some of the models, it is possible
 
 ### Evaluation
 
-Scripts for evaluating model predictions for the last three hours are also made available. Once the predictions are made through the main script, you may call `python src/eval/viz/plot-real_time.py [--num_workers]` to produce plots or `python src/eval/metrics/calc-metrics.py [--num_workers]` to calculate metrics.
+Scripts for evaluating model predictions for the last three hours are also made available. Once the predictions are made through the main script, you may call `python src/eval/viz/plot_real_time.py [--num_workers]` to produce plots or `python src/eval/metrics/calc-metrics.py [--num_workers]` to calculate metrics.
 
 
 ## File structure

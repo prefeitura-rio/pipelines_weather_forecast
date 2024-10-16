@@ -33,7 +33,7 @@ def inv_transform(X, mean, std, std_fac):
 
 def main(args_dict, parameters_dict):
     autoencoder_path = (
-        "models/context_LDM_VAE/"
+        "pipelines/precipitation_model/impa/src/models/context_LDM_VAE/"
         + args_dict["vae_hash"]
         + "/train/"
         + args_dict["dataframe"]

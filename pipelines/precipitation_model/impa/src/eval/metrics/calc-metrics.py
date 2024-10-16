@@ -22,7 +22,7 @@ NLAGS = 18
 METRICS_NAMES = ["log-MAE", "log-MSE", "CSI1", "CSI8"]
 order = np.array([[1, 1, -1, -1]]).reshape(1, -1)
 
-config = pathlib.Path("src/eval/real_time_config.json")
+config = pathlib.Path("pipelines/precipitation_model/impa/src/eval/real_time_config.json")
 with open(config, "r") as json_file:
     specs_dict = json.load(json_file)
 
@@ -119,6 +119,6 @@ with Pool(min(NLAGS, args.num_workers)) as pool:
 
 # save dataframe
 df = pd.concat(dfs)
-metrics_filepath = pathlib.Path("eval/metrics/metrics.csv")
+metrics_filepath = pathlib.Path("pipelines/precipitation_model/impa/src/eval/metrics/metrics.csv")
 metrics_filepath.parent.mkdir(parents=True, exist_ok=True)
 df.to_csv(metrics_filepath, index=False, na_rep="nan")
