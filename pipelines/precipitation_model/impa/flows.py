@@ -66,15 +66,15 @@ with Flow(
         "start_datetime",
         default=None,
         required=False,
-        description="Datetime in YYYY-MM-dd HH:mm:ss format, UTC timezone",
+        #description="Datetime in YYYY-MM-dd HH:mm:ss format, UTC timezone",
     )
     num_workers = Parameter(
         "num_workers",
         default=8,
         required=False,
-        description="Number of workers to use for parallel processing",
+        #description="Number of workers to use for parallel processing",
     )
-    cuda = Parameter("cuda", default=False, required=False, description="Use CUDA for prediction")
+    cuda = Parameter("cuda", default=False, required=False)  #, description="Use CUDA for prediction"
 
     # Parameters for saving data on GCP
     materialize_after_dump = Parameter("materialize_after_dump", default=False, required=False)
