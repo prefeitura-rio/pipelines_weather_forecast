@@ -7,6 +7,7 @@ Plot reak time predictions
 import datetime
 import json
 import pathlib
+
 # from argparse import ArgumentParser
 from multiprocessing.pool import Pool
 
@@ -15,7 +16,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import tqdm
-
 from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.precipitation_model.impa.src.eval.metrics.metrics import metrics_dict
@@ -79,7 +79,6 @@ def task_lag(lag: int):
             continue
         preds.append(pred_hdf)
         model_names.append(model_name)
-
 
     future_dt = last_obs_dt + datetime.timedelta(minutes=lag * timestep)
     past_dt = past_obs_dt + datetime.timedelta(minutes=lag * timestep)
@@ -247,6 +246,7 @@ def task_lag(lag: int):
 # with Pool(min(NLAGS, args.num_workers)) as pool:
 #     list(tqdm.tqdm(pool.imap(task_lag, list(range(1, NLAGS + 1))), total=NLAGS))
 
+
 def create_images(num_workers=6, NLAGS=18):
     """
     Executa uma função em paralelo com multiprocessing.Pool e exibe uma barra de progresso.
@@ -266,7 +266,7 @@ def create_images(num_workers=6, NLAGS=18):
     output_filepath = pathlib.Path("eval/viz/plot-real_time/")
 
     if output_filepath.exists() and output_filepath.is_dir():
-        files = list(output_filepath.glob('*'))
+        files = list(output_filepath.glob("*"))
         log(f"Prediction images files saved as: {files}")
     else:
         print(f"Folder {output_filepath} does not exist.")
