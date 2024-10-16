@@ -1,8 +1,13 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=invalid-name, too-many-branches, too-many-statements, line-too-long, import-error
+# pylint: disable=too-many-locals, unspecified-encoding
+"""
+Plot reak time predictions
+"""
 import datetime
 import json
 import pathlib
-from argparse import ArgumentParser
+# from argparse import ArgumentParser
 from multiprocessing.pool import Pool
 
 import h5py
@@ -11,60 +16,71 @@ import numpy as np
 import pandas as pd
 import tqdm
 
+from prefeitura_rio.pipelines_utils.logging import log
+
 from pipelines.precipitation_model.impa.src.eval.metrics.metrics import metrics_dict
 from pipelines.precipitation_model.impa.src.utils.eval_utils import get_img
 from pipelines.precipitation_model.impa.src.utils.general_utils import print_warning
 from pipelines.precipitation_model.impa.src.utils.hdf_utils import get_dataset_keys
 
-parser = ArgumentParser()
-parser.add_argument("--num_workers", type=int, default=16)
-args = parser.parse_args()
-
-NLAGS = 18
-BG_COLOR = "white"
-METRICS_NAMES = ["log-MAE", "log-MSE", "CSI1", "CSI8"]
-order = np.array([[1, 1, -1, -1]]).reshape(1, -1)
-
-HEIGHT = 500
-WIDTH = 500
-
-config = pathlib.Path("src/eval/real_time_config.json")
-with open(config, "r") as json_file:
-    specs_dict = json.load(json_file)
-
-ground_truth_df = h5py.File(
-    "data/dataframes/SAT-CORRECTED-ABI-L2-RRQPEF-real_time-rio_de_janeiro/test.hdf"
-)
-latlons = np.load(f"data/dataframe_grids/rio_de_janeiro-res=2km-256x256.npy")
-feature = ground_truth_df["what"].attrs["feature"]
-timestep = int(ground_truth_df["what"].attrs["timestep"])
-
-keys = get_dataset_keys(ground_truth_df)
-last_obs = keys[-1]
-past_obs = keys[-(NLAGS + 1)]
-last_obs_dt = pd.to_datetime(last_obs)
-past_obs_dt = pd.to_datetime(past_obs)
-
-preds = [ground_truth_df]
-model_names = ["Ground truth"]
-for model_name in specs_dict["models"].keys():
-    predictions = f"predictions/{model_name}.hdf"
-    if (
-        "plot" in specs_dict["models"][model_name].keys()
-        and specs_dict["models"][model_name]["plot"] == False
-    ):
-        continue
-    try:
-        pred_hdf = h5py.File(predictions)
-    except FileNotFoundError:
-        print_warning(f"File {predictions} not found. Skipping model {model_name}...")
-        continue
-    preds.append(pred_hdf)
-    model_names.append(model_name)
-
+# parser = ArgumentParser()
+# parser.add_argument("--num_workers", type=int, default=16)
+# args = parser.parse_args()
 
 # flake8: noqa: C901
 def task_lag(lag: int):
+    """
+    Generate a plot for the given lag in the future/past.
+
+    Parameters
+    ----------
+    lag: int
+        The number of time steps in the future/past to plot.
+    """
+    NLAGS = 18
+    BG_COLOR = "white"
+    METRICS_NAMES = ["log-MAE", "log-MSE", "CSI1", "CSI8"]
+    order = np.array([[1, 1, -1, -1]]).reshape(1, -1)
+
+    HEIGHT = 500
+    WIDTH = 500
+
+    config = pathlib.Path("src/eval/real_time_config.json")
+    with open(config, "r") as json_file:
+        specs_dict = json.load(json_file)
+
+    ground_truth_df = h5py.File(
+        "data/dataframes/SAT-CORRECTED-ABI-L2-RRQPEF-real_time-rio_de_janeiro/test.hdf"
+    )
+    latlons = np.load("data/dataframe_grids/rio_de_janeiro-res=2km-256x256.npy")
+    feature = ground_truth_df["what"].attrs["feature"]
+    timestep = int(ground_truth_df["what"].attrs["timestep"])
+
+    keys = get_dataset_keys(ground_truth_df)
+    last_obs = keys[-1]
+    past_obs = keys[-(NLAGS + 1)]
+    last_obs_dt = pd.to_datetime(last_obs)
+    past_obs_dt = pd.to_datetime(past_obs)
+
+    preds = [ground_truth_df]
+    model_names = ["Ground truth"]
+    for model_name in specs_dict["models"].keys():
+        predictions = f"predictions/{model_name}.hdf"
+        # pylint: disable=C0121
+        if (
+            "plot" in specs_dict["models"][model_name].keys()
+            and specs_dict["models"][model_name]["plot"] == False
+        ):
+            continue
+        try:
+            pred_hdf = h5py.File(predictions)
+        except FileNotFoundError:
+            print_warning(f"File {predictions} not found. Skipping model {model_name}...")
+            continue
+        preds.append(pred_hdf)
+        model_names.append(model_name)
+
+
     future_dt = last_obs_dt + datetime.timedelta(minutes=lag * timestep)
     past_dt = past_obs_dt + datetime.timedelta(minutes=lag * timestep)
     output_filepath = pathlib.Path(f"eval/viz/plot-real_time/lag={lag}.png")
@@ -150,7 +166,10 @@ def task_lag(lag: int):
             pass
     best_metrics = np.argmin(metrics_array * order, axis=0)
     worst_metrics = np.argmax(metrics_array * order, axis=0)
-    pathlib.Path(output_filepath).parents[0].mkdir(parents=True, exist_ok=True)
+    # pathlib.Path(output_filepath).parents[0].mkdir(parents=True, exist_ok=True)
+    output_filepath = pathlib.Path(output_filepath)
+    output_filepath.parent.mkdir(parents=True, exist_ok=True)
+    # Cria a imagem
     fig, axs = plt.subplots(figsize=(5 * len(preds), 10), ncols=len(preds), nrows=2)
     imgs = future_imgs + past_imgs
     present_dt = last_obs_dt - datetime.timedelta(hours=3)
@@ -225,5 +244,31 @@ def task_lag(lag: int):
     plt.close()
 
 
-with Pool(min(NLAGS, args.num_workers)) as pool:
-    list(tqdm.tqdm(pool.imap(task_lag, list(range(1, NLAGS + 1))), total=NLAGS))
+# with Pool(min(NLAGS, args.num_workers)) as pool:
+#     list(tqdm.tqdm(pool.imap(task_lag, list(range(1, NLAGS + 1))), total=NLAGS))
+
+def create_images(num_workers=6, NLAGS=18):
+    """
+    Executa uma função em paralelo com multiprocessing.Pool e exibe uma barra de progresso.
+
+    Args:
+        NLAGS (int): Número total de tarefas a serem processadas.
+        num_workers (int): Número máximo de processos em paralelo.
+
+    Returns:
+        list: Resultados das tarefas executadas.
+    """
+    # Definir o pool com o número de workers como o mínimo entre NLAGS e num_workers
+    with Pool(min(NLAGS, num_workers)) as pool:
+        # Usar pool.imap para aplicar task_lag em paralelo com barra de progresso
+        list(tqdm.tqdm(pool.imap(task_lag, range(1, NLAGS + 1)), total=NLAGS))
+
+    output_filepath = pathlib.Path("eval/viz/plot-real_time/")
+
+    if output_filepath.exists() and output_filepath.is_dir():
+        files = list(output_filepath.glob('*'))
+        log(f"Prediction images files saved as: {files}")
+    else:
+        print(f"Folder {output_filepath} does not exist.")
+
+    return files
