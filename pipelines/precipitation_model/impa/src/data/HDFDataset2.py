@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from pathlib import Path
 
 import h5py
@@ -5,8 +6,16 @@ import numpy as np
 import torch
 from torch.utils import data
 
-from pipelines.precipitation_model.impa.src.utils.dataframe_utils import N_AFTER, N_BEFORE, fetch_future_datetimes, fetch_reversed_past_datetimes
-from pipelines.precipitation_model.impa.src.utils.general_utils import print_ok, print_warning
+from pipelines.precipitation_model.impa.src.utils.dataframe_utils import (
+    N_AFTER,
+    N_BEFORE,
+    fetch_future_datetimes,
+    fetch_reversed_past_datetimes,
+)
+from pipelines.precipitation_model.impa.src.utils.general_utils import (
+    print_ok,
+    print_warning,
+)
 from pipelines.precipitation_model.impa.src.utils.hdf_utils import get_dataset_keys
 
 MIN_WEIGHT = 100
@@ -56,16 +65,27 @@ class HDFDataset2(data.Dataset):
         else:
             suffix = ""
 
-        if len(set(["latent_field", "motion_field", "intensities"]).intersection(set(get_item_output))) > 0:
+        if (
+            len(
+                set(["latent_field", "motion_field", "intensities"]).intersection(
+                    set(get_item_output)
+                )
+            )
+            > 0
+        ):
             if autoencoder_hash is None:
                 autoencoder_hash = "001178e117f50cf17817f336b86a809f"
             parent_path = Path(filepath).parents[0]
             if "train" in filepath.stem:
-                self.latent_field_filepath = Path(f"{parent_path}/train_latent{suffix}_{autoencoder_hash}.hdf")
+                self.latent_field_filepath = Path(
+                    f"{parent_path}/train_latent{suffix}_{autoencoder_hash}.hdf"
+                )
                 self.motion_field_filepath = Path(f"{parent_path}/train_motion{suffix}.hdf")
                 self.intensities_filepath = Path(f"{parent_path}/train_intensities{suffix}.hdf")
             elif "val" in filepath.stem:
-                self.latent_field_filepath = Path(f"{parent_path}/val_latent{suffix}_{autoencoder_hash}.hdf")
+                self.latent_field_filepath = Path(
+                    f"{parent_path}/val_latent{suffix}_{autoencoder_hash}.hdf"
+                )
                 self.motion_field_filepath = Path(f"{parent_path}/val_motion{suffix}.hdf")
                 self.intensities_filepath = Path(f"{parent_path}/val_intensities{suffix}.hdf")
             else:
@@ -267,9 +287,12 @@ class HDFDataset2(data.Dataset):
             return len(self.keys)
 
     def get_sample_weights(self, overwrite_if_exists=False, verbose=True):
-        assert self.filepath.stem == "train", "Sample weights can only be calculated for the train dataset."
+        assert (
+            self.filepath.stem == "train"
+        ), "Sample weights can only be calculated for the train dataset."
         weights_filepath = (
-            self.filepath.parents[0] / f"train_sample_weights2-n_before={self.n_before}-n_after={self.n_after}.npy"
+            self.filepath.parents[0]
+            / f"train_sample_weights2-n_before={self.n_before}-n_after={self.n_after}.npy"
         )
         if not overwrite_if_exists:
             if weights_filepath.is_file():

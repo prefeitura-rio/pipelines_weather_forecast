@@ -32,6 +32,7 @@ from pipelines.tasks import (  # pylint: disable=E0611, E0401
     get_storage_destination,
     upload_files_to_storage,
 )
+
 # from prefeitura_rio.pipelines_utils.tasks import (  # pylint: disable=E0611, E0401
 #     create_table_and_upload_to_gcs,
 #     get_now_datetime,

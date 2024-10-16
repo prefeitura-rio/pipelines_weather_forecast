@@ -121,22 +121,39 @@ class PredHDFDatasetLocations(data.Dataset):
                 self.keys = np.append(self.keys, new_keys)
                 try:
                     self.past_keys = np.vstack(
-                        [self.past_keys, np.array(fetch_reversed_past_datetimes(new_keys, self.n_before, timestep))]
+                        [
+                            self.past_keys,
+                            np.array(
+                                fetch_reversed_past_datetimes(new_keys, self.n_before, timestep)
+                            ),
+                        ]
                     )
                 except ValueError:
-                    self.past_keys = np.array(fetch_reversed_past_datetimes(new_keys, self.n_before, timestep))
+                    self.past_keys = np.array(
+                        fetch_reversed_past_datetimes(new_keys, self.n_before, timestep)
+                    )
                 try:
                     self.future_keys = np.vstack(
-                        [self.future_keys, np.array(fetch_future_datetimes(new_keys, self.n_after, timestep))]
+                        [
+                            self.future_keys,
+                            np.array(fetch_future_datetimes(new_keys, self.n_after, timestep)),
+                        ]
                     )
                 except ValueError:
-                    self.future_keys = np.array(fetch_future_datetimes(new_keys, self.n_after, timestep))
+                    self.future_keys = np.array(
+                        fetch_future_datetimes(new_keys, self.n_after, timestep)
+                    )
                 try:
                     self.pred_keys = np.vstack(
-                        [self.pred_keys, np.array(fetch_pred_keys(new_keys, self.n_predictions, timestep))]
+                        [
+                            self.pred_keys,
+                            np.array(fetch_pred_keys(new_keys, self.n_predictions, timestep)),
+                        ]
                     )
                 except ValueError:
-                    self.pred_keys = np.array(fetch_pred_keys(new_keys, self.n_predictions, timestep))
+                    self.pred_keys = np.array(
+                        fetch_pred_keys(new_keys, self.n_predictions, timestep)
+                    )
                 try:
                     self.ds_indices.append(len(new_keys) + self.ds_indices[-1])
                 except IndexError:
@@ -163,11 +180,13 @@ class PredHDFDatasetLocations(data.Dataset):
             for i, key in enumerate(self.past_keys[index]):
                 tensor_ind = 2 * self.n_before - 2 * i - 2
                 try:
-                    X[:, :, tensor_ind : tensor_ind + 2] = torch.as_tensor(np.array(hdf[key])).reshape(
-                        (self.ni, self.nj, 2)
-                    )
+                    X[:, :, tensor_ind : tensor_ind + 2] = torch.as_tensor(
+                        np.array(hdf[key])
+                    ).reshape((self.ni, self.nj, 2))
                 except KeyError:
-                    X[:, :, tensor_ind : tensor_ind + 2] = torch.ones((self.ni, self.nj, 2)) * np.nan
+                    X[:, :, tensor_ind : tensor_ind + 2] = (
+                        torch.ones((self.ni, self.nj, 2)) * np.nan
+                    )
             if self.leadtime_conditioning:
                 try:
                     Y = torch.as_tensor(np.array(hdf[self.future_keys[index][leadtime_index]]))
@@ -176,7 +195,9 @@ class PredHDFDatasetLocations(data.Dataset):
             else:
                 for i, key in enumerate(self.future_keys[index]):
                     try:
-                        Y[:, :, 2 * i : 2 * i + 2] = torch.as_tensor(np.array(hdf[key])).reshape((self.ni, self.nj, 2))
+                        Y[:, :, 2 * i : 2 * i + 2] = torch.as_tensor(np.array(hdf[key])).reshape(
+                            (self.ni, self.nj, 2)
+                        )
                     except KeyError:
                         Y[:, :, 2 * i : 2 * i + 2] = torch.ones((self.ni, self.nj, 2)) * np.nan
         with h5py.File(self.predict_filepaths[hdf_index], "r") as pred_hdf:
@@ -198,7 +219,9 @@ class PredHDFDatasetLocations(data.Dataset):
         day = int(date[6:8])
         hour = int(date[9:11])
         minute = int(date[11:13])
-        date = torch.tensor([month / 12, day / 31, hour / 24, minute / 60], dtype=torch.float32).reshape((1, 1, -1))
+        date = torch.tensor(
+            [month / 12, day / 31, hour / 24, minute / 60], dtype=torch.float32
+        ).reshape((1, 1, -1))
         date_tensor = date.expand((self.ni, self.nj, -1))
 
         metadata_tensor = torch.cat(

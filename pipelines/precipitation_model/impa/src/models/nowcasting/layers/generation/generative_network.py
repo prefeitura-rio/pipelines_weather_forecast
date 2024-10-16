@@ -3,8 +3,11 @@
 
 import torch.nn as nn
 import torch.nn.functional as F
+
 from pipelines.precipitation_model.impa.src.models.nowcasting.layers.evolution.module import *
-from pipelines.precipitation_model.impa.src.models.nowcasting.layers.generation.module import GenBlock
+from pipelines.precipitation_model.impa.src.models.nowcasting.layers.generation.module import (
+    GenBlock,
+)
 
 
 class Generative_Encoder(nn.Module):

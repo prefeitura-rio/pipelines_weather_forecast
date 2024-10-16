@@ -48,7 +48,9 @@ class SatelliteData:
     def _load_previous_day(self):
         self.data = pd.concat(
             [
-                pd.read_feather(f"{self.folder}/{self.product}/{self.day - timedelta(days=1)}.feather"),
+                pd.read_feather(
+                    f"{self.folder}/{self.product}/{self.day - timedelta(days=1)}.feather"
+                ),
                 self.data,
             ]
         )
@@ -57,7 +59,9 @@ class SatelliteData:
         return pd.concat(
             [
                 pd.read_feather(f"{self.folder}/ABI-L2-ACHAF/{self.day}.feather"),
-                pd.read_feather(f"{self.folder}/ABI-L2-ACHAF/{self.day - timedelta(days=1)}.feather"),
+                pd.read_feather(
+                    f"{self.folder}/ABI-L2-ACHAF/{self.day - timedelta(days=1)}.feather"
+                ),
             ]
         )
 
@@ -84,7 +88,9 @@ class SatelliteData:
             points = np.stack((height_lons, height_lats)).T
             h_interp = interpolate.griddata(points, heights, (lons, lats), method="linear")
 
-            new_lons, new_lats = get_parallax_corrected_lonlats(SAT_LON, SAT_LAT, SAT_ALT, lons, lats, h_interp)
+            new_lons, new_lats = get_parallax_corrected_lonlats(
+                SAT_LON, SAT_LAT, SAT_ALT, lons, lats, h_interp
+            )
 
             if updated_lats is None:
                 updated_lats = new_lats
@@ -98,7 +104,9 @@ class SatelliteData:
 
     def interp_at_grid(self, band: str, timestamp: datetime, target_grid: NDArray):
         self._load_previous_day()
-        assert (timestamp >= self.data["creation"]).any(), "Timestamp passed precedes all timestamps in the data"
+        assert (
+            timestamp >= self.data["creation"]
+        ).any(), "Timestamp passed precedes all timestamps in the data"
         closest_timestamp = self.data.loc[self.data["creation"] <= timestamp, "creation"].max()
         df = self.data[self.data["creation"] == closest_timestamp]
         column = f"{self.value}_{band}" if self.product == "ABI-L2-MCMIPF" else self.value
@@ -113,7 +121,10 @@ class SatelliteData:
         points = np.stack((x, y)).T
         shape = target_grid.shape[:2]
         interp_values = interpolate.griddata(
-            points, values, (target_grid[:, :, 1].flatten(), target_grid[:, :, 0].flatten()), method="linear"
+            points,
+            values,
+            (target_grid[:, :, 1].flatten(), target_grid[:, :, 0].flatten()),
+            method="linear",
         ).reshape(shape)
 
         return interp_values

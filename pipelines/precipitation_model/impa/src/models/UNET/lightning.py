@@ -1,7 +1,13 @@
 # -*- coding: utf-8 -*-
 import torch
+
 from pipelines.precipitation_model.impa.src.models.lightning_module import LModule
-from pipelines.precipitation_model.impa.src.models.UNET.unet_parts import DoubleConv, Down, OutConv, Up
+from pipelines.precipitation_model.impa.src.models.UNET.unet_parts import (
+    DoubleConv,
+    Down,
+    OutConv,
+    Up,
+)
 
 
 class model(LModule):

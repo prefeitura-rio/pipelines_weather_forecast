@@ -3,6 +3,8 @@
 
 import torch
 import torch.nn as nn
+from torch.nn import Sequential
+
 from pipelines.precipitation_model.impa.src.models.lightning_module import LModule
 from pipelines.precipitation_model.impa.src.models.Metnet3.Max_Vit.Max_Vit import MaxViT
 from pipelines.precipitation_model.impa.src.models.Metnet3.metnet3_pytorch import (
@@ -12,7 +14,6 @@ from pipelines.precipitation_model.impa.src.models.Metnet3.metnet3_pytorch impor
     ResnetBlocks,
     Upsample2x,
 )
-from torch.nn import Sequential
 
 
 class model(LModule):

@@ -6,8 +6,13 @@ from argparse import ArgumentParser
 import boto3
 from botocore import UNSIGNED
 from botocore.config import Config
-from pipelines.precipitation_model.impa.src.data.process.build_dataframe import build_dataframe
-from pipelines.precipitation_model.impa.src.data.process.process_satellite import process_satellite
+
+from pipelines.precipitation_model.impa.src.data.process.build_dataframe import (
+    build_dataframe,
+)
+from pipelines.precipitation_model.impa.src.data.process.process_satellite import (
+    process_satellite,
+)
 from pipelines.precipitation_model.impa.src.eval.predict_real_time import predict
 
 BUCKET_NAME = "noaa-goes16"

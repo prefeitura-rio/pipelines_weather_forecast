@@ -1,7 +1,13 @@
+# -*- coding: utf-8 -*-
 import numpy as np
 
-from pipelines.precipitation_model.impa.src.data.HDFDatasetMultiple import HDFDatasetMultiple
-from pipelines.precipitation_model.impa.src.utils.dataframe_utils import N_AFTER, N_BEFORE
+from pipelines.precipitation_model.impa.src.data.HDFDatasetMultiple import (
+    HDFDatasetMultiple,
+)
+from pipelines.precipitation_model.impa.src.utils.dataframe_utils import (
+    N_AFTER,
+    N_BEFORE,
+)
 
 elevation_file_small = "data/processed/elevations_data/elevation_{location}-res=2km-256x256.npy"
 elevation_file_large = "data/processed/elevations_data/elevation_{location}-res=4km-256x256.npy"

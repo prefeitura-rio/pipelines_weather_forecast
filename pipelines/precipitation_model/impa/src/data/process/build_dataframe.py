@@ -12,7 +12,9 @@ import h5py
 import numpy as np
 from tqdm import tqdm
 
-from pipelines.precipitation_model.impa.src.data.process.SatelliteData import SatelliteData
+from pipelines.precipitation_model.impa.src.data.process.SatelliteData import (
+    SatelliteData,
+)
 from pipelines.precipitation_model.impa.src.utils.general_utils import print_warning
 
 HEAVY_RAIN_TRAIN_LOG_MEAN = 0.15839338
@@ -23,7 +25,14 @@ HEAVY_RAIN_TRAIN_STD = 2.8702092
 
 
 def task_dt(
-    dt, ni: int, nj: int, sat_folder: str, grid_small: np.ndarray, grid_large: np.ndarray, value: str, band: str
+    dt,
+    ni: int,
+    nj: int,
+    sat_folder: str,
+    grid_small: np.ndarray,
+    grid_large: np.ndarray,
+    value: str,
+    band: str,
 ):
     date_str = dt.strftime("%Y-%m-%d")
     datetime_key = (dt).strftime("%Y%m%d/%H%M")
@@ -74,7 +83,9 @@ def build_dataframe(
         pass
 
     # Build dataframe for last 6 hours of data
-    dt_rounded = datetime.datetime(dt.year, dt.month, dt.day, dt.hour, dt.minute - dt.minute % timestep)
+    dt_rounded = datetime.datetime(
+        dt.year, dt.month, dt.day, dt.hour, dt.minute - dt.minute % timestep
+    )
     for i in range((60 * 6) // timestep):
         datetimes.append(dt_rounded - i * datetime.timedelta(minutes=timestep))
     full_datetimes = list(datetimes)
@@ -93,7 +104,8 @@ def build_dataframe(
             output_filepath.unlink()
         else:
             print_warning(
-                f"Warning: {output_filepath} already exists. Call with -o option to overwrite.", verbose=verbose
+                f"Warning: {output_filepath} already exists. Call with -o option to overwrite.",
+                verbose=verbose,
             )
             exit(0)
 
@@ -116,7 +128,8 @@ def build_dataframe(
         # these are the datetimes which we want to predict from
         relevant_datetimes = [datetimes[18], datetimes[0]]
         what.create_dataset(
-            "datetime_keys", data=np.asarray([dt.strftime("%Y%m%d/%H%M") for dt in relevant_datetimes], dtype="S")
+            "datetime_keys",
+            data=np.asarray([dt.strftime("%Y%m%d/%H%M") for dt in relevant_datetimes], dtype="S"),
         )
 
         step = num_workers
@@ -148,7 +161,9 @@ def build_dataframe(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--verbose", "-v", action="store_true", help="If true, prints more information.")
+    parser.add_argument(
+        "--verbose", "-v", action="store_true", help="If true, prints more information."
+    )
     parser.add_argument(
         "--overwrite",
         "-o",
@@ -169,7 +184,13 @@ if __name__ == "__main__":
         default=1,
         help="Number of processes for parallelization.",
     )
-    parser.add_argument("--location", "-loc", default="rio_de_janeiro", type=str, help="Location to build dataframe.")
+    parser.add_argument(
+        "--location",
+        "-loc",
+        default="rio_de_janeiro",
+        type=str,
+        help="Location to build dataframe.",
+    )
     parser.add_argument("--timestep", "-ts", default=10, type=int, help="Timestep in minutes.")
     parser.add_argument("--value", "-val", default="RRQPE", type=str, help="Satellite value.")
     parser.add_argument("--band", "-b", default="RRQPE", type=str, help="Satellite band.")

@@ -8,7 +8,9 @@ import torch
 import torch.nn as nn
 
 # from ldm.util import instantiate_from_config
-from pipelines.precipitation_model.impa.src.models.context_LDM_concat_new.attention import LinearAttention
+from pipelines.precipitation_model.impa.src.models.context_LDM_concat_new.attention import (
+    LinearAttention,
+)
 
 
 class Encoder(nn.Module):

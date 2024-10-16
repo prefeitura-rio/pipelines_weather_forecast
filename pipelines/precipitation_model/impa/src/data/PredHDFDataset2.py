@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from pathlib import Path
 
 import h5py
@@ -12,7 +13,10 @@ from pipelines.precipitation_model.impa.src.utils.dataframe_utils import (
     fetch_pred_keys,
     fetch_reversed_past_datetimes,
 )
-from pipelines.precipitation_model.impa.src.utils.general_utils import print_ok, print_warning
+from pipelines.precipitation_model.impa.src.utils.general_utils import (
+    print_ok,
+    print_warning,
+)
 from pipelines.precipitation_model.impa.src.utils.hdf_utils import get_dataset_keys
 
 MIN_WEIGHT = 100
@@ -59,7 +63,9 @@ class PredHDFDataset2(data.Dataset):
                 f"models/{model}/predictions/{dataset}/predict_{split}-ckpt={ckpt_file.replace('.ckpt','')}.hdf"
             )
         else:
-            self.predict_filepath = Path(f"models/{model}/predictions/{dataset}/predict_{split}.hdf")
+            self.predict_filepath = Path(
+                f"models/{model}/predictions/{dataset}/predict_{split}.hdf"
+            )
         self.n_predictions = n_predictions
         self.n_before = n_before
         self.n_after = n_after
@@ -69,16 +75,27 @@ class PredHDFDataset2(data.Dataset):
 
         self._load_keys()
 
-        if len(set(["latent_field", "motion_field", "intensities"]).intersection(set(get_item_output))) > 0:
+        if (
+            len(
+                set(["latent_field", "motion_field", "intensities"]).intersection(
+                    set(get_item_output)
+                )
+            )
+            > 0
+        ):
             if autoencoder_hash is None:
                 autoencoder_hash = "001178e117f50cf17817f336b86a809f"
             parent_path = filepath.parents[0]
             if "train" in filepath.stem:
-                self.latent_field_filepath = Path(f"{parent_path}/train_latent_{autoencoder_hash}.hdf")
+                self.latent_field_filepath = Path(
+                    f"{parent_path}/train_latent_{autoencoder_hash}.hdf"
+                )
                 self.motion_field_filepath = Path(f"{parent_path}/train_motion.hdf")
                 self.intensities_filepath = Path(f"{parent_path}/train_intensities.hdf")
             elif "val" in filepath.stem:
-                self.latent_field_filepath = Path(f"{parent_path}/val_latent_{autoencoder_hash}.hdf")
+                self.latent_field_filepath = Path(
+                    f"{parent_path}/val_latent_{autoencoder_hash}.hdf"
+                )
                 self.motion_field_filepath = Path(f"{parent_path}/val_motion.hdf")
                 self.intensities_filepath = Path(f"{parent_path}/val_intensities.hdf")
             else:
@@ -287,9 +304,12 @@ class PredHDFDataset2(data.Dataset):
         return len(self.keys)
 
     def get_sample_weights(self, overwrite_if_exists=False, verbose=True):
-        assert self.filepath.stem == "train", "Sample weights can only be calculated for the train dataset."
+        assert (
+            self.filepath.stem == "train"
+        ), "Sample weights can only be calculated for the train dataset."
         weights_filepath = (
-            self.filepath.parents[0] / f"train_sample_weights2-n_before={self.n_before}-n_after={self.n_after}.npy"
+            self.filepath.parents[0]
+            / f"train_sample_weights2-n_before={self.n_before}-n_after={self.n_after}.npy"
         )
         if not overwrite_if_exists:
             if weights_filepath.is_file():

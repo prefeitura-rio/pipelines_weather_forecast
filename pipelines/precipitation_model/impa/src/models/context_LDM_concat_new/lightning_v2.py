@@ -6,17 +6,26 @@ import torch
 import torch.nn.functional as F
 from einops import rearrange
 from pytorch_lightning import LightningModule
-from pipelines.precipitation_model.impa.src.models.context_LDM_concat_new.autoenc_v2 import AutoencoderKL
+from tqdm import tqdm
+
+from pipelines.precipitation_model.impa.src.models.context_LDM_concat_new.autoenc_v2 import (
+    AutoencoderKL,
+)
 
 # from pipelines.precipitation_model.impa.src.models.context_LDM_concat.autoencoder.autoenc_old import AutoencoderKL
-from pipelines.precipitation_model.impa.src.models.context_LDM_concat_new.ddim import DDIMSampler
+from pipelines.precipitation_model.impa.src.models.context_LDM_concat_new.ddim import (
+    DDIMSampler,
+)
 from pipelines.precipitation_model.impa.src.models.context_LDM_concat_new.model import (
     get_named_beta_schedule,
     linear_beta_schedule,
 )
-from pipelines.precipitation_model.impa.src.models.context_LDM_concat_new.openaimodel import UNetModel
-from pipelines.precipitation_model.impa.src.utils.data_utils import data_modification_options
-from tqdm import tqdm
+from pipelines.precipitation_model.impa.src.models.context_LDM_concat_new.openaimodel import (
+    UNetModel,
+)
+from pipelines.precipitation_model.impa.src.utils.data_utils import (
+    data_modification_options,
+)
 
 
 def extract(a, t, x_shape):

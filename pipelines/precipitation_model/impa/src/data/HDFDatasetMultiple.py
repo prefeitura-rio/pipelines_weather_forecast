@@ -8,7 +8,10 @@ import numpy as np
 import torch
 from torch.utils import data
 
-from pipelines.precipitation_model.impa.src.utils.dataframe_utils import fetch_future_datetimes, fetch_reversed_past_datetimes
+from pipelines.precipitation_model.impa.src.utils.dataframe_utils import (
+    fetch_future_datetimes,
+    fetch_reversed_past_datetimes,
+)
 from pipelines.precipitation_model.impa.src.utils.hdf_utils import get_dataset_keys
 
 
@@ -76,7 +79,9 @@ class HDFDatasetMultiple(data.Dataset):
                 # print_warning("File not found in /dev/shm, using original path.")
                 new_dataframe_filepaths_array[i] = str(filepath)
 
-        self.dataframe_shm_filepaths_array = new_dataframe_filepaths_array.reshape(dataframe_filepaths_array.shape)
+        self.dataframe_shm_filepaths_array = new_dataframe_filepaths_array.reshape(
+            dataframe_filepaths_array.shape
+        )
         self.dataframe_filepaths_array = dataframe_filepaths_array
         self.n_before_array = n_before_array
         self.n_after_array = n_after_array
@@ -126,7 +131,9 @@ class HDFDatasetMultiple(data.Dataset):
                         if j == 0:
                             new_keys = set(hdf["split_info"]["split_datetime_keys"])
                         else:
-                            new_keys = set(hdf["split_info"]["split_datetime_keys"]).intersection(new_keys)
+                            new_keys = set(hdf["split_info"]["split_datetime_keys"]).intersection(
+                                new_keys
+                            )
                     else:
                         if j == 0:
                             new_keys = set(get_dataset_keys(hdf))
@@ -140,17 +147,30 @@ class HDFDatasetMultiple(data.Dataset):
                 self.past_keys = np.vstack(
                     [
                         self.past_keys,
-                        np.array(fetch_reversed_past_datetimes(new_keys, self.n_before_array.max(), timestep)),
+                        np.array(
+                            fetch_reversed_past_datetimes(
+                                new_keys, self.n_before_array.max(), timestep
+                            )
+                        ),
                     ]
                 )
             except ValueError:
-                self.past_keys = np.array(fetch_reversed_past_datetimes(new_keys, self.n_before_array.max(), timestep))
+                self.past_keys = np.array(
+                    fetch_reversed_past_datetimes(new_keys, self.n_before_array.max(), timestep)
+                )
             try:
                 self.future_keys = np.vstack(
-                    [self.future_keys, np.array(fetch_future_datetimes(new_keys, self.n_after_array.max(), timestep))]
+                    [
+                        self.future_keys,
+                        np.array(
+                            fetch_future_datetimes(new_keys, self.n_after_array.max(), timestep)
+                        ),
+                    ]
                 )
             except ValueError:
-                self.future_keys = np.array(fetch_future_datetimes(new_keys, self.n_after_array.max(), timestep))
+                self.future_keys = np.array(
+                    fetch_future_datetimes(new_keys, self.n_after_array.max(), timestep)
+                )
             try:
                 self.ds_indices.append(len(new_keys) + self.ds_indices[-1])
             except IndexError:
@@ -162,11 +182,21 @@ class HDFDatasetMultiple(data.Dataset):
                 return i
 
     def __getitem__(self, index):
-        X = torch.ones((self.ni, self.nj, (self.n_before_array * self.n_before_resolution_array).sum())) * torch.inf
+        X = (
+            torch.ones(
+                (self.ni, self.nj, (self.n_before_array * self.n_before_resolution_array).sum())
+            )
+            * torch.inf
+        )
         if self.leadtime_conditioning:
             pass
         else:
-            Y = torch.ones((self.ni, self.nj, (self.n_after_array * self.n_after_resolution_array).sum())) * torch.inf
+            Y = (
+                torch.ones(
+                    (self.ni, self.nj, (self.n_after_array * self.n_after_resolution_array).sum())
+                )
+                * torch.inf
+            )
 
         if self.leadtime_conditioning:
             leadtime_index = index % self.n_after_array[0]
@@ -186,17 +216,24 @@ class HDFDatasetMultiple(data.Dataset):
                     )
                     try:
                         X[:, :, tensor_ind : tensor_ind + n_resolution] = torch.as_tensor(
-                            np.array(hdf[self.past_keys[index][i]]).reshape((self.ni, self.nj, n_resolution))
+                            np.array(hdf[self.past_keys[index][i]]).reshape(
+                                (self.ni, self.nj, n_resolution)
+                            )
                         )
                     except KeyError:
-                        X[:, :, tensor_ind : tensor_ind + n_resolution] = torch.ones((self.ni, self.nj, 1)) * np.nan
+                        X[:, :, tensor_ind : tensor_ind + n_resolution] = (
+                            torch.ones((self.ni, self.nj, 1)) * np.nan
+                        )
                 if self.leadtime_conditioning and j == 0:
                     try:
-                        Y = torch.as_tensor(np.array(hdf[self.future_keys[index][leadtime_index]])).reshape(
-                            (self.ni, self.nj, self.n_after_resolution_array[0])
-                        )
+                        Y = torch.as_tensor(
+                            np.array(hdf[self.future_keys[index][leadtime_index]])
+                        ).reshape((self.ni, self.nj, self.n_after_resolution_array[0]))
                     except KeyError:
-                        Y = torch.ones((self.ni, self.nj, self.n_after_resolution_array[0])) * np.nan
+                        Y = (
+                            torch.ones((self.ni, self.nj, self.n_after_resolution_array[0]))
+                            * np.nan
+                        )
                 else:
                     # for i, key in enumerate(self.future_keys[index]):
                     n_resolution = self.n_after_resolution_array[j]
@@ -204,7 +241,9 @@ class HDFDatasetMultiple(data.Dataset):
                         if j == 0:
                             cumsum = 0
                         else:
-                            cumsum = np.cumsum(self.n_after_array * self.n_after_resolution_array)[j - 1]
+                            cumsum = np.cumsum(self.n_after_array * self.n_after_resolution_array)[
+                                j - 1
+                            ]
                         tensor_ind = cumsum + i * n_resolution
                         try:
                             Y[:, :, tensor_ind : tensor_ind + n_resolution] = torch.as_tensor(
@@ -212,7 +251,9 @@ class HDFDatasetMultiple(data.Dataset):
                             ).reshape((self.ni, self.nj, n_resolution))
 
                         except KeyError:
-                            Y[:, :, tensor_ind : tensor_ind + n_resolution] = torch.ones((self.ni, self.nj, 1)) * np.nan
+                            Y[:, :, tensor_ind : tensor_ind + n_resolution] = (
+                                torch.ones((self.ni, self.nj, 1)) * np.nan
+                            )
         if self.x_transform:
             X = self.x_transform(X)
         if self.y_transform:
@@ -225,7 +266,9 @@ class HDFDatasetMultiple(data.Dataset):
         day = int(date[6:8])
         hour = int(date[9:11])
         minute = int(date[11:13])
-        date = torch.tensor([month / 12, day / 31, hour / 24, minute / 60], dtype=torch.float32).reshape((1, 1, -1))
+        date = torch.tensor(
+            [month / 12, day / 31, hour / 24, minute / 60], dtype=torch.float32
+        ).reshape((1, 1, -1))
         date_tensor = date.expand((self.ni, self.nj, -1))
 
         metadata_tensor = torch.cat(
@@ -259,7 +302,9 @@ class HDFDatasetMultiple(data.Dataset):
             pre_weights_size = len(pre_weights)
             pre_weights = np.append(pre_weights, np.array([pre_weights.min()]))
             inds = np.load(inds_filepath).reshape(-1, 1)
-            deltas = np.arange(-self.n_before_array[0] + 1, self.n_after_array[0] + 1, dtype=int).reshape(1, -1)
+            deltas = np.arange(
+                -self.n_before_array[0] + 1, self.n_after_array[0] + 1, dtype=int
+            ).reshape(1, -1)
             slices = inds + deltas
             slices[np.logical_or(slices < 0, slices >= pre_weights_size)] = pre_weights_size
             summed_weights = pre_weights[slices].sum(axis=1).reshape(-1)

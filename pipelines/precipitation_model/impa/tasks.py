@@ -11,10 +11,14 @@ from botocore import UNSIGNED
 from botocore.config import Config
 from prefect import task
 from prefeitura_rio.pipelines_utils.logging import log
-from pipelines.precipitation_model.impa.src.data.process.build_dataframe import build_dataframe
-from pipelines.precipitation_model.impa.src.data.process.process_satellite import process_satellite
-from pipelines.precipitation_model.impa.src.eval.predict_real_time import predict
 
+from pipelines.precipitation_model.impa.src.data.process.build_dataframe import (
+    build_dataframe,
+)
+from pipelines.precipitation_model.impa.src.data.process.process_satellite import (
+    process_satellite,
+)
+from pipelines.precipitation_model.impa.src.eval.predict_real_time import predict
 from pipelines.precipitation_model.impa.utils import download_file_from_s3
 
 

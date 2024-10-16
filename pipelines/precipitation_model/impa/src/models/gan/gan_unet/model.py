@@ -3,13 +3,26 @@
 
 import torch
 import torch.nn as nn
-from pipelines.precipitation_model.impa.src.models.gan.gan_unet.unet_parts import DoubleConv, Down, OutConv, S, Up, Up2
-from pipelines.precipitation_model.impa.src.models.gan.parts_gan import AvgPool, L2_Block, L3_Block, Noise_Projector
+from torch.nn.utils import spectral_norm
+
+from pipelines.precipitation_model.impa.src.models.gan.gan_unet.unet_parts import (
+    DoubleConv,
+    Down,
+    OutConv,
+    S,
+    Up,
+    Up2,
+)
+from pipelines.precipitation_model.impa.src.models.gan.parts_gan import (
+    AvgPool,
+    L2_Block,
+    L3_Block,
+    Noise_Projector,
+)
 from pipelines.precipitation_model.impa.src.models.nowcasting.layers.generation.generative_network import (
     Generative_Decoder,
     Generative_Encoder,
 )
-from torch.nn.utils import spectral_norm
 
 ni = 192  # size of image
 ndf = 32  # size of discriminator feature map
