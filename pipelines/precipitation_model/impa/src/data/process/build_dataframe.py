@@ -72,7 +72,7 @@ def build_dataframe(
 
     assert location in ["rio_de_janeiro", "curitiba", "porto_alegre", "salvador", "sao_luis"]
 
-    sat_folder = f"data/processed/satellite/{product}"
+    sat_folder = f"pipelines/precipitation_model/impa/data/processed/satellite/{product}"
 
     output_filename = "real_time-" + location
     datetimes = []
@@ -93,7 +93,7 @@ def build_dataframe(
     full_datetimes = sorted(full_datetimes)
 
     output_filepath = pathlib.Path(
-        f"data/dataframes/SAT-CORRECTED-{product}-{pathlib.Path(output_filename).stem}/test.hdf"
+        f"pipelines/precipitation_model/impa/data/dataframes/SAT-CORRECTED-{product}-{pathlib.Path(output_filename).stem}/test.hdf"
     )
 
     pathlib.Path(output_filepath).parents[0].mkdir(parents=True, exist_ok=True)
@@ -109,8 +109,8 @@ def build_dataframe(
             )
             exit(0)
 
-    grid_small = np.load(f"data/dataframe_grids/{location}-res=2km-256x256.npy")
-    grid_large = np.load(f"data/dataframe_grids/{location}-res=4km-256x256.npy")
+    grid_small = np.load(f"pipelines/precipitation_model/impa/data/dataframe_grids/{location}-res=2km-256x256.npy")
+    grid_large = np.load(f"pipelines/precipitation_model/impa/data/dataframe_grids/{location}-res=4km-256x256.npy")
     assert grid_small.shape == grid_large.shape
     ni, nj = grid_small.shape[:2]
     with h5py.File(output_filepath, "w") as f:

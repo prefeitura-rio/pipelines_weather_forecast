@@ -19,11 +19,11 @@ from pipelines.precipitation_model.impa.src.utils.hdf_utils import get_dataset_k
 
 MIN_WEIGHT = 100
 
-elevation_file_small = "data/processed/elevations_data/elevation_{location}-res=2km-256x256.npy"
-elevation_file_large = "data/processed/elevations_data/elevation_{location}-res=4km-256x256.npy"
+elevation_file_small = "dpipelines/precipitation_model/impa/data/processed/elevations_data/elevation_{location}-res=2km-256x256.npy"
+elevation_file_large = "pipelines/precipitation_model/impa/data/processed/elevations_data/elevation_{location}-res=4km-256x256.npy"
 
-latlon_file_small = "data/dataframe_grids/{location}-res=2km-256x256.npy"
-latlon_file_large = "data/dataframe_grids/{location}-res=4km-256x256.npy"
+latlon_file_small = "pipelines/precipitation_model/impa/data/dataframe_grids/{location}-res=2km-256x256.npy"
+latlon_file_large = "pipelines/precipitation_model/impa/data/dataframe_grids/{location}-res=4km-256x256.npy"
 
 
 class PredHDFDatasetLocations(data.Dataset):

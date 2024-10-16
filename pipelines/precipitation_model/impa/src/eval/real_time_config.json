@@ -4,8 +4,8 @@
             "args":{
                 "locations": ["rio_de_janeiro"],
                 "overwrite": true,
-                "output_predict_filepath": ["predictions/PySTEPS.hdf"],
-                "dataframe_filepath": "data/dataframes/SAT-CORRECTED-ABI-L2-RRQPEF-real_time-{location}/test.hdf",
+                "output_predict_filepath": ["pipelines/precipitation_model/impa/predictions/PySTEPS.hdf"],
+                "dataframe_filepath": "pipelines/precipitation_model/impa/data/dataframes/SAT-CORRECTED-ABI-L2-RRQPEF-real_time-{location}/test.hdf",
                 "data_type": "SAT",
                 "motion_field": "lk",
                 "advection":"steps"
@@ -22,10 +22,10 @@
             "args":{
                 "locations": ["rio_de_janeiro"],
                 "overwrite": true,
-                "output_predict_filepaths": ["predictions/NowcastNet.hdf"],
-                "dataframe_filepath": "data/dataframes/SAT-CORRECTED-ABI-L2-RRQPEF-real_time-{location}/test.hdf",
+                "output_predict_filepaths": ["pipelines/precipitation_model/impa/predictions/NowcastNet.hdf"],
+                "dataframe_filepath": "pipelines/precipitation_model/impa/data/dataframes/SAT-CORRECTED-ABI-L2-RRQPEF-real_time-{location}/test.hdf",
                 "dataframe": "SAT-ABI-L2-RRQPEF-{location}-file=thr=0_split2",
-                "predict_dataframe": "predictions/EVONET.hdf",
+                "predict_dataframe": "pipelines/precipitation_model/impa/predictions/EVONET.hdf",
                 "input_model_filepath": "pipelines/precipitation_model/impa/src/models/NowcastNet/0--best-epoch=4-v1.ckpt",
                 "compile": false,
                 "batch_to_predict": 8

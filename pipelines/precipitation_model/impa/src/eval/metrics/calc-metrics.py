@@ -27,9 +27,9 @@ with open(config, "r") as json_file:
     specs_dict = json.load(json_file)
 
 ground_truth_df = h5py.File(
-    "data/dataframes/SAT-CORRECTED-ABI-L2-RRQPEF-real_time-rio_de_janeiro/test.hdf"
+    "pipelines/precipitation_model/impa/data/dataframes/SAT-CORRECTED-ABI-L2-RRQPEF-real_time-rio_de_janeiro/test.hdf"
 )
-latlons = np.load(f"data/dataframe_grids/rio_de_janeiro-res=2km-256x256.npy")
+latlons = np.load(f"pipelines/precipitation_model/impa/data/dataframe_grids/rio_de_janeiro-res=2km-256x256.npy")
 feature = ground_truth_df["what"].attrs["feature"]
 timestep = int(ground_truth_df["what"].attrs["timestep"])
 
@@ -40,7 +40,7 @@ past_obs_dt = pd.to_datetime(past_obs)
 preds = [ground_truth_df]
 model_names = ["Ground truth"]
 for model_name in specs_dict["models"].keys():
-    predictions = f"predictions/{model_name}.hdf"
+    predictions = f"pipelines/precipitation_model/impa/predictions/{model_name}.hdf"
     try:
         pred_hdf = h5py.File(predictions)
     except FileNotFoundError:

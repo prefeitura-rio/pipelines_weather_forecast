@@ -11,11 +11,11 @@ from pipelines.precipitation_model.impa.src.utils.dataframe_utils import (
 
 # For Rio de Janeiro only
 
-elevation_file_small = "data/processed/elevations_data/elevation_rio_de_janeiro-res=2km-256x256.npy"
-elevation_file_large = "data/processed/elevations_data/elevation_rio_de_janeiro-res=4km-256x256.npy"
+elevation_file_small = "pipelines/precipitation_model/impa/data/processed/elevations_data/elevation_rio_de_janeiro-res=2km-256x256.npy"
+elevation_file_large = "pipelines/precipitation_model/impa/data/processed/elevations_data/elevation_rio_de_janeiro-res=4km-256x256.npy"
 
-latlon_file_small = "data/dataframe_grids/rio_de_janeiro-res=2km-256x256.npy"
-latlon_file_large = "data/dataframe_grids/rio_de_janeiro-res=4km-256x256.npy"
+latlon_file_small = "pipelines/precipitation_model/impa/data/dataframe_grids/rio_de_janeiro-res=2km-256x256.npy"
+latlon_file_large = "pipelines/precipitation_model/impa/data/dataframe_grids/rio_de_janeiro-res=4km-256x256.npy"
 
 
 class HDFDatasetMerged(HDFDatasetMultiple):

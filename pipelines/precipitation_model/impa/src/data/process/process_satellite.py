@@ -127,12 +127,12 @@ def process_satellite(
         return pd.concat(
             Parallel(n_jobs=num_workers)(
                 delayed(process_file)(file, bands, lat_bounds, lon_bounds, include_dataset_name)
-                for file in tqdm(glob(f"data/raw/satellite/{product}/{year}/{day:03d}/*/*.nc"))
+                for file in tqdm(glob(f"pipelines/precipitation_model/impa/data/raw/satellite/{product}/{year}/{day:03d}/*/*.nc"))
             )
         )
 
     end_date = datetime(year, 1, 1) + timedelta(day - 1)
-    today_file = Path(f"data/processed/satellite/{product}/{end_date.date()}.feather")
+    today_file = Path(f"pipelines/precipitation_model/impa/data/processed/satellite/{product}/{end_date.date()}.feather")
     if today_file.is_file():
         # Do not process older dates
         start_date = end_date
@@ -140,7 +140,7 @@ def process_satellite(
         start_date = datetime(year, 1, 1) + timedelta(day - 4)
 
     df_current = load_entire_day(pd.Timestamp(start_date))
-    output_path = Path(f"data/processed/satellite/{product}")
+    output_path = Path(f"pipelines/precipitation_model/impa/data/processed/satellite/{product}")
     output_path.mkdir(exist_ok=True, parents=True)
 
     for date in tqdm(
