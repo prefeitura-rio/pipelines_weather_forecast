@@ -82,7 +82,9 @@ def task_lag(lag: int):
 
     future_dt = last_obs_dt + datetime.timedelta(minutes=lag * timestep)
     past_dt = past_obs_dt + datetime.timedelta(minutes=lag * timestep)
-    output_filepath = pathlib.Path(f"pipelines/precipitation_model/impa/src/eval/viz/plot_real_time/lag={lag}.png")
+    output_filepath = pathlib.Path(
+        f"pipelines/precipitation_model/impa/src/eval/viz/plot_real_time/lag={lag}.png"
+    )
 
     future_time = (future_dt - datetime.timedelta(hours=3)).strftime("%H:%M")
     past_time = (past_dt - datetime.timedelta(hours=3)).strftime("%H:%M")
@@ -263,7 +265,9 @@ def create_images(num_workers=6, NLAGS=18):
         # Usar pool.imap para aplicar task_lag em paralelo com barra de progresso
         list(tqdm.tqdm(pool.imap(task_lag, range(1, NLAGS + 1)), total=NLAGS))
 
-    output_filepath = pathlib.Path("pipelines/precipitation_model/impa/src/eval/viz/plot_real_time/")
+    output_filepath = pathlib.Path(
+        "pipelines/precipitation_model/impa/src/eval/viz/plot_real_time/"
+    )
 
     if output_filepath.exists() and output_filepath.is_dir():
         files = list(output_filepath.glob("*"))
