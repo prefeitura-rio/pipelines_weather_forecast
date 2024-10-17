@@ -56,7 +56,9 @@ def task_lag(lag: int):
     else:
         print(f"Arquivo ground_truth {ground_truth_path} não encontrado.")
 
-    latlons_path = "pipelines/precipitation_model/impa/data/dataframe_grids/rio_de_janeiro-res=2km-256x256.npy"
+    latlons_path = (
+        "pipelines/precipitation_model/impa/data/dataframe_grids/rio_de_janeiro-res=2km-256x256.npy"
+    )
     if os.path.exists(ground_truth_path):
         latlons = np.load(latlons_path)
     else:

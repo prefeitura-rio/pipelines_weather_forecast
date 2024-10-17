@@ -21,6 +21,7 @@ from pipelines.constants import constants  # pylint: disable=E0611, E0401
 from pipelines.precipitation_model.impa.schedules import (  # pylint: disable=E0611, E0401
     prediction_schedule,
 )
+
 # from pipelines.precipitation_model.impa.src.eval.viz.plot_real_time import create_images
 from pipelines.precipitation_model.impa.tasks import (  # pylint: disable=E0611, E0401
     download_files_from_s3,
