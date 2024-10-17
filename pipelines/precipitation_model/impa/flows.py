@@ -21,7 +21,7 @@ from pipelines.constants import constants  # pylint: disable=E0611, E0401
 from pipelines.precipitation_model.impa.schedules import (  # pylint: disable=E0611, E0401
     prediction_schedule,
 )
-from pipelines.precipitation_model.impa.src.eval.viz.plot_real_time import create_images
+# from pipelines.precipitation_model.impa.src.eval.viz.plot_real_time import create_images
 from pipelines.precipitation_model.impa.tasks import (  # pylint: disable=E0611, E0401
     download_files_from_s3,
     get_predictions,
@@ -114,16 +114,16 @@ with Flow(
         destination_folder=destination_folder_models,
         source_file_names=output_predict_filepaths,
     )
-    prediction_images_path = create_images()
-    destination_folder_images = get_storage_destination(
-        path="cor-clima-imagens/previsao_chuva/impa/"
-    )
-    upload_files_to_storage(
-        project="datario",
-        bucket_name="datario-public",
-        destination_folder=destination_folder_images,
-        source_file_names=prediction_images_path,
-    )
+    # prediction_images_path = create_images()
+    # destination_folder_images = get_storage_destination(
+    #     path="cor-clima-imagens/previsao_chuva/impa/"
+    # )
+    # upload_files_to_storage(
+    #     project="datario",
+    #     bucket_name="datario-public",
+    #     destination_folder=destination_folder_images,
+    #     source_file_names=prediction_images_path,
+    # )
 
     # image_path = create_image(geolocalized_prediction_datasets)
     # # Save prediction on file
