@@ -36,6 +36,7 @@ def download_file_from_s3(s3, product, year, day_of_year, hour):
     parent_folder.mkdir(parents=True, exist_ok=True)
 
     # download files
+    log(f"Bucket name = {BUCKET_NAME} and prefix = {prefix}")
     s3_result = s3.list_objects_v2(Bucket=BUCKET_NAME, Prefix=prefix, Delimiter="/")
     for obj in s3_result.get("Contents", []):
         key = obj["Key"]

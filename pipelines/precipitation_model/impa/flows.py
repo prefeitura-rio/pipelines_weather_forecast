@@ -70,7 +70,7 @@ with Flow(
     # Model parameters
     start_datetime = Parameter(
         "start_datetime",
-        default=None,
+        default="2024-10-17 10:00:00",
         required=False,
         # description="Datetime in YYYY-MM-dd HH:mm:ss format, UTC timezone",
     )
