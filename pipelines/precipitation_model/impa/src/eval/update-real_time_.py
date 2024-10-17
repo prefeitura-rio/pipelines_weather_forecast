@@ -29,6 +29,7 @@ def download_data(product, year, day_of_year, hour):
     # Initialize the S3 client
     s3 = boto3.client("s3", config=Config(signature_version=UNSIGNED))
     # create parent folders
+    print(product, year, day_of_year, hour)
     prefix = f"{product}/{year}/{day_of_year:03d}/{hour:02d}/"
     parent_folder = pathlib.Path(f"data/raw/satellite/{prefix}")
     parent_folder.mkdir(parents=True, exist_ok=True)
