@@ -96,10 +96,12 @@ def process_data(year, day_of_year, num_workers, dt):
     process_satellite(year=year, day=day_of_year, num_workers=num_workers, product="ABI-L2-RRQPEF")
     process_satellite(year=year, day=day_of_year, num_workers=num_workers, product="ABI-L2-ACHAF")
     build_dataframe(overwrite=True, num_workers=num_workers, dt=dt)
+    log("End processing satellite data...")
+    return True
 
 
 @task
-def get_predictions(num_workers, cuda):
+def get_predictions(num_workers, cuda, wait=None):  # pylint: disable=unused-argument
     """
     get predictions
     """

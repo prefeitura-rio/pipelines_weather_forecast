@@ -102,9 +102,9 @@ with Flow(
     download_files_from_s3(relevant_dts, days_of_year, years)
 
     # Process and predict for the latest day
-    process_data(years[0], days_of_year[0], num_workers, dt)
+    data_processed = process_data(years[0], days_of_year[0], num_workers, dt)
 
-    output_predict_filepaths = get_predictions(num_workers, cuda)
+    output_predict_filepaths = get_predictions(num_workers, cuda, wait=data_processed)
 
     destination_folder_models = get_storage_destination(
         path="cor-clima-imagens/previsao_chuva/impa/modelos"
