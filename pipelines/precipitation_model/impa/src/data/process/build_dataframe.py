@@ -109,8 +109,12 @@ def build_dataframe(
             )
             exit(0)
 
-    grid_small = np.load(f"pipelines/precipitation_model/impa/data/dataframe_grids/{location}-res=2km-256x256.npy")
-    grid_large = np.load(f"pipelines/precipitation_model/impa/data/dataframe_grids/{location}-res=4km-256x256.npy")
+    grid_small = np.load(
+        f"pipelines/precipitation_model/impa/data/dataframe_grids/{location}-res=2km-256x256.npy"
+    )
+    grid_large = np.load(
+        f"pipelines/precipitation_model/impa/data/dataframe_grids/{location}-res=4km-256x256.npy"
+    )
     assert grid_small.shape == grid_large.shape
     ni, nj = grid_small.shape[:2]
     with h5py.File(output_filepath, "w") as f:

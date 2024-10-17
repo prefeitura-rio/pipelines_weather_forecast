@@ -50,7 +50,9 @@ def predict(num_workers=8, cuda=False):
         model_path = pathlib.Path(f"pipelines/precipitation_model/impa/src/models/{model_name}/")
         model_file = model_path / info["model_file"]
 
-        output_predict_filepaths = [f"pipelines/precipitation_model/impa/predictions/{model_name}.hdf"]
+        output_predict_filepaths = [
+            f"pipelines/precipitation_model/impa/predictions/{model_name}.hdf"
+        ]
         log(f"\nmodel_path: {model_path}")
         log(f"model_file: {model_file}")
         log(f"output_predict_filepaths: {output_predict_filepaths}\n")

@@ -52,7 +52,9 @@ def task_lag(lag: int):
     ground_truth_df = h5py.File(
         "pipelines/precipitation_model/impa/data/dataframes/SAT-CORRECTED-ABI-L2-RRQPEF-real_time-rio_de_janeiro/test.hdf"
     )
-    latlons = np.load("pipelines/precipitation_model/impa/data/dataframe_grids/rio_de_janeiro-res=2km-256x256.npy")
+    latlons = np.load(
+        "pipelines/precipitation_model/impa/data/dataframe_grids/rio_de_janeiro-res=2km-256x256.npy"
+    )
     feature = ground_truth_df["what"].attrs["feature"]
     timestep = int(ground_truth_df["what"].attrs["timestep"])
 
