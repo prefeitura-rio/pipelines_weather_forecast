@@ -6,6 +6,7 @@ Plot reak time predictions
 """
 import datetime
 import json
+import os
 import pathlib
 
 # from argparse import ArgumentParser
@@ -49,12 +50,18 @@ def task_lag(lag: int):
     with open(config, "r") as json_file:
         specs_dict = json.load(json_file)
 
-    ground_truth_df = h5py.File(
-        "pipelines/precipitation_model/impa/data/dataframes/SAT-CORRECTED-ABI-L2-RRQPEF-real_time-rio_de_janeiro/test.hdf"
-    )
-    latlons = np.load(
-        "pipelines/precipitation_model/impa/data/dataframe_grids/rio_de_janeiro-res=2km-256x256.npy"
-    )
+    ground_truth_path = "pipelines/precipitation_model/impa/data/dataframes/SAT-CORRECTED-ABI-L2-RRQPEF-real_time-rio_de_janeiro/test.hdf"
+    if os.path.exists(ground_truth_path):
+        ground_truth_df = h5py.File(ground_truth_path)
+    else:
+        print(f"Arquivo ground_truth {ground_truth_path} não encontrado.")
+
+    latlons_path = "pipelines/precipitation_model/impa/data/dataframe_grids/rio_de_janeiro-res=2km-256x256.npy"
+    if os.path.exists(ground_truth_path):
+        latlons = np.load(latlons_path)
+    else:
+        print(f"Arquivo de latlon{latlons_path} não encontrado.")
+
     feature = ground_truth_df["what"].attrs["feature"]
     timestep = int(ground_truth_df["what"].attrs["timestep"])
 
