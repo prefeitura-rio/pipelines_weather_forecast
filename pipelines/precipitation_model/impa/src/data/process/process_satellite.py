@@ -95,7 +95,14 @@ def process_file(
 
 
 def process_satellite(
-    product="ABI-L2-RRQPEF", lat_min=-26.0, lat_max=-19.0, lon_min=-47.0, lon_max=-40.0, num_workers=16, day=-1, year=-1
+    product="ABI-L2-RRQPEF",
+    lat_min=-26.0,
+    lat_max=-19.0,
+    lon_min=-47.0,
+    lon_max=-40.0,
+    num_workers=16,
+    day=-1,
+    year=-1,
 ):
     match product:
         case "ABI-L2-MCMIPF":  # Cloud and Moisture Imagery
@@ -127,12 +134,18 @@ def process_satellite(
         return pd.concat(
             Parallel(n_jobs=num_workers)(
                 delayed(process_file)(file, bands, lat_bounds, lon_bounds, include_dataset_name)
-                for file in tqdm(glob(f"pipelines/precipitation_model/impa/data/raw/satellite/{product}/{year}/{day:03d}/*/*.nc"))
+                for file in tqdm(
+                    glob(
+                        f"pipelines/precipitation_model/impa/data/raw/satellite/{product}/{year}/{day:03d}/*/*.nc"
+                    )
+                )
             )
         )
 
     end_date = datetime(year, 1, 1) + timedelta(day - 1)
-    today_file = Path(f"pipelines/precipitation_model/impa/data/processed/satellite/{product}/{end_date.date()}.feather")
+    today_file = Path(
+        f"pipelines/precipitation_model/impa/data/processed/satellite/{product}/{end_date.date()}.feather"
+    )
     if today_file.is_file():
         # Do not process older dates
         start_date = end_date
