@@ -8,7 +8,6 @@ import pathlib
 import boto3
 from botocore import UNSIGNED
 from botocore.config import Config
-
 from prefeitura_rio.pipelines_utils.logging import log
 
 

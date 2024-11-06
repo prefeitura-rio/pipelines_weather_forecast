@@ -99,10 +99,14 @@ with Flow(
     relevant_dts, days_of_year, years = get_relevant_dates_informations(dt=dt)
 
     # Download data from s3
-    downloaded_files = download_files_from_s3(relevant_dts=relevant_dts, days_of_year=days_of_year, years=years)
+    downloaded_files = download_files_from_s3(
+        relevant_dts=relevant_dts, days_of_year=days_of_year, years=years
+    )
 
     # Process and predict for the latest day
-    data_processed = process_data(year=years[0], day_of_year=days_of_year[0], num_workers=num_workers, dt=dt)
+    data_processed = process_data(
+        year=years[0], day_of_year=days_of_year[0], num_workers=num_workers, dt=dt
+    )
     data_processed.set_upstream(downloaded_files)
 
     output_predict_filepaths = get_predictions(num_workers=num_workers, cuda=cuda)
