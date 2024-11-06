@@ -6,9 +6,6 @@ Tasks
 
 import datetime
 
-import boto3
-from botocore import UNSIGNED
-from botocore.config import Config
 from prefect import task
 from prefeitura_rio.pipelines_utils.logging import log
 
@@ -64,17 +61,14 @@ def get_relevant_dates_informations(dt):
 
 @task
 def download_files_from_s3(relevant_dts, days_of_year, years):
-    # Initialize the S3 client
-    s3 = boto3.client("s3", config=Config(signature_version=UNSIGNED))
-
     hours = range(24)
     for i in range(4):
         day_of_year = days_of_year[i]
         year = years[i]
         print(f"Downloading the latest data for {relevant_dts[i].strftime('%Y-%m-%d')}...")
         for hour in hours:
-            download_file_from_s3(s3, "ABI-L2-RRQPEF", year, day_of_year, hour)
-            download_file_from_s3(s3, "ABI-L2-ACHAF", year, day_of_year, hour)
+            download_file_from_s3("ABI-L2-RRQPEF", year, day_of_year, hour)
+            download_file_from_s3("ABI-L2-ACHAF", year, day_of_year, hour)
 
 
 @task
@@ -101,7 +95,7 @@ def process_data(year, day_of_year, num_workers, dt):
 
 
 @task
-def get_predictions(num_workers, cuda, wait=None):  # pylint: disable=unused-argument
+def get_predictions(num_workers, cuda):
     """
     get predictions
     """

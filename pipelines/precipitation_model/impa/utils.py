@@ -5,10 +5,14 @@ Utils
 """
 import pathlib
 
+import boto3
+from botocore import UNSIGNED
+from botocore.config import Config
+
 from prefeitura_rio.pipelines_utils.logging import log
 
 
-def download_file_from_s3(s3, product, year, day_of_year, hour):
+def download_file_from_s3(product, year, day_of_year, hour):
     """
     Download satellite data from AWS S3 bucket.
 
@@ -29,6 +33,17 @@ def download_file_from_s3(s3, product, year, day_of_year, hour):
     -------
     None
     """
+    # Initialize the S3 client
+    signature_version = None
+    if isinstance(UNSIGNED, type):
+        # We're getting the class, not an instance
+        signature_version = UNSIGNED()
+    else:
+        # We're getting an instance
+        signature_version = UNSIGNED
+
+    s3 = boto3.client("s3", config=Config(signature_version=signature_version))
+
     BUCKET_NAME = "noaa-goes16"
     # create parent folders
     prefix = f"{product}/{year}/{day_of_year:03d}/{hour:02d}/"

@@ -95,16 +95,18 @@ with Flow(
     #########################
 
     # Input arguments (These can be passed via Prefect Parameters or CLI)
-    dt = get_start_datetime(start_datetime)
-    relevant_dts, days_of_year, years = get_relevant_dates_informations(dt)
+    dt = get_start_datetime(start_datetime=start_datetime)
+    relevant_dts, days_of_year, years = get_relevant_dates_informations(dt=dt)
 
     # Download data from s3
-    download_files_from_s3(relevant_dts, days_of_year, years)
+    downloaded_files = download_files_from_s3(relevant_dts=relevant_dts, days_of_year=days_of_year, years=years)
 
     # Process and predict for the latest day
-    data_processed = process_data(years[0], days_of_year[0], num_workers, dt)
+    data_processed = process_data(year=years[0], day_of_year=days_of_year[0], num_workers=num_workers, dt=dt)
+    data_processed.set_upstream(downloaded_files)
 
-    output_predict_filepaths = get_predictions(num_workers, cuda, wait=data_processed)
+    output_predict_filepaths = get_predictions(num_workers=num_workers, cuda=cuda)
+    output_predict_filepaths.set_upstream(data_processed)
 
     destination_folder_models = get_storage_destination(
         path="cor-clima-imagens/previsao_chuva/impa/modelos"
