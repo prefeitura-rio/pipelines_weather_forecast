@@ -5,6 +5,7 @@ Download sattelite goes 16 data, treat then and predict
 """
 
 from prefect import Parameter  # pylint: disable=E0611, E0401
+from prefect.executors import LocalDaskExecutor  # pylint: disable=E0611, E0401
 from prefect.run_configs import KubernetesRun  # pylint: disable=E0611, E0401
 from prefect.storage import GCS  # pylint: disable=E0611, E0401
 
@@ -186,3 +187,4 @@ prediction_previsao_chuva_impa.run_config = KubernetesRun(
     labels=[constants.WEATHER_FORECAST_AGENT_LABEL.value],
 )
 prediction_previsao_chuva_impa.schedule = prediction_schedule
+prediction_previsao_chuva_impa.executor = LocalDaskExecutor(num_workers=10)
