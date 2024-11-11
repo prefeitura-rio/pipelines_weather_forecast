@@ -108,7 +108,7 @@ def process_satellite(
     year=-1,
     download_base_path="",
 ):
-    """ Empty """
+    """Empty"""
     match product:
         case "ABI-L2-MCMIPF":  # Cloud and Moisture Imagery
             bands = ["CMI_C08", "CMI_C09", "CMI_C10", "CMI_C11"]
