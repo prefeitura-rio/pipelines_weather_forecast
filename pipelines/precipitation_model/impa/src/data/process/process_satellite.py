@@ -13,10 +13,9 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from joblib import Parallel, delayed  # pylint: disable=E0611, E0401
+from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 from pyproj import Proj
 from tqdm import tqdm  # pylint: disable=E0611, E0401
-
-from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 
 
 def process_file(
