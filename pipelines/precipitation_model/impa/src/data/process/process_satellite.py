@@ -103,7 +103,9 @@ def process_satellite(
     num_workers=16,
     day=-1,
     year=-1,
+    download_base_path="",
 ):
+    """ """
     match product:
         case "ABI-L2-MCMIPF":  # Cloud and Moisture Imagery
             bands = ["CMI_C08", "CMI_C09", "CMI_C10", "CMI_C11"]
@@ -128,17 +130,14 @@ def process_satellite(
     lat_bounds = lat_min, lat_max
     lon_bounds = lon_min, lon_max
 
-    def load_entire_day(ts: pd.Timestamp) -> pd.DataFrame:
+    def load_entire_day(ts: pd.Timestamp, download_base_path) -> pd.DataFrame:
+        """ """
         year = ts.year
         day = ts.dayofyear
         return pd.concat(
             Parallel(n_jobs=num_workers)(
                 delayed(process_file)(file, bands, lat_bounds, lon_bounds, include_dataset_name)
-                for file in tqdm(
-                    glob(
-                        f"pipelines/precipitation_model/impa/data/raw/satellite/{product}/{year}/{day:03d}/*/*.nc"
-                    )
-                )
+                for file in tqdm(glob(f"{download_base_path}/{product}/{year}/{day:03d}/*/*.nc"))
             )
         )
 
@@ -152,7 +151,7 @@ def process_satellite(
     else:
         start_date = datetime(year, 1, 1) + timedelta(day - 4)
 
-    df_current = load_entire_day(pd.Timestamp(start_date))
+    df_current = load_entire_day(pd.Timestamp(start_date), download_base_path)
     output_path = Path(f"pipelines/precipitation_model/impa/data/processed/satellite/{product}")
     output_path.mkdir(exist_ok=True, parents=True)
 

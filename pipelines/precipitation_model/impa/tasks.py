@@ -6,8 +6,8 @@ Tasks
 
 import datetime
 
-from prefect import task
-from prefeitura_rio.pipelines_utils.logging import log
+from prefect import task  # pylint: disable=E0611, E0401
+from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 
 from pipelines.precipitation_model.impa.src.data.process.build_dataframe import (
     build_dataframe,
@@ -60,19 +60,33 @@ def get_relevant_dates_informations(dt):
 
 
 @task
-def download_files_from_s3(relevant_dts, days_of_year, years):
+def download_files_from_s3(
+    relevant_dts, days_of_year, years, download_base_path: str = "data/raw/satellite"
+):
+    """
+    Download satellite data from AWS S3 bucket.
+
+    Parameters
+    ----------
+
+    Returns
+    -------
+    None
+    """
     hours = range(24)
     for i in range(4):
         day_of_year = days_of_year[i]
         year = years[i]
         print(f"Downloading the latest data for {relevant_dts[i].strftime('%Y-%m-%d')}...")
         for hour in hours:
-            download_file_from_s3("ABI-L2-RRQPEF", year, day_of_year, hour)
-            download_file_from_s3("ABI-L2-ACHAF", year, day_of_year, hour)
+            download_file_from_s3("ABI-L2-RRQPEF", year, day_of_year, hour, download_base_path)
+            download_file_from_s3("ABI-L2-ACHAF", year, day_of_year, hour, download_base_path)
 
 
 @task
-def process_data(year, day_of_year, num_workers, dt):
+def process_data(
+    year, day_of_year, num_workers, dt, download_base_path: str = "data/raw/satellite", wait=None
+):
     """
     Processes satellite data for a given year and day of the year using the specified
     number of workers and datetime.
@@ -87,15 +101,27 @@ def process_data(year, day_of_year, num_workers, dt):
     products using `process_satellite`, and then builds a dataframe with `build_dataframe`.
     """
     log("Processing satellite data...")
-    process_satellite(year=year, day=day_of_year, num_workers=num_workers, product="ABI-L2-RRQPEF")
-    process_satellite(year=year, day=day_of_year, num_workers=num_workers, product="ABI-L2-ACHAF")
+    process_satellite(
+        year=year,
+        day=day_of_year,
+        num_workers=num_workers,
+        product="ABI-L2-RRQPEF",
+        download_base_path=download_base_path,
+    )
+    process_satellite(
+        year=year,
+        day=day_of_year,
+        num_workers=num_workers,
+        product="ABI-L2-ACHAF",
+        download_base_path=download_base_path,
+    )
     build_dataframe(overwrite=True, num_workers=num_workers, dt=dt)
     log("End processing satellite data...")
     return True
 
 
 @task
-def get_predictions(num_workers, cuda):
+def get_predictions(num_workers, cuda, wait=None):
     """
     get predictions
     """

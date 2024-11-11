@@ -4,14 +4,15 @@
 Download sattelite goes 16 data, treat then and predict
 """
 
-from prefect import Parameter
-from prefect.run_configs import KubernetesRun
-from prefect.storage import GCS
+from prefect import Parameter  # pylint: disable=E0611, E0401
+from prefect.run_configs import KubernetesRun  # pylint: disable=E0611, E0401
+from prefect.storage import GCS  # pylint: disable=E0611, E0401
 
 # from google.api_core.exceptions import Forbidden
 from prefeitura_rio.pipelines_utils.custom import Flow  # pylint: disable=E0611, E0401
 
 # from prefeitura_rio.pipelines_utils.logging import log
+# pylint: disable=E0611, E0401
 from prefeitura_rio.pipelines_utils.state_handlers import (
     handler_initialize_sentry,
     handler_inject_bd_credentials,
@@ -90,6 +91,7 @@ with Flow(
     )
     table_id = Parameter("table_id", default="modelo_satelite_goes_16_impa", required=False)
 
+    download_base_path = "data/raw/satellite"
     #########################
     #  Start flow           #
     #########################
@@ -100,17 +102,24 @@ with Flow(
 
     # Download data from s3
     downloaded_files = download_files_from_s3(
-        relevant_dts=relevant_dts, days_of_year=days_of_year, years=years
+        relevant_dts=relevant_dts,
+        days_of_year=days_of_year,
+        years=years,
+        download_base_path=download_base_path,
     )
 
     # Process and predict for the latest day
     data_processed = process_data(
-        year=years[0], day_of_year=days_of_year[0], num_workers=num_workers, dt=dt
+        year=years[0],
+        day_of_year=days_of_year[0],
+        num_workers=num_workers,
+        dt=dt,
+        wait=downloaded_files,
     )
-    data_processed.set_upstream(downloaded_files)
 
-    output_predict_filepaths = get_predictions(num_workers=num_workers, cuda=cuda)
-    output_predict_filepaths.set_upstream(data_processed)
+    output_predict_filepaths = get_predictions(
+        num_workers=num_workers, cuda=cuda, wait=data_processed
+    )
 
     destination_folder_models = get_storage_destination(
         path="cor-clima-imagens/previsao_chuva/impa/modelos"
