@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
+"""
+Process satellite data
+"""
 # flake8: noqa: E501
 
-from argparse import ArgumentParser
+# from argparse import ArgumentParser
 from datetime import datetime, timedelta
 from glob import glob
 from pathlib import Path
@@ -9,9 +12,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import xarray as xr
-from joblib import Parallel, delayed
+from joblib import Parallel, delayed  # pylint: disable=E0611, E0401
 from pyproj import Proj
-from tqdm import tqdm
+from tqdm import tqdm  # pylint: disable=E0611, E0401
 
 
 def process_file(
@@ -105,7 +108,7 @@ def process_satellite(
     year=-1,
     download_base_path="",
 ):
-    """ """
+    """ Empty """
     match product:
         case "ABI-L2-MCMIPF":  # Cloud and Moisture Imagery
             bands = ["CMI_C08", "CMI_C09", "CMI_C10", "CMI_C11"]
@@ -161,7 +164,7 @@ def process_satellite(
     ):
         next_date = date + timedelta(days=1)
         try:
-            df_next = load_entire_day(next_date)
+            df_next = load_entire_day(next_date, download_base_path)
             df = pd.concat([df_current, df_next])
         except ValueError:
             df = df_current
@@ -176,16 +179,16 @@ def process_satellite(
         del df_next
 
 
-if __name__ == "__main__":
-    parser = ArgumentParser()
-    parser.add_argument("--product", type=str, default="ABI-L2-RRQPEF")
-    parser.add_argument("--lat_min", type=float, default=-26.0)
-    parser.add_argument("--lat_max", type=float, default=-19.0)
-    parser.add_argument("--lon_min", type=float, default=-47.0)
-    parser.add_argument("--lon_max", type=float, default=-40.0)
-    parser.add_argument("--num_workers", type=int, default=16)
-    parser.add_argument("--day", type=int, default=-1)
-    parser.add_argument("--year", type=int, default=-1)
-    args = parser.parse_args()
+# if __name__ == "__main__":
+#     parser = ArgumentParser()
+#     parser.add_argument("--product", type=str, default="ABI-L2-RRQPEF")
+#     parser.add_argument("--lat_min", type=float, default=-26.0)
+#     parser.add_argument("--lat_max", type=float, default=-19.0)
+#     parser.add_argument("--lon_min", type=float, default=-47.0)
+#     parser.add_argument("--lon_max", type=float, default=-40.0)
+#     parser.add_argument("--num_workers", type=int, default=16)
+#     parser.add_argument("--day", type=int, default=-1)
+#     parser.add_argument("--year", type=int, default=-1)
+#     args = parser.parse_args()
 
-    process_satellite(**vars(args))
+#     process_satellite(**vars(args))
