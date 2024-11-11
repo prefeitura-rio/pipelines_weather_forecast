@@ -16,6 +16,8 @@ from joblib import Parallel, delayed  # pylint: disable=E0611, E0401
 from pyproj import Proj
 from tqdm import tqdm  # pylint: disable=E0611, E0401
 
+from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
+
 
 def process_file(
     file_path: str,
@@ -109,6 +111,7 @@ def process_satellite(
     download_base_path="",
 ):
     """Empty"""
+    log(f"Processing satellite {product}")
     match product:
         case "ABI-L2-MCMIPF":  # Cloud and Moisture Imagery
             bands = ["CMI_C08", "CMI_C09", "CMI_C10", "CMI_C11"]
@@ -154,6 +157,7 @@ def process_satellite(
     else:
         start_date = datetime(year, 1, 1) + timedelta(day - 4)
 
+    log(f"Start loading entire day of start_date {start_date}")
     df_current = load_entire_day(pd.Timestamp(start_date), download_base_path)
     output_path = Path(f"pipelines/precipitation_model/impa/data/processed/satellite/{product}")
     output_path.mkdir(exist_ok=True, parents=True)
@@ -164,6 +168,7 @@ def process_satellite(
     ):
         next_date = date + timedelta(days=1)
         try:
+            log(f"Start loading entire day for {next_date}")
             df_next = load_entire_day(next_date, download_base_path)
             df = pd.concat([df_current, df_next])
         except ValueError:
