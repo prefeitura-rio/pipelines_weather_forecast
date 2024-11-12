@@ -83,7 +83,7 @@ with Flow(
         # description="Number of workers to use for parallel processing",
     )
     cuda = Parameter("cuda", default=False, required=False)  # description="UseCUDA for prediction"
-    memory = Parameter("memory", default="16Gi", required=False)
+    # memory = Parameter("memory", default="16Gi", required=False)
 
     # Parameters for saving data on GCP
     materialize_after_dump = Parameter("materialize_after_dump", default=False, required=False)
@@ -188,8 +188,8 @@ prediction_previsao_chuva_impa.run_config = KubernetesRun(
     labels=[
         constants.WEATHER_FORECAST_AGENT_LABEL.value,
     ],
-    memory_limit=memory,
-    memory_request=memory,
+    memory_limit="12Gi",
+    memory_request="12Gi",
 )
 prediction_previsao_chuva_impa.schedule = prediction_schedule
 prediction_previsao_chuva_impa.executor = LocalDaskExecutor(num_workers=10)
