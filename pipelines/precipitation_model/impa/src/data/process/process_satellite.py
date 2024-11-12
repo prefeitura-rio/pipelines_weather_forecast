@@ -3,6 +3,7 @@
 Process satellite data
 """
 # flake8: noqa: E501
+# pylint: disable=invalid-name, line-too-long, too-many-locals, too-many-arguments
 
 # from argparse import ArgumentParser
 from datetime import datetime, timedelta
@@ -140,12 +141,23 @@ def process_satellite(
         """ """
         year = ts.year
         day = ts.dayofyear
-        return pd.concat(
-            Parallel(n_jobs=num_workers)(
+        files = glob(f"{download_base_path}/{product}/{year}/{day:03d}/*/*.nc")
+
+        dfs = []
+        batch_size = 10  # Ajuste o tamanho do lote conforme necessário
+
+        for i in tqdm(range(0, len(files), batch_size)):
+            start = i + 1
+            end = min(i + batch_size, len(files))
+            log(f"Processando lote de arquivos {start} a {end}")
+            batch_files = files[i : i + batch_size]
+            batch_dfs = Parallel(n_jobs=num_workers)(
                 delayed(process_file)(file, bands, lat_bounds, lon_bounds, include_dataset_name)
-                for file in tqdm(glob(f"{download_base_path}/{product}/{year}/{day:03d}/*/*.nc"))
+                for file in batch_files
             )
-        )
+            dfs.append(pd.concat(batch_dfs))
+
+        return pd.concat(dfs)
 
     end_date = datetime(year, 1, 1) + timedelta(day - 1)
     today_file = Path(
@@ -170,13 +182,13 @@ def process_satellite(
         try:
             log(f"Start loading entire day for {next_date}")
             df_next = load_entire_day(next_date, download_base_path)
-            df = pd.concat([df_current, df_next])
+            dfr = pd.concat([df_current, df_next])
         except ValueError:
-            df = df_current
+            dfr = df_current
             df_next = None
-        df = df[df["creation"].dt.date == date.date()]
-        df = df.reset_index(drop=True)
-        df.to_feather(f"{output_path}/{date.date()}.feather")
+        dfr = dfr[dfr["creation"].dt.date == date.date()]
+        dfr = dfr.reset_index(drop=True)
+        dfr.to_feather(f"{output_path}/{date.date()}.feather")
         try:
             df_current = df_next.copy()
         except AttributeError:
