@@ -143,7 +143,7 @@ def process_satellite(
         files = glob(f"{download_base_path}/{product}/{year}/{day:03d}/*/*.nc")
 
         dfs = []
-        batch_size = 10  # Ajuste o tamanho do lote conforme necessário
+        batch_size = 5  # Ajuste o tamanho do lote conforme necessário
 
         for i in tqdm(range(0, len(files), batch_size)):
             start = i + 1

@@ -184,7 +184,11 @@ prediction_previsao_chuva_impa.state_handlers = [handler_inject_bd_credentials]
 prediction_previsao_chuva_impa.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 prediction_previsao_chuva_impa.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
-    labels=[constants.WEATHER_FORECAST_AGENT_LABEL.value],
+    labels=[
+        constants.WEATHER_FORECAST_AGENT_LABEL.value,
+    ],
+    memory_limit="32Gi",
+    memory_request="32Gi",
 )
 prediction_previsao_chuva_impa.schedule = prediction_schedule
 prediction_previsao_chuva_impa.executor = LocalDaskExecutor(num_workers=10)
