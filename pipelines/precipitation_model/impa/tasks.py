@@ -61,7 +61,7 @@ def get_relevant_dates_informations(dt):
 
 @task
 def download_files_from_s3(
-    relevant_dts, days_of_year, years, download_base_path: str = "data/raw/satellite"
+    product, relevant_dts, days_of_year, years, download_base_path: str = "data/raw/satellite"
 ):
     """
     Download satellite data from AWS S3 bucket.
@@ -79,8 +79,7 @@ def download_files_from_s3(
         year = years[i]
         print(f"Downloading the latest data for {relevant_dts[i].strftime('%Y-%m-%d')}...")
         for hour in hours:
-            download_file_from_s3("ABI-L2-RRQPEF", year, day_of_year, hour, download_base_path)
-            download_file_from_s3("ABI-L2-ACHAF", year, day_of_year, hour, download_base_path)
+            download_file_from_s3(product, year, day_of_year, hour, download_base_path)
 
 
 @task

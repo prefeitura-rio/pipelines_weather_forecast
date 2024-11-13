@@ -94,7 +94,7 @@ with Flow(
     )
     table_id = Parameter("table_id", default="modelo_satelite_goes_16_impa", required=False)
 
-    download_base_path = "data/raw/satellite"
+    download_base_path = "pipelines/precipitation_model/impa/data/raw/satellite"
     #########################
     #  Start flow           #
     #########################
@@ -104,27 +104,34 @@ with Flow(
     relevant_dts, days_of_year, years = get_relevant_dates_informations(dt=dt)
 
     # Download data from s3
-    downloaded_files = download_files_from_s3(
+    downloaded_files_rr = download_files_from_s3(
+        product="ABI-L2-RRQPEF",
+        relevant_dts=relevant_dts,
+        days_of_year=days_of_year,
+        years=years,
+        download_base_path=download_base_path,
+    )
+    downloaded_files_achaf = download_files_from_s3(
+        product="ABI-L2-ACHAF",
         relevant_dts=relevant_dts,
         days_of_year=days_of_year,
         years=years,
         download_base_path=download_base_path,
     )
 
-    # Process and predict for the latest day
     data_processed_rr = process_satellite_task(
         year=years[0],
         day_of_year=days_of_year[0],
         num_workers=num_workers,
         product="ABI-L2-RRQPEF",
-        wait=downloaded_files,
+        wait=downloaded_files_rr,
     )
     data_processed_achaf = process_satellite_task(
         year=years[0],
         day_of_year=days_of_year[0],
         num_workers=num_workers,
         product="ABI-L2-ACHAF",
-        wait=downloaded_files,
+        wait=downloaded_files_achaf,
     )
     dfr = build_dataframe_task(num_workers, dt, wait=[data_processed_rr, data_processed_achaf])
     output_predict_filepaths = get_predictions(num_workers=num_workers, cuda=cuda, wait=dfr)
