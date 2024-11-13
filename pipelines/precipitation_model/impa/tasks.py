@@ -61,7 +61,11 @@ def get_relevant_dates_informations(dt):
 
 @task
 def download_files_from_s3(
-    product, relevant_dts, days_of_year, years, download_base_path: str = "pipelines/precipitation_model/impa/data/raw/satellite"
+    product,
+    relevant_dts,
+    days_of_year,
+    years,
+    download_base_path: str = "pipelines/precipitation_model/impa/data/raw/satellite",
 ):
     """
     Download satellite data from AWS S3 bucket.
