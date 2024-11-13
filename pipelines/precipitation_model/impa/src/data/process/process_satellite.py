@@ -136,27 +136,37 @@ def process_satellite(
     lat_bounds = lat_min, lat_max
     lon_bounds = lon_min, lon_max
 
-    def load_entire_day(ts: pd.Timestamp, download_base_path) -> pd.DataFrame:
-        """ """
+    # def load_entire_day(ts: pd.Timestamp, download_base_path) -> pd.DataFrame:
+    #     """ """
+    #     year = ts.year
+    #     day = ts.dayofyear
+    #     files = glob(f"{download_base_path}/{product}/{year}/{day:03d}/*/*.nc")
+
+    #     dfs = []
+    #     batch_size = 5  # Ajuste o tamanho do lote conforme necessário
+
+    #     for i in tqdm(range(0, len(files), batch_size)):
+    #         start = i + 1
+    #         end = min(i + batch_size, len(files))
+    #         log(f"Processando lote de arquivos {start} a {end}")
+    #         batch_files = files[i : i + batch_size]
+    #         batch_dfs = Parallel(n_jobs=num_workers)(
+    #             delayed(process_file)(file, bands, lat_bounds, lon_bounds, include_dataset_name)
+    #             for file in batch_files
+    #         )
+    #         dfs.append(pd.concat(batch_dfs))
+
+    #     return pd.concat(dfs)
+
+    def load_entire_day(ts: pd.Timestamp) -> pd.DataFrame:
         year = ts.year
         day = ts.dayofyear
-        files = glob(f"{download_base_path}/{product}/{year}/{day:03d}/*/*.nc")
-
-        dfs = []
-        batch_size = 5  # Ajuste o tamanho do lote conforme necessário
-
-        for i in tqdm(range(0, len(files), batch_size)):
-            start = i + 1
-            end = min(i + batch_size, len(files))
-            log(f"Processando lote de arquivos {start} a {end}")
-            batch_files = files[i : i + batch_size]
-            batch_dfs = Parallel(n_jobs=num_workers)(
+        return pd.concat(
+            Parallel(n_jobs=num_workers)(
                 delayed(process_file)(file, bands, lat_bounds, lon_bounds, include_dataset_name)
-                for file in batch_files
+                for file in tqdm(glob(f"{download_base_path}/{product}/{year}/{day:03d}/*/*.nc"))
             )
-            dfs.append(pd.concat(batch_dfs))
-
-        return pd.concat(dfs)
+        )
 
     end_date = datetime(year, 1, 1) + timedelta(day - 1)
     today_file = Path(

@@ -84,8 +84,13 @@ def download_files_from_s3(
 
 
 @task
-def process_data(
-    year, day_of_year, num_workers, dt, download_base_path: str = "data/raw/satellite", wait=None
+def process_satellite_task(
+    year,
+    day_of_year,
+    num_workers,
+    product,
+    download_base_path: str = "data/raw/satellite",
+    wait=None,
 ):
     """
     Processes satellite data for a given year and day of the year using the specified
@@ -100,23 +105,24 @@ def process_data(
     This function logs the processing activity, processes satellite data for specified
     products using `process_satellite`, and then builds a dataframe with `build_dataframe`.
     """
-    log("Processing satellite data...")
+    log(f"Processing {product} satellite data...")
     process_satellite(
         year=year,
         day=day_of_year,
         num_workers=num_workers,
-        product="ABI-L2-RRQPEF",
+        product=product,
         download_base_path=download_base_path,
     )
-    process_satellite(
-        year=year,
-        day=day_of_year,
-        num_workers=num_workers,
-        product="ABI-L2-ACHAF",
-        download_base_path=download_base_path,
-    )
+    log(f"End processing {product} satellite data...")
+    return True
+
+
+@task
+def build_dataframe_task(num_workers, dt, wait=None):
+    """ """
+    log("Start build dataframe...")
     build_dataframe(overwrite=True, num_workers=num_workers, dt=dt)
-    log("End processing satellite data...")
+    log("End build dataframe...")
     return True
 
 
@@ -125,4 +131,5 @@ def get_predictions(num_workers, cuda, wait=None):
     """
     get predictions
     """
+    log("Start predictions...")
     return predict(num_workers=num_workers, cuda=cuda)

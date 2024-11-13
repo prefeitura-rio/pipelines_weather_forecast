@@ -26,11 +26,12 @@ from pipelines.precipitation_model.impa.schedules import (  # pylint: disable=E0
 
 # from pipelines.precipitation_model.impa.src.eval.viz.plot_real_time import create_images
 from pipelines.precipitation_model.impa.tasks import (  # pylint: disable=E0611, E0401
+    build_dataframe_task,
     download_files_from_s3,
     get_predictions,
     get_relevant_dates_informations,
     get_start_datetime,
-    process_data,
+    process_satellite_task,
 )
 from pipelines.tasks import (  # pylint: disable=E0611, E0401
     get_storage_destination,
@@ -111,17 +112,22 @@ with Flow(
     )
 
     # Process and predict for the latest day
-    data_processed = process_data(
+    data_processed_rr = process_satellite_task(
         year=years[0],
         day_of_year=days_of_year[0],
         num_workers=num_workers,
-        dt=dt,
+        product="ABI-L2-RRQPEF",
         wait=downloaded_files,
     )
-
-    output_predict_filepaths = get_predictions(
-        num_workers=num_workers, cuda=cuda, wait=data_processed
+    data_processed_achaf = process_satellite_task(
+        year=years[0],
+        day_of_year=days_of_year[0],
+        num_workers=num_workers,
+        product="ABI-L2-ACHAF",
+        wait=downloaded_files,
     )
+    dfr = build_dataframe_task(num_workers, dt, wait=[data_processed_rr, data_processed_achaf])
+    output_predict_filepaths = get_predictions(num_workers=num_workers, cuda=cuda, wait=dfr)
 
     destination_folder_models = get_storage_destination(
         path="cor-clima-imagens/previsao_chuva/impa/modelos"
@@ -191,7 +197,7 @@ prediction_previsao_chuva_impa.run_config = KubernetesRun(
     # cpu_limit="1",
     cpu_request="500m",
     memory_limit="12Gi",
-    memory_request="12Gi",
+    memory_request="4Gi",
 )
 prediction_previsao_chuva_impa.schedule = prediction_schedule
 prediction_previsao_chuva_impa.executor = LocalDaskExecutor(num_workers=10)
