@@ -158,7 +158,7 @@ def process_satellite(
 
     #     return pd.concat(dfs)
 
-    def load_entire_day(ts: pd.Timestamp) -> pd.DataFrame:
+    def load_entire_day(ts: pd.Timestamp, download_base_path) -> pd.DataFrame:
         year = ts.year
         day = ts.dayofyear
         return pd.concat(
