@@ -9,6 +9,7 @@ Process satellite data
 from datetime import datetime, timedelta
 from glob import glob
 from pathlib import Path
+import os
 
 import numpy as np
 import pandas as pd
@@ -108,7 +109,7 @@ def process_satellite(
     num_workers=16,
     day=-1,
     year=-1,
-    download_base_path="",
+    download_base_path="pipelines/precipitation_model/impa/data/raw/satellite",
 ):
     """Empty"""
     log(f"Processing satellite {product}")
@@ -159,8 +160,15 @@ def process_satellite(
     #     return pd.concat(dfs)
 
     def load_entire_day(ts: pd.Timestamp, download_base_path) -> pd.DataFrame:
+        # pipelines/precipitation_model/impa/data/raw/satellite
+        print("**" * 6)
         year = ts.year
         day = ts.dayofyear
+        print(year, day, download_base_path)
+        print("--", os.listdir(f"{download_base_path}/{product}/{year}/{day:03d}/"))
+        # for file in tqdm(glob(f"{download_base_path}/{product}/{year}/{day:03d}/*/*.nc")):
+        # print("--", glob(f"{download_base_path}/{product}/{year}/{day:03d}/*/*.nc"))
+        # print(file)
         return pd.concat(
             Parallel(n_jobs=num_workers)(
                 delayed(process_file)(file, bands, lat_bounds, lon_bounds, include_dataset_name)
