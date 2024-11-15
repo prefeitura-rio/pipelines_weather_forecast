@@ -3,7 +3,6 @@
 Utils file
 """
 
-# from concurrent.futures import ThreadPoolExecutor, as_completed, wait
 from datetime import datetime, timedelta
 from time import sleep
 from typing import Callable, Dict, Tuple  # , List
@@ -162,5 +161,5 @@ def wait_run(api, task_response, flow_type: str = "dataflow") -> Dict:
 
     if response["state"] != "SUCCESS":
         log("Error processing this dataset. Stop flow or restart this task")
-
+    log(f"Wait run ended. Response: {response}.")
     return response
