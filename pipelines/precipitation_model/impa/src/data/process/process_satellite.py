@@ -5,8 +5,7 @@ Process satellite data
 # flake8: noqa: E501
 # pylint: disable=invalid-name, line-too-long, too-many-locals, too-many-arguments
 
-import os
-
+# import os
 # from argparse import ArgumentParser
 from datetime import datetime, timedelta
 from glob import glob
@@ -14,6 +13,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import psutil
 import xarray as xr
 from joblib import Parallel, delayed  # pylint: disable=E0611, E0401
 from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
@@ -42,6 +42,19 @@ def process_file(
         [1] https://github.com/blaylockbk/pyBKB_v3/blob/master/BB_GOES/mapping_GOES16_TrueColor.ipynb
         [2] https://proj4.org/operations/projections/geos.html
     """
+
+    # Obtém informações sobre o uso de memória
+    memory_info = psutil.virtual_memory()
+
+    # Total de RAM usada em bytes
+    ram_usada = memory_info.used
+
+    # Converte para gigabytes
+    ram_usada_gb = ram_usada / (1024**3)
+
+    # log(file_path)
+    log(f"\n\nRAM usada: {ram_usada_gb:.2f} GB\n\n")
+
     # Read satellite data
     dataset = xr.open_dataset(file_path)
 
@@ -80,15 +93,15 @@ def process_file(
         columns=["lat", "lon", *bands],
     )
 
-    # Remove nan and infinite values
-    df = df.replace(np.inf, np.nan)
-    df = df.dropna(how="any", axis=0)
-
     # Discard observations for latitudes and longitudes outside bounds
     if lat_bounds:
         df = df[(df["lat"] > lat_bounds[0]) & (df["lat"] < lat_bounds[1])]
     if lon_bounds:
         df = df[(df["lon"] > lon_bounds[0]) & (df["lon"] < lon_bounds[1])]
+
+    # Remove nan and infinite values
+    df = df.replace(np.inf, np.nan)
+    df = df.dropna(how="any", axis=0)
 
     # Include datetimes of file creation and start and end of scan (UTC-3)
     df["start"] = scan_start  # - timedelta(hours=3)
@@ -166,7 +179,7 @@ def process_satellite(
         year = ts.year
         day = ts.dayofyear
         print(year, day, download_base_path)
-        print("--", os.listdir(f"{download_base_path}/{product}/{year}/{day:03d}/"))
+        # print("--", os.listdir(f"{download_base_path}/{product}/{year}/{day:03d}/"))
         # for file in tqdm(glob(f"{download_base_path}/{product}/{year}/{day:03d}/*/*.nc")):
         # print("--", glob(f"{download_base_path}/{product}/{year}/{day:03d}/*/*.nc"))
         # print(file)
