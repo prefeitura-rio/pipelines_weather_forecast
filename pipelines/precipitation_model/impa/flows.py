@@ -131,7 +131,7 @@ with Flow(
         day_of_year=days_of_year[0],
         num_workers=num_workers,
         product="ABI-L2-ACHAF",
-        wait=downloaded_files_achaf,
+        wait=[downloaded_files_achaf, data_processed_rr],
     )
     dfr = build_dataframe_task(num_workers, dt, wait=[data_processed_rr, data_processed_achaf])
     output_predict_filepaths = get_predictions(num_workers=num_workers, cuda=cuda, wait=dfr)
@@ -203,8 +203,8 @@ prediction_previsao_chuva_impa.run_config = KubernetesRun(
     ],
     # cpu_limit="1",
     cpu_request="500m",
-    # memory_limit="12Gi",
-    # memory_request="8Gi",
+    memory_limit="30Gi",
+    memory_request="15Gi",
 )
 prediction_previsao_chuva_impa.schedule = prediction_schedule
-prediction_previsao_chuva_impa.executor = LocalDaskExecutor(num_workers=10)
+prediction_previsao_chuva_impa.executor = LocalDaskExecutor(num_workers=2)  # 10
