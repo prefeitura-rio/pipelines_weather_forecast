@@ -183,6 +183,13 @@ def process_satellite(
         # for file in tqdm(glob(f"{download_base_path}/{product}/{year}/{day:03d}/*/*.nc")):
         # print("--", glob(f"{download_base_path}/{product}/{year}/{day:03d}/*/*.nc"))
         # print(file)
+
+        # Obtém informações sobre o uso de memória
+        memory_info = psutil.virtual_memory()
+        ram_usada = memory_info.used
+        ram_usada_gb = ram_usada / (1024**3)
+        log(f"\n\nRAM usada no load_entire_day: {ram_usada_gb:.2f} GB\n\n")
+
         return pd.concat(
             Parallel(n_jobs=num_workers)(
                 delayed(process_file)(file, bands, lat_bounds, lon_bounds, include_dataset_name)
