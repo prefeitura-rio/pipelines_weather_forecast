@@ -5,13 +5,15 @@ Utils
 """
 import pathlib
 
-import boto3
-from botocore import UNSIGNED
-from botocore.config import Config
-from prefeitura_rio.pipelines_utils.logging import log
+import boto3  # pylint: disable=E0611, E0401
+from botocore import UNSIGNED  # pylint: disable=E0611, E0401
+from botocore.config import Config  # pylint: disable=E0611, E0401
+from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 
 
-def download_file_from_s3(product, year, day_of_year, hour):
+def download_file_from_s3(
+    product, year, day_of_year, hour, download_base_path: str = "data/raw/satellite"
+) -> str:
     """
     Download satellite data from AWS S3 bucket.
 
@@ -46,7 +48,7 @@ def download_file_from_s3(product, year, day_of_year, hour):
     BUCKET_NAME = "noaa-goes16"
     # create parent folders
     prefix = f"{product}/{year}/{day_of_year:03d}/{hour:02d}/"
-    parent_folder = pathlib.Path(f"data/raw/satellite/{prefix}")
+    parent_folder = pathlib.Path(f"{download_base_path}/{prefix}")
     parent_folder.mkdir(parents=True, exist_ok=True)
 
     # download files
@@ -55,7 +57,7 @@ def download_file_from_s3(product, year, day_of_year, hour):
     for obj in s3_result.get("Contents", []):
         key = obj["Key"]
         file_name = key.split("/")[-1].split(".")[0]
-        filepath = pathlib.Path(f"data/raw/satellite/{prefix}/{file_name}.nc")
+        filepath = pathlib.Path(f"{download_base_path}/{prefix}/{file_name}.nc")
         if filepath.exists():
             continue
         s3.download_file(BUCKET_NAME, key, filepath)

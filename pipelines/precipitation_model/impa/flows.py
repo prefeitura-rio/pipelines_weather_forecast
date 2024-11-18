@@ -4,14 +4,16 @@
 Download sattelite goes 16 data, treat then and predict
 """
 
-from prefect import Parameter
-from prefect.run_configs import KubernetesRun
-from prefect.storage import GCS
+from prefect import Parameter  # pylint: disable=E0611, E0401
+from prefect.executors import LocalDaskExecutor  # pylint: disable=E0611, E0401
+from prefect.run_configs import KubernetesRun  # pylint: disable=E0611, E0401
+from prefect.storage import GCS  # pylint: disable=E0611, E0401
 
 # from google.api_core.exceptions import Forbidden
 from prefeitura_rio.pipelines_utils.custom import Flow  # pylint: disable=E0611, E0401
 
 # from prefeitura_rio.pipelines_utils.logging import log
+# pylint: disable=E0611, E0401
 from prefeitura_rio.pipelines_utils.state_handlers import (
     handler_initialize_sentry,
     handler_inject_bd_credentials,
@@ -24,11 +26,12 @@ from pipelines.precipitation_model.impa.schedules import (  # pylint: disable=E0
 
 # from pipelines.precipitation_model.impa.src.eval.viz.plot_real_time import create_images
 from pipelines.precipitation_model.impa.tasks import (  # pylint: disable=E0611, E0401
+    build_dataframe_task,
     download_files_from_s3,
     get_predictions,
     get_relevant_dates_informations,
     get_start_datetime,
-    process_data,
+    process_satellite_task,
 )
 from pipelines.tasks import (  # pylint: disable=E0611, E0401
     get_storage_destination,
@@ -81,6 +84,7 @@ with Flow(
         # description="Number of workers to use for parallel processing",
     )
     cuda = Parameter("cuda", default=False, required=False)  # description="UseCUDA for prediction"
+    # memory = Parameter("memory", default="16Gi", required=False)
 
     # Parameters for saving data on GCP
     materialize_after_dump = Parameter("materialize_after_dump", default=False, required=False)
@@ -90,6 +94,7 @@ with Flow(
     )
     table_id = Parameter("table_id", default="modelo_satelite_goes_16_impa", required=False)
 
+    download_base_path = "pipelines/precipitation_model/impa/data/raw/satellite"
     #########################
     #  Start flow           #
     #########################
@@ -99,18 +104,37 @@ with Flow(
     relevant_dts, days_of_year, years = get_relevant_dates_informations(dt=dt)
 
     # Download data from s3
-    downloaded_files = download_files_from_s3(
-        relevant_dts=relevant_dts, days_of_year=days_of_year, years=years
+    downloaded_files_rr = download_files_from_s3(
+        product="ABI-L2-RRQPEF",
+        relevant_dts=relevant_dts,
+        days_of_year=days_of_year,
+        years=years,
+        download_base_path=download_base_path,
+    )
+    downloaded_files_achaf = download_files_from_s3(
+        product="ABI-L2-ACHAF",
+        relevant_dts=relevant_dts,
+        days_of_year=days_of_year,
+        years=years,
+        download_base_path=download_base_path,
     )
 
-    # Process and predict for the latest day
-    data_processed = process_data(
-        year=years[0], day_of_year=days_of_year[0], num_workers=num_workers, dt=dt
+    data_processed_rr = process_satellite_task(
+        year=years[0],
+        day_of_year=days_of_year[0],
+        num_workers=num_workers,
+        product="ABI-L2-RRQPEF",
+        wait=downloaded_files_rr,
     )
-    data_processed.set_upstream(downloaded_files)
-
-    output_predict_filepaths = get_predictions(num_workers=num_workers, cuda=cuda)
-    output_predict_filepaths.set_upstream(data_processed)
+    data_processed_achaf = process_satellite_task(
+        year=years[0],
+        day_of_year=days_of_year[0],
+        num_workers=num_workers,
+        product="ABI-L2-ACHAF",
+        wait=[downloaded_files_achaf, data_processed_rr],
+    )
+    dfr = build_dataframe_task(num_workers, dt, wait=[data_processed_rr, data_processed_achaf])
+    output_predict_filepaths = get_predictions(num_workers=num_workers, cuda=cuda, wait=dfr)
 
     destination_folder_models = get_storage_destination(
         path="cor-clima-imagens/previsao_chuva/impa/modelos"
@@ -174,6 +198,13 @@ prediction_previsao_chuva_impa.state_handlers = [handler_inject_bd_credentials]
 prediction_previsao_chuva_impa.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 prediction_previsao_chuva_impa.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
-    labels=[constants.WEATHER_FORECAST_AGENT_LABEL.value],
+    labels=[
+        constants.WEATHER_FORECAST_AGENT_LABEL.value,
+    ],
+    # cpu_limit="1",
+    cpu_request="500m",
+    memory_limit="30Gi",
+    memory_request="15Gi",
 )
 prediction_previsao_chuva_impa.schedule = prediction_schedule
+prediction_previsao_chuva_impa.executor = LocalDaskExecutor(num_workers=2)  # 10

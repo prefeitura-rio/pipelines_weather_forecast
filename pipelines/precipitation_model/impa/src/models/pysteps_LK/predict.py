@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import pathlib
+import warnings
 from functools import partial
 
 import numpy as np
@@ -13,6 +14,9 @@ from pipelines.precipitation_model.impa.src.data.HDFDatasetLocations import (
 )
 from pipelines.precipitation_model.impa.src.utils.general_utils import print_ok
 from pipelines.precipitation_model.impa.src.utils.hdf_utils import array_to_pred_hdf
+
+warnings.simplefilter("ignore")
+warnings.filterwarnings("ignore")
 
 
 def r_to_z(value: int, a_z: float = 223.0, b_z: float = 1.56):
