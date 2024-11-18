@@ -3,10 +3,10 @@
 
 import copy
 import math
+import warnings
 from collections import OrderedDict
 from functools import partial
 from typing import Any
-import warnings
 
 warnings.simplefilter("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)

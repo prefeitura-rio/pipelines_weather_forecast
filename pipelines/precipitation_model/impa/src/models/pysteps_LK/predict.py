@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 import pathlib
-from functools import partial
 import warnings
-
+from functools import partial
 
 import numpy as np
 import torch
