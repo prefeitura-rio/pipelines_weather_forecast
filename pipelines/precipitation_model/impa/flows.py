@@ -201,8 +201,7 @@ prediction_previsao_chuva_impa.run_config = KubernetesRun(
     labels=[
         constants.WEATHER_FORECAST_AGENT_LABEL.value,
     ],
-    # cpu_limit="1",
-    cpu_request="500m",
+    cpu_request="1",
     memory_limit="30Gi",
     memory_request="15Gi",
 )

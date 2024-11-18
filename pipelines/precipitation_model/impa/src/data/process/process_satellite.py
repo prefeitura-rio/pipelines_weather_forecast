@@ -9,6 +9,7 @@ Process satellite data
 # from argparse import ArgumentParser
 from datetime import datetime, timedelta
 from glob import glob
+# import os
 from pathlib import Path
 
 import numpy as np
@@ -53,8 +54,32 @@ def process_file(
     ram_usada_gb = ram_usada / (1024**3)
 
     # log(file_path)
-    log(f"\n\nRAM usada: {ram_usada_gb:.2f} GB\n\n")
+    log(f"\nRAM usada geral: {ram_usada_gb:.2f} GB")
+    # pid = os.getpid()
+    # process = psutil.Process(pid)
 
+    # cpu_usage = process.cpu_percent(interval=1)
+    # memory_info = process.memory_info()
+
+    # print(f"Uso de CPU médio por esse processo em 1s: {cpu_usage}%")
+    # print(f"Uso de memória física por esse processo: {memory_info.rss / (1024 * 1024):.2f} MB")
+    # print(f"Uso de memória virtual por esse processo: {memory_info.vms / (1024 * 1024):.2f} MB")
+
+    # cpu_usage = psutil.cpu_percent(interval=1, percpu=True)  # Lista de uso de cada núcleo
+    # cpu_usage_total = sum(cpu_usage) / len(cpu_usage)  # Média de uso de CPU (total)
+
+    # # Uso total de memória do sistema
+    # memory_info = psutil.virtual_memory()
+    # total_memory = memory_info.total / (1024**3)  # Convertendo para GB
+    # used_memory = memory_info.used / (1024**3)   # Convertendo para GB
+    # free_memory = memory_info.available / (1024**3)
+
+    # # Exibir os resultados
+    # print(f"Uso total de CPU por núcleo (%): {cpu_usage}")
+    # print(f"Uso médio total de CPU (%): {cpu_usage_total:.2f}%")
+    # print(f"Memória total: {total_memory:.2f} GB")
+    # print(f"Memória usada: {used_memory:.2f} GB")
+    # print(f"Memória livre: {free_memory:.2f} GB")
     # Read satellite data
     dataset = xr.open_dataset(file_path)
 
@@ -184,11 +209,32 @@ def process_satellite(
         # print("--", glob(f"{download_base_path}/{product}/{year}/{day:03d}/*/*.nc"))
         # print(file)
 
-        # Obtém informações sobre o uso de memória
+        # Obtém informações sobre o uso de memória e cpu
+        # pid = os.getpid()
+        # process = psutil.Process(pid)
+
+        # cpu_usage = process.cpu_percent(interval=1)
+        # memory_info = process.memory_info()
+
+        # print(f"Uso de CPU médio por esse processo em 1s: {cpu_usage}%")
+        # print(f"Uso de memória física por esse processo: {memory_info.rss / (1024 * 1024):.2f} MB")
+        # print(f"Uso de memória virtual por esse processo: {memory_info.vms / (1024 * 1024):.2f} MB")
+
+        cpu_usage = psutil.cpu_percent(interval=1, percpu=True)  # Lista de uso de cada núcleo
+        cpu_usage_total = sum(cpu_usage) / len(cpu_usage)  # Média de uso de CPU (total)
+
+        # Uso total de memória do sistema
         memory_info = psutil.virtual_memory()
-        ram_usada = memory_info.used
-        ram_usada_gb = ram_usada / (1024**3)
-        log(f"\n\nRAM usada no load_entire_day: {ram_usada_gb:.2f} GB\n\n")
+        total_memory = memory_info.total / (1024**3)  # Convertendo para GB
+        used_memory = memory_info.used / (1024**3)  # Convertendo para GB
+        free_memory = memory_info.available / (1024**3)
+
+        # Exibir os resultados
+        print(f"Uso total de CPU por núcleo (%): {cpu_usage}")
+        print(f"Uso médio total de CPU (%): {cpu_usage_total:.2f}%")
+        print(f"Memória total: {total_memory:.2f} GB")
+        print(f"Memória usada: {used_memory:.2f} GB")
+        print(f"Memória livre: {free_memory:.2f} GB")
 
         return pd.concat(
             Parallel(n_jobs=num_workers)(
