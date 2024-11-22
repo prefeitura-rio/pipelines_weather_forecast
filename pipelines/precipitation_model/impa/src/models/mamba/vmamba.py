@@ -3,9 +3,13 @@
 
 import copy
 import math
+import warnings
 from collections import OrderedDict
 from functools import partial
 from typing import Any
+
+warnings.simplefilter("ignore", category=FutureWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 import torch
 import torch.nn as nn
