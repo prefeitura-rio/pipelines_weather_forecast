@@ -8,8 +8,8 @@ Process satellite data
 # import os
 # from argparse import ArgumentParser
 from datetime import datetime, timedelta
+import gc
 from glob import glob
-
 # import os
 from pathlib import Path
 
@@ -45,48 +45,50 @@ def process_file(
         [2] https://proj4.org/operations/projections/geos.html
     """
 
-    # Obtém informações sobre o uso de memória
-    memory_info = psutil.virtual_memory()
+    # # Obtém informações sobre o uso de memória
+    # memory_info = psutil.virtual_memory()
 
-    # Total de RAM usada em bytes
-    ram_usada = memory_info.used
+    # # Total de RAM usada em bytes
+    # ram_usada = memory_info.used
 
-    # Converte para gigabytes
-    ram_usada_gb = ram_usada / (1024**3)
+    # # Converte para gigabytes
+    # ram_usada_gb = ram_usada / (1024**3)
 
-    # log(file_path)
-    log(f"\nRAM usada geral: {ram_usada_gb:.2f} GB")
+    # # log(file_path)
+    # log(f"\nRAM usada geral: {ram_usada_gb:.2f} GB")
     # pid = os.getpid()
     # process = psutil.Process(pid)
 
     # cpu_usage = process.cpu_percent(interval=1)
     # memory_info = process.memory_info()
 
-    # print(f"Uso de CPU médio por esse processo em 1s: {cpu_usage}%")
-    # print(f"Uso de memória física por esse processo: {memory_info.rss / (1024 * 1024):.2f} MB")
-    # print(f"Uso de memória virtual por esse processo: {memory_info.vms / (1024 * 1024):.2f} MB")
+    # log(f"\nProcessing file {file_path}")
+    # log(f"Uso de CPU médio por esse processo em 1s: {cpu_usage}%")
+    # log(f"Uso de memória física por esse processo: {memory_info.rss / (1024 * 1024):.2f} MB")
+    # log(f"Uso de memória virtual por esse processo: {memory_info.vms / (1024 * 1024):.2f} MB")
 
-    # cpu_usage = psutil.cpu_percent(interval=1, percpu=True)  # Lista de uso de cada núcleo
-    # cpu_usage_total = sum(cpu_usage) / len(cpu_usage)  # Média de uso de CPU (total)
+    cpu_usage = psutil.cpu_percent(interval=1, percpu=True)  # Lista de uso de cada núcleo
+    cpu_usage_total = sum(cpu_usage) / len(cpu_usage)  # Média de uso de CPU (total)
 
-    # # Uso total de memória do sistema
-    # memory_info = psutil.virtual_memory()
-    # total_memory = memory_info.total / (1024**3)  # Convertendo para GB
-    # used_memory = memory_info.used / (1024**3)   # Convertendo para GB
-    # free_memory = memory_info.available / (1024**3)
+    # Uso total de memória do sistema
+    memory_info = psutil.virtual_memory()
+    total_memory = memory_info.total / (1024**3)  # Convertendo para GB
+    used_memory = memory_info.used / (1024**3)  # Convertendo para GB
+    free_memory = memory_info.available / (1024**3)
 
-    # # Exibir os resultados
-    # print(f"Uso total de CPU por núcleo (%): {cpu_usage}")
-    # print(f"Uso médio total de CPU (%): {cpu_usage_total:.2f}%")
-    # print(f"Memória total: {total_memory:.2f} GB")
-    # print(f"Memória usada: {used_memory:.2f} GB")
-    # print(f"Memória livre: {free_memory:.2f} GB")
+    # Exibir os resultados
+    log(f"Uso total de CPU por núcleo (%): {cpu_usage}")
+    log(f"Uso médio total de CPU (%): {cpu_usage_total:.2f}%")
+    log(f"Memória total: {total_memory:.2f} GB")
+    log(f"Memória usada: {used_memory:.2f} GB")
+    log(f"Memória livre: {free_memory:.2f} GB")
+
     # Read satellite data
     dataset = xr.open_dataset(file_path)
 
     # Retrieve datetimes of file creation and start and end of scan (UTC)
-    scan_start = datetime.strptime(dataset.time_coverage_start, "%Y-%m-%dT%H:%M:%S.%fZ")
-    scan_end = datetime.strptime(dataset.time_coverage_end, "%Y-%m-%dT%H:%M:%S.%fZ")
+    # scan_start = datetime.strptime(dataset.time_coverage_start, "%Y-%m-%dT%H:%M:%S.%fZ")
+    # scan_end = datetime.strptime(dataset.time_coverage_end, "%Y-%m-%dT%H:%M:%S.%fZ")
     creation = datetime.strptime(dataset.date_created, "%Y-%m-%dT%H:%M:%S.%fZ")
 
     if hasattr(dataset, "lon") and hasattr(dataset, "lat"):
@@ -115,23 +117,23 @@ def process_file(
 
     # Construct dataframe
     df = pd.DataFrame(
-        np.array(data).reshape(len(data), -1).T,
+        np.array(data).astype(dtype=np.float32).reshape(len(data), -1).T,
         columns=["lat", "lon", *bands],
     )
 
+    # Remove nan and infinite values
+    df.replace(np.inf, np.nan, inplace=True)
+    df.dropna(how="any", axis=0, inplace=True)
+
     # Discard observations for latitudes and longitudes outside bounds
     if lat_bounds:
-        df = df[(df["lat"] > lat_bounds[0]) & (df["lat"] < lat_bounds[1])]
+        df.drop(df[(df["lat"] <= lat_bounds[0]) | (df["lat"] >= lat_bounds[1])].index, inplace=True)
     if lon_bounds:
-        df = df[(df["lon"] > lon_bounds[0]) & (df["lon"] < lon_bounds[1])]
-
-    # Remove nan and infinite values
-    df = df.replace(np.inf, np.nan)
-    df = df.dropna(how="any", axis=0)
+        df.drop(df[(df["lon"] <= lon_bounds[0]) | (df["lon"] >= lon_bounds[1])].index, inplace=True)
 
     # Include datetimes of file creation and start and end of scan (UTC-3)
-    df["start"] = scan_start  # - timedelta(hours=3)
-    df["end"] = scan_end  # - timedelta(hours=3)
+    # df["start"] = scan_start  # - timedelta(hours=3)
+    # df["end"] = scan_end  # - timedelta(hours=3)
     df["creation"] = creation  # - timedelta(hours=3)
 
     if include_dataset_name:
@@ -177,38 +179,9 @@ def process_satellite(
     lat_bounds = lat_min, lat_max
     lon_bounds = lon_min, lon_max
 
-    # def load_entire_day(ts: pd.Timestamp, download_base_path) -> pd.DataFrame:
-    #     """ """
-    #     year = ts.year
-    #     day = ts.dayofyear
-    #     files = glob(f"{download_base_path}/{product}/{year}/{day:03d}/*/*.nc")
-
-    #     dfs = []
-    #     batch_size = 5  # Ajuste o tamanho do lote conforme necessário
-
-    #     for i in tqdm(range(0, len(files), batch_size)):
-    #         start = i + 1
-    #         end = min(i + batch_size, len(files))
-    #         log(f"Processando lote de arquivos {start} a {end}")
-    #         batch_files = files[i : i + batch_size]
-    #         batch_dfs = Parallel(n_jobs=num_workers)(
-    #             delayed(process_file)(file, bands, lat_bounds, lon_bounds, include_dataset_name)
-    #             for file in batch_files
-    #         )
-    #         dfs.append(pd.concat(batch_dfs))
-
-    #     return pd.concat(dfs)
-
     def load_entire_day(ts: pd.Timestamp, download_base_path) -> pd.DataFrame:
-        # pipelines/precipitation_model/impa/data/raw/satellite
-        print("**" * 6)
         year = ts.year
         day = ts.dayofyear
-        print(year, day, download_base_path)
-        # print("--", os.listdir(f"{download_base_path}/{product}/{year}/{day:03d}/"))
-        # for file in tqdm(glob(f"{download_base_path}/{product}/{year}/{day:03d}/*/*.nc")):
-        # print("--", glob(f"{download_base_path}/{product}/{year}/{day:03d}/*/*.nc"))
-        # print(file)
 
         # Obtém informações sobre o uso de memória e cpu
         # pid = os.getpid()
@@ -217,25 +190,24 @@ def process_satellite(
         # cpu_usage = process.cpu_percent(interval=1)
         # memory_info = process.memory_info()
 
-        # print(f"Uso de CPU médio por esse processo em 1s: {cpu_usage}%")
-        # print(f"Uso de memória física por esse processo: {memory_info.rss / (1024 * 1024):.2f} MB")
-        # print(f"Uso de memória virtual por esse processo: {memory_info.vms / (1024 * 1024):.2f} MB")
+        # log(f"Uso de CPU médio por esse processo em 1s: {cpu_usage}%")
+        # log(f"Uso de memória física por esse processo: {memory_info.rss / (1024 * 1024):.2f} MB")
+        # log(f"Uso de memória virtual por esse processo: {memory_info.vms / (1024 * 1024):.2f} MB")
 
-        cpu_usage = psutil.cpu_percent(interval=1, percpu=True)  # Lista de uso de cada núcleo
-        cpu_usage_total = sum(cpu_usage) / len(cpu_usage)  # Média de uso de CPU (total)
+        # cpu_usage = psutil.cpu_percent(interval=1, percpu=True)  # Lista de uso de cada núcleo
+        # cpu_usage_total = sum(cpu_usage) / len(cpu_usage)  # Média de uso de CPU (total)
 
-        # Uso total de memória do sistema
-        memory_info = psutil.virtual_memory()
-        total_memory = memory_info.total / (1024**3)  # Convertendo para GB
-        used_memory = memory_info.used / (1024**3)  # Convertendo para GB
-        free_memory = memory_info.available / (1024**3)
+        # # Uso total de memória do sistema
+        # memory_info = psutil.virtual_memory()
+        # total_memory = memory_info.total / (1024**3)  # Convertendo para GB
+        # used_memory = memory_info.used / (1024**3)  # Convertendo para GB
+        # free_memory = memory_info.available / (1024**3)
 
-        # Exibir os resultados
-        print(f"Uso total de CPU por núcleo (%): {cpu_usage}")
-        print(f"Uso médio total de CPU (%): {cpu_usage_total:.2f}%")
-        print(f"Memória total: {total_memory:.2f} GB")
-        print(f"Memória usada: {used_memory:.2f} GB")
-        print(f"Memória livre: {free_memory:.2f} GB")
+        # log(f"Uso total de CPU por núcleo (%): {cpu_usage}")
+        # log(f"Uso médio total de CPU (%): {cpu_usage_total:.2f}%")
+        # log(f"Memória total: {total_memory:.2f} GB")
+        # log(f"Memória usada: {used_memory:.2f} GB")
+        # log(f"Memória livre: {free_memory:.2f} GB")
 
         return pd.concat(
             Parallel(n_jobs=num_workers)(
@@ -265,20 +237,20 @@ def process_satellite(
     ):
         next_date = date + timedelta(days=1)
         try:
-            log(f"Start loading entire day for {next_date}")
             df_next = load_entire_day(next_date, download_base_path)
-            dfr = pd.concat([df_current, df_next])
+            df_current = pd.concat([df_current, df_next])
         except ValueError:
-            dfr = df_current
             df_next = None
-        dfr = dfr[dfr["creation"].dt.date == date.date()]
-        dfr = dfr.reset_index(drop=True)
-        dfr.to_feather(f"{output_path}/{date.date()}.feather")
+        df_current = df_current[df_current["creation"].dt.date == date.date()]
+        df_current.reset_index(drop=True, inplace=True)
+        df_current.to_feather(f"{output_path}/{date.date()}.feather")
+        del df_current
         try:
             df_current = df_next.copy()
         except AttributeError:
             pass
         del df_next
+        gc.collect()
 
 
 # if __name__ == "__main__":
