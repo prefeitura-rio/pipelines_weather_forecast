@@ -5,11 +5,13 @@ Process satellite data
 # flake8: noqa: E501
 # pylint: disable=invalid-name, line-too-long, too-many-locals, too-many-arguments
 
+import gc
+
 # import os
 # from argparse import ArgumentParser
 from datetime import datetime, timedelta
-import gc
 from glob import glob
+
 # import os
 from pathlib import Path
 
