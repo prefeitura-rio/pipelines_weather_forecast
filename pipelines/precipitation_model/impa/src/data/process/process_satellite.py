@@ -6,18 +6,19 @@ Process satellite data
 # pylint: disable=invalid-name, line-too-long, too-many-locals, too-many-arguments
 
 import gc
+import os
 
 # import os
 # from argparse import ArgumentParser
 from datetime import datetime, timedelta
 from glob import glob
-import os
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import psutil
 import xarray as xr
+
 # from joblib import Parallel, delayed  # pylint: disable=E0611, E0401
 from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 from pyproj import Proj
