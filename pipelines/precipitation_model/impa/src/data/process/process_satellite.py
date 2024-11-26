@@ -11,15 +11,14 @@ import gc
 # from argparse import ArgumentParser
 from datetime import datetime, timedelta
 from glob import glob
-
-# import os
+import os
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import psutil
 import xarray as xr
-from joblib import Parallel, delayed  # pylint: disable=E0611, E0401
+# from joblib import Parallel, delayed  # pylint: disable=E0611, E0401
 from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 from pyproj import Proj
 from tqdm import tqdm  # pylint: disable=E0611, E0401
@@ -56,7 +55,6 @@ def process_file(
     # # Converte para gigabytes
     # ram_usada_gb = ram_usada / (1024**3)
 
-    # # log(file_path)
     # log(f"\nRAM usada geral: {ram_usada_gb:.2f} GB")
     # pid = os.getpid()
     # process = psutil.Process(pid)
@@ -75,15 +73,16 @@ def process_file(
     # Uso total de memória do sistema
     memory_info = psutil.virtual_memory()
     total_memory = memory_info.total / (1024**3)  # Convertendo para GB
-    used_memory = memory_info.used / (1024**3)  # Convertendo para GB
+    used_memory = memory_info.used / (1024**3)
     free_memory = memory_info.available / (1024**3)
 
     # Exibir os resultados
-    log(f"Uso total de CPU por núcleo (%): {cpu_usage}")
-    log(f"Uso médio total de CPU (%): {cpu_usage_total:.2f}%")
-    log(f"Memória total: {total_memory:.2f} GB")
-    log(f"Memória usada: {used_memory:.2f} GB")
-    log(f"Memória livre: {free_memory:.2f} GB")
+    log(
+        f"Uso total de CPU por núcleo (%): {cpu_usage}, Uso médio total de CPU (%): {cpu_usage_total:.2f}%"
+    )
+    log(
+        f"Memória total: {total_memory:.2f} GB, Memória usada: {used_memory:.2f} GB, Memória livre: {free_memory:.2f} GB"
+    )
 
     # Read satellite data
     dataset = xr.open_dataset(file_path)
@@ -150,7 +149,7 @@ def process_satellite(
     lat_max=-19.0,
     lon_min=-47.0,
     lon_max=-40.0,
-    num_workers=16,
+    # num_workers=16,
     day=-1,
     year=-1,
     download_base_path="pipelines/precipitation_model/impa/data/raw/satellite",
@@ -185,38 +184,27 @@ def process_satellite(
         year = ts.year
         day = ts.dayofyear
 
-        # Obtém informações sobre o uso de memória e cpu
-        # pid = os.getpid()
-        # process = psutil.Process(pid)
+        # Check if files exist inside path
+        path_ = f"{download_base_path}/{product}/{year}/{day:03d}/"
+        all_files = []
+        for root, dirs, files in os.walk(path_):
+            for file in files:
+                all_files.append(os.path.join(root, file))
 
-        # cpu_usage = process.cpu_percent(interval=1)
-        # memory_info = process.memory_info()
+        log(f"Files to be processed: {all_files[:5]}")
 
-        # log(f"Uso de CPU médio por esse processo em 1s: {cpu_usage}%")
-        # log(f"Uso de memória física por esse processo: {memory_info.rss / (1024 * 1024):.2f} MB")
-        # log(f"Uso de memória virtual por esse processo: {memory_info.vms / (1024 * 1024):.2f} MB")
+        # return pd.concat(
+        #     Parallel(n_jobs=num_workers)(
+        #         delayed(process_file)(file, bands, lat_bounds, lon_bounds, include_dataset_name)
+        #         for file in glob(f"{download_base_path}/{product}/{year}/{day:03d}/*/*.nc")
+        #     )
+        # )
+        dfr_list = []
+        for file in glob(f"{download_base_path}/{product}/{year}/{day:03d}/*/*.nc"):
+            df = process_file(file, bands, lat_bounds, lon_bounds, include_dataset_name)
+            dfr_list.append(df)
 
-        # cpu_usage = psutil.cpu_percent(interval=1, percpu=True)  # Lista de uso de cada núcleo
-        # cpu_usage_total = sum(cpu_usage) / len(cpu_usage)  # Média de uso de CPU (total)
-
-        # # Uso total de memória do sistema
-        # memory_info = psutil.virtual_memory()
-        # total_memory = memory_info.total / (1024**3)  # Convertendo para GB
-        # used_memory = memory_info.used / (1024**3)  # Convertendo para GB
-        # free_memory = memory_info.available / (1024**3)
-
-        # log(f"Uso total de CPU por núcleo (%): {cpu_usage}")
-        # log(f"Uso médio total de CPU (%): {cpu_usage_total:.2f}%")
-        # log(f"Memória total: {total_memory:.2f} GB")
-        # log(f"Memória usada: {used_memory:.2f} GB")
-        # log(f"Memória livre: {free_memory:.2f} GB")
-
-        return pd.concat(
-            Parallel(n_jobs=num_workers)(
-                delayed(process_file)(file, bands, lat_bounds, lon_bounds, include_dataset_name)
-                for file in tqdm(glob(f"{download_base_path}/{product}/{year}/{day:03d}/*/*.nc"))
-            )
-        )
+        return pd.concat(dfr_list, ignore_index=True)
 
     end_date = datetime(year, 1, 1) + timedelta(day - 1)
     today_file = Path(
