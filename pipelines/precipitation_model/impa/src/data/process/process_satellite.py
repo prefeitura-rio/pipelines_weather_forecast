@@ -150,7 +150,7 @@ def process_satellite(
     lat_max=-19.0,
     lon_min=-47.0,
     lon_max=-40.0,
-    # num_workers=16,
+    num_workers=16,
     day=-1,
     year=-1,
     download_base_path="pipelines/precipitation_model/impa/data/raw/satellite",
