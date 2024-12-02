@@ -1,16 +1,5 @@
 {
     "models":{
-        "PySTEPS":{
-            "args":{
-                "locations": ["rio_de_janeiro"],
-                "overwrite": true,
-                "output_predict_filepath": ["pipelines/precipitation_model/impa/predictions/PySTEPS.hdf"],
-                "dataframe_filepath": "pipelines/precipitation_model/impa/data/dataframes/SAT-CORRECTED-ABI-L2-RRQPEF-real_time-{location}/test.hdf",
-                "data_type": "SAT",
-                "motion_field": "lk",
-                "advection":"steps"
-            }
-        },
         "UNET":{
             "model_file": "3--best-epoch=4.ckpt"
         },

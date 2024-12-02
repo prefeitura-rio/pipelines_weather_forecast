@@ -19,16 +19,16 @@ from pipelines.precipitation_model.impa.src.models.mamba.predict import (
 from pipelines.precipitation_model.impa.src.models.predict import (
     main as general_predict,
 )
-from pipelines.precipitation_model.impa.src.models.pysteps_LK.predict import (
-    main as pysteps_predict,
-)
+# from pipelines.precipitation_model.impa.src.models.pysteps_LK.predict import (
+#     main as pysteps_predict,
+# )  # removed
 
 MAP_CENTER = {"lat": -22.914550816555533, "lon": -43.502443050594596}
 ZOOM = 8
 eval_window = range(96, 160)
 
 predict_dict = {
-    "PySTEPS": pysteps_predict,
+    # "PySTEPS": pysteps_predict,  # removed
     "UNET": general_predict,
     "EVONET": general_predict,
     "NowcastNet": general_predict,
