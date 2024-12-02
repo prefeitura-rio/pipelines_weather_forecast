@@ -19,6 +19,7 @@ from pipelines.precipitation_model.impa.src.models.mamba.predict import (
 from pipelines.precipitation_model.impa.src.models.predict import (
     main as general_predict,
 )
+
 # from pipelines.precipitation_model.impa.src.models.pysteps_LK.predict import (
 #     main as pysteps_predict,
 # )  # removed
