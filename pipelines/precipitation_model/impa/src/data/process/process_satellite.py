@@ -201,7 +201,7 @@ def process_satellite(
         # Do not process older dates
         start_date = end_date
     else:
-        start_date = datetime(year, 1, 1) + timedelta(day - n_historical_days-1)
+        start_date = datetime(year, 1, 1) + timedelta(day - n_historical_days - 1)
 
     log(f"DEBUG start_date: {start_date}, end_date: {end_date}")
     log(f"Start loading entire day of start_date {start_date}")

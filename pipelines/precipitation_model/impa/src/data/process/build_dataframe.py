@@ -10,13 +10,13 @@ from functools import partial
 
 import h5py
 import numpy as np
+from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 from tqdm import tqdm
 
 from pipelines.precipitation_model.impa.src.data.process.SatelliteData import (
     SatelliteData,
 )
 from pipelines.precipitation_model.impa.src.utils.general_utils import print_warning
-from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 
 HEAVY_RAIN_TRAIN_LOG_MEAN = 0.15839338
 HEAVY_RAIN_TRAIN_LOG_STD = 0.5295107
