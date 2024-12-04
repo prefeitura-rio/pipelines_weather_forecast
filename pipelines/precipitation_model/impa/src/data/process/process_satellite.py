@@ -127,6 +127,13 @@ def load_entire_day(
     product, ts: pd.Timestamp, lat_bounds, lon_bounds, download_base_path
 ) -> pd.DataFrame:
     """Load and concatenate all files from that day"""
+    year = ts.year
+    day = ts.dayofyear
+
+    if not Path(f"{download_base_path}/{product}/{year}/{day:03d}").exists():
+        log(f"No files found for {product} {year} {day:03d}")
+        return pd.DataFrame()
+
     match product:
         case "ABI-L2-MCMIPF":  # Cloud and Moisture Imagery
             bands = ["CMI_C08", "CMI_C09", "CMI_C10", "CMI_C11"]
@@ -147,9 +154,6 @@ def load_entire_day(
             include_dataset_name = False
         case _:
             raise ValueError("Unsupported product selected.")
-
-    year = ts.year
-    day = ts.dayofyear
 
     # Check if files exist inside path
     path_ = f"{download_base_path}/{product}/{year}/"

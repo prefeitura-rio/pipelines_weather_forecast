@@ -102,7 +102,7 @@ with Flow(
     # Input arguments (These can be passed via Prefect Parameters or CLI)
     n_historical_days = 1
     dt = get_start_datetime(start_datetime=start_datetime)
-    relevant_dts, days_of_year, years = get_relevant_dates_informations(
+    relevant_dts, days_of_year, years, relevant_times = get_relevant_dates_informations(
         dt=dt, n_historical_days=n_historical_days
     )
 
@@ -112,6 +112,7 @@ with Flow(
         relevant_dts=relevant_dts,
         days_of_year=days_of_year,
         years=years,
+        relevant_times=relevant_times,
         download_base_path=download_base_path,
     )
     downloaded_files_achaf = download_files_from_s3(
@@ -119,6 +120,7 @@ with Flow(
         relevant_dts=relevant_dts,
         days_of_year=days_of_year,
         years=years,
+        relevant_times=relevant_times,
         download_base_path=download_base_path,
     )
 
@@ -213,5 +215,5 @@ prediction_previsao_chuva_impa.run_config = KubernetesRun(
 )
 prediction_previsao_chuva_impa.schedule = prediction_schedule
 prediction_previsao_chuva_impa.executor = LocalDaskExecutor(
-    scheduler="processes", num_workers=20
+    scheduler="processes", num_workers=50
 )  # 10

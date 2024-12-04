@@ -47,18 +47,38 @@ def get_start_datetime(start_datetime=None):
     return dt
 
 
-@task(nout=3)
+@task(nout=4)
 def get_relevant_dates_informations(dt, n_historical_days: int = 1):
     """
-    Get relevant dates iformations for the last 4 days
-    """
+    Get relevant dates information for historical days and 6 hours behind current time.
 
+    Args:
+        dt (datetime): Current datetime
+        n_historical_days (int): Number of historical days to look back
+
+    Returns:
+        tuple: (
+            relevant_dts: List of datetime objects for historical days,
+            days_of_year: List of day of year values,
+            years: List of years,
+            six_hours_info: Tuple of (year, day_of_year, hour) for 6 hours ago
+        )
+    """
+    # Calculate historical dates
     relevant_dts = [
         dt - datetime.timedelta(days=day_delta) for day_delta in range(n_historical_days + 1)
     ]
     days_of_year = [dt.timetuple().tm_yday for dt in relevant_dts]
     years = [dt.year for dt in relevant_dts]
-    return relevant_dts, days_of_year, years
+
+    # Calculate 6 hours behind
+    relevant_times = [dt - datetime.timedelta(hours=hour_delta) for hour_delta in range(7)]
+    relevant_times = [
+        (relevant_time.year, relevant_time.timetuple().tm_yday, relevant_time.hour)
+        for relevant_time in relevant_times
+    ]
+
+    return relevant_dts, days_of_year, years, relevant_times
 
 
 @task
@@ -67,6 +87,7 @@ def download_files_from_s3(
     relevant_dts,
     days_of_year,
     years,
+    relevant_times,
     download_base_path: str = "pipelines/precipitation_model/impa/data/raw/satellite",
 ):
     """
@@ -79,13 +100,15 @@ def download_files_from_s3(
     -------
     None
     """
-    hours = range(24)
-    for i in range(len(days_of_year)):
-        day_of_year = days_of_year[i]
-        year = years[i]
-        print(f"Downloading the latest data for {relevant_dts[i].strftime('%Y-%m-%d')}...")
-        for hour in hours:
-            download_file_from_s3(product, year, day_of_year, hour, download_base_path)
+    # hours = range(24)
+    # for i in range(len(days_of_year)):
+    #     day_of_year = days_of_year[i]
+    #     year = years[i]
+    #     print(f"Downloading the latest data for {relevant_dts[i].strftime('%Y-%m-%d')}...")
+    #     for hour in hours:
+    #         download_file_from_s3(product, year, day_of_year, hour, download_base_path)
+    for relevant_time in relevant_times:
+        download_file_from_s3(product, *relevant_time, download_base_path)
 
 
 @task
