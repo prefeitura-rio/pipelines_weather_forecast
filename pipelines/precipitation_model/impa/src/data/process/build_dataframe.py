@@ -16,6 +16,7 @@ from pipelines.precipitation_model.impa.src.data.process.SatelliteData import (
     SatelliteData,
 )
 from pipelines.precipitation_model.impa.src.utils.general_utils import print_warning
+from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 
 HEAVY_RAIN_TRAIN_LOG_MEAN = 0.15839338
 HEAVY_RAIN_TRAIN_LOG_STD = 0.5295107
@@ -109,6 +110,7 @@ def build_dataframe(
             )
             exit(0)
 
+    log("Loading grids")
     grid_small = np.load(
         f"pipelines/precipitation_model/impa/data/dataframe_grids/{location}-res=2km-256x256.npy"
     )
@@ -117,6 +119,8 @@ def build_dataframe(
     )
     assert grid_small.shape == grid_large.shape
     ni, nj = grid_small.shape[:2]
+
+    log("Start saving files as h5")
     with h5py.File(output_filepath, "w") as f:
         what = f.create_group("what")
         what.attrs["feature"] = product

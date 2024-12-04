@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=import-error, invalid-name, missing-function-docstring
+# pylint: disable=import-error, invalid-name, missing-function-docstring, too-many-arguments
 """
 Tasks
 """
@@ -48,12 +48,14 @@ def get_start_datetime(start_datetime=None):
 
 
 @task(nout=3)
-def get_relevant_dates_informations(dt):
+def get_relevant_dates_informations(dt, n_historical_days: int = 1):
     """
     Get relevant dates iformations for the last 4 days
     """
 
-    relevant_dts = [dt - datetime.timedelta(days=day_delta) for day_delta in range(4)]
+    relevant_dts = [
+        dt - datetime.timedelta(days=day_delta) for day_delta in range(n_historical_days + 1)
+    ]
     days_of_year = [dt.timetuple().tm_yday for dt in relevant_dts]
     years = [dt.year for dt in relevant_dts]
     return relevant_dts, days_of_year, years
@@ -78,7 +80,7 @@ def download_files_from_s3(
     None
     """
     hours = range(24)
-    for i in range(4):
+    for i in range(len(days_of_year)):
         day_of_year = days_of_year[i]
         year = years[i]
         print(f"Downloading the latest data for {relevant_dts[i].strftime('%Y-%m-%d')}...")
@@ -92,6 +94,7 @@ def process_satellite_task(
     day_of_year,
     num_workers,
     product,
+    n_historical_days: int = 1,
     download_base_path: str = "pipelines/precipitation_model/impa/data/raw/satellite",
     wait=None,
 ):
@@ -114,6 +117,7 @@ def process_satellite_task(
         day=day_of_year,
         num_workers=num_workers,
         product=product,
+        n_historical_days=n_historical_days,
         download_base_path=download_base_path,
     )
     log(f"End processing {product} satellite data...")
@@ -122,7 +126,9 @@ def process_satellite_task(
 
 @task
 def build_dataframe_task(num_workers, dt, wait=None):
-    """ """
+    """
+    Build dataframe
+    """
     log("Start build dataframe...")
     build_dataframe(overwrite=True, num_workers=num_workers, dt=dt)
     log("End build dataframe...")

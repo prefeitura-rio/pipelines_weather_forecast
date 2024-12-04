@@ -47,43 +47,22 @@ def process_file(
         [2] https://proj4.org/operations/projections/geos.html
     """
 
-    # # Obtém informações sobre o uso de memória
+    # cpu_usage = psutil.cpu_percent(interval=1, percpu=True)  # Lista de uso de cada núcleo
+    # cpu_usage_total = sum(cpu_usage) / len(cpu_usage)  # Média de uso de CPU (total)
+
+    # # Uso total de memória do sistema
     # memory_info = psutil.virtual_memory()
+    # total_memory = memory_info.total / (1024**3)  # Convertendo para GB
+    # used_memory = memory_info.used / (1024**3)
+    # free_memory = memory_info.available / (1024**3)
 
-    # # Total de RAM usada em bytes
-    # ram_usada = memory_info.used
-
-    # # Converte para gigabytes
-    # ram_usada_gb = ram_usada / (1024**3)
-
-    # log(f"\nRAM usada geral: {ram_usada_gb:.2f} GB")
-    # pid = os.getpid()
-    # process = psutil.Process(pid)
-
-    # cpu_usage = process.cpu_percent(interval=1)
-    # memory_info = process.memory_info()
-
-    # log(f"\nProcessing file {file_path}")
-    # log(f"Uso de CPU médio por esse processo em 1s: {cpu_usage}%")
-    # log(f"Uso de memória física por esse processo: {memory_info.rss / (1024 * 1024):.2f} MB")
-    # log(f"Uso de memória virtual por esse processo: {memory_info.vms / (1024 * 1024):.2f} MB")
-
-    cpu_usage = psutil.cpu_percent(interval=1, percpu=True)  # Lista de uso de cada núcleo
-    cpu_usage_total = sum(cpu_usage) / len(cpu_usage)  # Média de uso de CPU (total)
-
-    # Uso total de memória do sistema
-    memory_info = psutil.virtual_memory()
-    total_memory = memory_info.total / (1024**3)  # Convertendo para GB
-    used_memory = memory_info.used / (1024**3)
-    free_memory = memory_info.available / (1024**3)
-
-    # Exibir os resultados
-    log(
-        f"Uso total de CPU por núcleo (%): {cpu_usage}, Uso médio total de CPU (%): {cpu_usage_total:.2f}%"
-    )
-    log(
-        f"Memória total: {total_memory:.2f} GB, Memória usada: {used_memory:.2f} GB, Memória livre: {free_memory:.2f} GB"
-    )
+    # # Exibir os resultados
+    # log(
+    #     f"Uso total de CPU por núcleo (%): {cpu_usage}, Uso médio total de CPU (%): {cpu_usage_total:.2f}%"
+    # )
+    # log(
+    #     f"Memória total: {total_memory:.2f} GB, Memória usada: {used_memory:.2f} GB, Memória livre: {free_memory:.2f} GB"
+    # )
 
     # Read satellite data
     dataset = xr.open_dataset(file_path)
@@ -144,19 +123,10 @@ def process_file(
     return df
 
 
-def process_satellite(
-    product="ABI-L2-RRQPEF",
-    lat_min=-26.0,
-    lat_max=-19.0,
-    lon_min=-47.0,
-    lon_max=-40.0,
-    num_workers=16,
-    day=-1,
-    year=-1,
-    download_base_path="pipelines/precipitation_model/impa/data/raw/satellite",
-):
-    """Empty"""
-    log(f"Processing satellite {product}")
+def load_entire_day(
+    product, ts: pd.Timestamp, lat_bounds, lon_bounds, download_base_path
+) -> pd.DataFrame:
+    """Load and concatenate all files from that day"""
     match product:
         case "ABI-L2-MCMIPF":  # Cloud and Moisture Imagery
             bands = ["CMI_C08", "CMI_C09", "CMI_C10", "CMI_C11"]
@@ -178,34 +148,50 @@ def process_satellite(
         case _:
             raise ValueError("Unsupported product selected.")
 
+    year = ts.year
+    day = ts.dayofyear
+
+    # Check if files exist inside path
+    path_ = f"{download_base_path}/{product}/{year}/"
+
+    all_files = []
+    for root, dirs, files in os.walk(path_):
+        for file in files:
+            all_files.append(os.path.join(root, file))
+
+    log(f"Files to be processed: {all_files[:5]} {len(all_files)}")
+
+    # return pd.concat(
+    #     Parallel(n_jobs=num_workers)(
+    #         delayed(process_file)(file, bands, lat_bounds, lon_bounds, include_dataset_name)
+    #         for file in glob(f"{download_base_path}/{product}/{year}/{day:03d}/*/*.nc")
+    #     )
+    # )
+    dfr_list = []
+    for file in glob(f"{download_base_path}/{product}/{year}/{day:03d}/*/*.nc"):
+        df = process_file(file, bands, lat_bounds, lon_bounds, include_dataset_name)
+        dfr_list.append(df)
+
+    return pd.concat(dfr_list, ignore_index=True)
+
+
+def process_satellite(
+    product="ABI-L2-RRQPEF",
+    lat_min=-26.0,
+    lat_max=-19.0,
+    lon_min=-47.0,
+    lon_max=-40.0,
+    num_workers=16,
+    day=-1,
+    year=-1,
+    n_historical_days=1,
+    download_base_path="pipelines/precipitation_model/impa/data/raw/satellite",
+):
+    """Empty"""
+    log(f"Processing satellite {product}")
+
     lat_bounds = lat_min, lat_max
     lon_bounds = lon_min, lon_max
-
-    def load_entire_day(ts: pd.Timestamp, download_base_path) -> pd.DataFrame:
-        year = ts.year
-        day = ts.dayofyear
-
-        # Check if files exist inside path
-        path_ = f"{download_base_path}/{product}/{year}/{day:03d}/"
-        all_files = []
-        for root, dirs, files in os.walk(path_):
-            for file in files:
-                all_files.append(os.path.join(root, file))
-
-        log(f"Files to be processed: {all_files[:5]}")
-
-        # return pd.concat(
-        #     Parallel(n_jobs=num_workers)(
-        #         delayed(process_file)(file, bands, lat_bounds, lon_bounds, include_dataset_name)
-        #         for file in glob(f"{download_base_path}/{product}/{year}/{day:03d}/*/*.nc")
-        #     )
-        # )
-        dfr_list = []
-        for file in glob(f"{download_base_path}/{product}/{year}/{day:03d}/*/*.nc"):
-            df = process_file(file, bands, lat_bounds, lon_bounds, include_dataset_name)
-            dfr_list.append(df)
-
-        return pd.concat(dfr_list, ignore_index=True)
 
     end_date = datetime(year, 1, 1) + timedelta(day - 1)
     today_file = Path(
@@ -215,10 +201,13 @@ def process_satellite(
         # Do not process older dates
         start_date = end_date
     else:
-        start_date = datetime(year, 1, 1) + timedelta(day - 4)
+        start_date = datetime(year, 1, 1) + timedelta(day - n_historical_days-1)
 
+    log(f"DEBUG start_date: {start_date}, end_date: {end_date}")
     log(f"Start loading entire day of start_date {start_date}")
-    df_current = load_entire_day(pd.Timestamp(start_date), download_base_path)
+    df_current = load_entire_day(
+        product, pd.Timestamp(start_date), lat_bounds, lon_bounds, download_base_path
+    )
     output_path = Path(f"pipelines/precipitation_model/impa/data/processed/satellite/{product}")
     output_path.mkdir(exist_ok=True, parents=True)
 
@@ -228,7 +217,9 @@ def process_satellite(
     ):
         next_date = date + timedelta(days=1)
         try:
-            df_next = load_entire_day(next_date, download_base_path)
+            df_next = load_entire_day(
+                product, next_date, lat_bounds, lon_bounds, download_base_path
+            )
             df_current = pd.concat([df_current, df_next])
         except ValueError:
             df_next = None

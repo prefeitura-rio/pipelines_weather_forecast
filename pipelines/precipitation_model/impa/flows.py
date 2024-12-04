@@ -100,8 +100,11 @@ with Flow(
     #########################
 
     # Input arguments (These can be passed via Prefect Parameters or CLI)
+    n_historical_days = 1
     dt = get_start_datetime(start_datetime=start_datetime)
-    relevant_dts, days_of_year, years = get_relevant_dates_informations(dt=dt)
+    relevant_dts, days_of_year, years = get_relevant_dates_informations(
+        dt=dt, n_historical_days=n_historical_days
+    )
 
     # Download data from s3
     downloaded_files_rr = download_files_from_s3(
@@ -124,6 +127,7 @@ with Flow(
         day_of_year=days_of_year[0],
         num_workers=num_workers,
         product="ABI-L2-RRQPEF",
+        n_historical_days=n_historical_days,
         wait=downloaded_files_rr,
     )
     data_processed_achaf = process_satellite_task(
@@ -131,7 +135,9 @@ with Flow(
         day_of_year=days_of_year[0],
         num_workers=num_workers,
         product="ABI-L2-ACHAF",
-        wait=[downloaded_files_achaf, data_processed_rr],
+        n_historical_days=n_historical_days,
+        wait=[downloaded_files_achaf],
+        # wait=[downloaded_files_achaf, data_processed_rr],
     )
     dfr = build_dataframe_task(num_workers, dt, wait=[data_processed_rr, data_processed_achaf])
     output_predict_filepaths = get_predictions(num_workers=num_workers, cuda=cuda, wait=dfr)
