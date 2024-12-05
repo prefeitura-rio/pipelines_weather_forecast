@@ -214,6 +214,4 @@ prediction_previsao_chuva_impa.run_config = KubernetesRun(
     memory_request="15Gi",
 )
 prediction_previsao_chuva_impa.schedule = prediction_schedule
-prediction_previsao_chuva_impa.executor = LocalDaskExecutor(
-    scheduler="processes", num_workers=50
-)  # 10
+prediction_previsao_chuva_impa.executor = LocalDaskExecutor(num_workers=50)

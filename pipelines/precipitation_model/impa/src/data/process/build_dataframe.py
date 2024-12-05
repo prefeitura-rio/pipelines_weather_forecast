@@ -117,7 +117,7 @@ def build_dataframe(
     grid_large = np.load(
         f"pipelines/precipitation_model/impa/data/dataframe_grids/{location}-res=4km-256x256.npy"
     )
-    print(f"grid_small.shape: {grid_small.shape}, grid_large.shape: {grid_large.shape}")
+    log(f"grid_small.shape: {grid_small.shape}, grid_large.shape: {grid_large.shape}")
     assert grid_small.shape == grid_large.shape
     ni, nj = grid_small.shape[:2]
 
