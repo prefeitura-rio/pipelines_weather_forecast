@@ -21,7 +21,7 @@ BUCKET_NAME = "noaa-goes16"
 def download_data(s3, product, year, day_of_year, hour):
     # create parent folders
     prefix = f"{product}/{year}/{day_of_year:03d}/{hour:02d}/"
-    parent_folder = pathlib.Path(f"data/raw/satellite/{prefix}")
+    parent_folder = pathlib.Path(f"pipelines/precipitation_model/impa/data/raw/satellite/{prefix}")
     parent_folder.mkdir(parents=True, exist_ok=True)
 
     # download files
@@ -29,7 +29,7 @@ def download_data(s3, product, year, day_of_year, hour):
     for obj in s3_result.get("Contents", []):
         key = obj["Key"]
         file_name = key.split("/")[-1].split(".")[0]
-        filepath = pathlib.Path(f"data/raw/satellite/{prefix}/{file_name}.nc")
+        filepath = pathlib.Path(f"pipelines/precipitation_model/impa/data/raw/satellite/{prefix}/{file_name}.nc")
         if filepath.exists():
             continue
         s3.download_file(BUCKET_NAME, key, filepath)
@@ -59,23 +59,31 @@ if __name__ == "__main__":
         dt = datetime.datetime.fromisoformat(args.datetime)
 
     print(f"Running predictions on datetime [{dt.strftime('%Y-%m-%d %H:%M:%S')} UTC]")
-
-    relevant_dts = [dt - datetime.timedelta(days=day_delta) for day_delta in range(4)]
+    n_historical_days = 1
+    relevant_dts = [dt - datetime.timedelta(days=day_delta) for day_delta in range(n_historical_days + 1)]
     days_of_year = [dt.timetuple().tm_yday for dt in relevant_dts]
     years = [dt.year for dt in relevant_dts]
+
+    relevant_times = [dt - datetime.timedelta(hours=hour_delta) for hour_delta in range(7)]
+    relevant_times = [
+        (relevant_time.year, relevant_time.timetuple().tm_yday, relevant_time.hour)
+        for relevant_time in relevant_times
+    ]
 
     # Initialize the S3 client
     s3 = boto3.client("s3", config=Config(signature_version=UNSIGNED))
 
-    hours = range(24)
-    for i in range(4):
-        day_of_year = days_of_year[i]
-        year = years[i]
-        print(f"Downloading the latest data for {relevant_dts[i].strftime('%Y-%m-%d')}...")
-        for hour in hours:
-            download_data(s3, "ABI-L2-RRQPEF", year, day_of_year, hour)
-            download_data(s3, "ABI-L2-ACHAF", year, day_of_year, hour)
-
+    # hours = range(24)
+    # for i in range(4):
+    #     day_of_year = days_of_year[i]
+    #     year = years[i]
+    #     print(f"Downloading the latest data for {relevant_dts[i].strftime('%Y-%m-%d')}...")
+    #     for hour in hours:
+            # download_data(s3, "ABI-L2-RRQPEF", year, day_of_year, hour)
+    #     # download_data(s3, "ABI-L2-ACHAF", year, day_of_year, hour)
+    for relevant_time in relevant_times:
+        download_data(s3, "ABI-L2-RRQPEF", *relevant_time)
+        download_data(s3, "ABI-L2-ACHAF", *relevant_time)
     # process data
     print("Processing satellite data...")
     process_satellite(
