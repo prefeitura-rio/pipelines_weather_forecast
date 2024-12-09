@@ -29,7 +29,9 @@ def download_data(s3, product, year, day_of_year, hour):
     for obj in s3_result.get("Contents", []):
         key = obj["Key"]
         file_name = key.split("/")[-1].split(".")[0]
-        filepath = pathlib.Path(f"pipelines/precipitation_model/impa/data/raw/satellite/{prefix}/{file_name}.nc")
+        filepath = pathlib.Path(
+            f"pipelines/precipitation_model/impa/data/raw/satellite/{prefix}/{file_name}.nc"
+        )
         if filepath.exists():
             continue
         s3.download_file(BUCKET_NAME, key, filepath)
@@ -60,7 +62,9 @@ if __name__ == "__main__":
 
     print(f"Running predictions on datetime [{dt.strftime('%Y-%m-%d %H:%M:%S')} UTC]")
     n_historical_days = 1
-    relevant_dts = [dt - datetime.timedelta(days=day_delta) for day_delta in range(n_historical_days + 1)]
+    relevant_dts = [
+        dt - datetime.timedelta(days=day_delta) for day_delta in range(n_historical_days + 1)
+    ]
     days_of_year = [dt.timetuple().tm_yday for dt in relevant_dts]
     years = [dt.year for dt in relevant_dts]
 
@@ -79,7 +83,7 @@ if __name__ == "__main__":
     #     year = years[i]
     #     print(f"Downloading the latest data for {relevant_dts[i].strftime('%Y-%m-%d')}...")
     #     for hour in hours:
-            # download_data(s3, "ABI-L2-RRQPEF", year, day_of_year, hour)
+    # download_data(s3, "ABI-L2-RRQPEF", year, day_of_year, hour)
     #     # download_data(s3, "ABI-L2-ACHAF", year, day_of_year, hour)
     for relevant_time in relevant_times:
         download_data(s3, "ABI-L2-RRQPEF", *relevant_time)
