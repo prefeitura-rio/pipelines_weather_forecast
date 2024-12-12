@@ -5,19 +5,21 @@ Process satellite data
 # flake8: noqa: E501
 # pylint: disable=invalid-name, line-too-long, too-many-locals, too-many-arguments
 
+import gc
+import os
+
 # import os
 # from argparse import ArgumentParser
 from datetime import datetime, timedelta
 from glob import glob
-
-# import os
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import psutil
 import xarray as xr
-from joblib import Parallel, delayed  # pylint: disable=E0611, E0401
+
+# from joblib import Parallel, delayed  # pylint: disable=E0611, E0401
 from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 from pyproj import Proj
 from tqdm import tqdm  # pylint: disable=E0611, E0401
@@ -45,48 +47,29 @@ def process_file(
         [2] https://proj4.org/operations/projections/geos.html
     """
 
-    # Obtém informações sobre o uso de memória
-    memory_info = psutil.virtual_memory()
-
-    # Total de RAM usada em bytes
-    ram_usada = memory_info.used
-
-    # Converte para gigabytes
-    ram_usada_gb = ram_usada / (1024**3)
-
-    # log(file_path)
-    log(f"\nRAM usada geral: {ram_usada_gb:.2f} GB")
-    # pid = os.getpid()
-    # process = psutil.Process(pid)
-
-    # cpu_usage = process.cpu_percent(interval=1)
-    # memory_info = process.memory_info()
-
-    # print(f"Uso de CPU médio por esse processo em 1s: {cpu_usage}%")
-    # print(f"Uso de memória física por esse processo: {memory_info.rss / (1024 * 1024):.2f} MB")
-    # print(f"Uso de memória virtual por esse processo: {memory_info.vms / (1024 * 1024):.2f} MB")
-
     # cpu_usage = psutil.cpu_percent(interval=1, percpu=True)  # Lista de uso de cada núcleo
     # cpu_usage_total = sum(cpu_usage) / len(cpu_usage)  # Média de uso de CPU (total)
 
     # # Uso total de memória do sistema
     # memory_info = psutil.virtual_memory()
     # total_memory = memory_info.total / (1024**3)  # Convertendo para GB
-    # used_memory = memory_info.used / (1024**3)   # Convertendo para GB
+    # used_memory = memory_info.used / (1024**3)
     # free_memory = memory_info.available / (1024**3)
 
     # # Exibir os resultados
-    # print(f"Uso total de CPU por núcleo (%): {cpu_usage}")
-    # print(f"Uso médio total de CPU (%): {cpu_usage_total:.2f}%")
-    # print(f"Memória total: {total_memory:.2f} GB")
-    # print(f"Memória usada: {used_memory:.2f} GB")
-    # print(f"Memória livre: {free_memory:.2f} GB")
+    # log(
+    #     f"Uso total de CPU por núcleo (%): {cpu_usage}, Uso médio total de CPU (%): {cpu_usage_total:.2f}%"
+    # )
+    # log(
+    #     f"Memória total: {total_memory:.2f} GB, Memória usada: {used_memory:.2f} GB, Memória livre: {free_memory:.2f} GB"
+    # )
+
     # Read satellite data
     dataset = xr.open_dataset(file_path)
 
     # Retrieve datetimes of file creation and start and end of scan (UTC)
-    scan_start = datetime.strptime(dataset.time_coverage_start, "%Y-%m-%dT%H:%M:%S.%fZ")
-    scan_end = datetime.strptime(dataset.time_coverage_end, "%Y-%m-%dT%H:%M:%S.%fZ")
+    # scan_start = datetime.strptime(dataset.time_coverage_start, "%Y-%m-%dT%H:%M:%S.%fZ")
+    # scan_end = datetime.strptime(dataset.time_coverage_end, "%Y-%m-%dT%H:%M:%S.%fZ")
     creation = datetime.strptime(dataset.date_created, "%Y-%m-%dT%H:%M:%S.%fZ")
 
     if hasattr(dataset, "lon") and hasattr(dataset, "lat"):
@@ -115,23 +98,23 @@ def process_file(
 
     # Construct dataframe
     df = pd.DataFrame(
-        np.array(data).reshape(len(data), -1).T,
+        np.array(data).astype(dtype=np.float32).reshape(len(data), -1).T,
         columns=["lat", "lon", *bands],
     )
 
+    # Remove nan and infinite values
+    df.replace(np.inf, np.nan, inplace=True)
+    df.dropna(how="any", axis=0, inplace=True)
+
     # Discard observations for latitudes and longitudes outside bounds
     if lat_bounds:
-        df = df[(df["lat"] > lat_bounds[0]) & (df["lat"] < lat_bounds[1])]
+        df.drop(df[(df["lat"] <= lat_bounds[0]) | (df["lat"] >= lat_bounds[1])].index, inplace=True)
     if lon_bounds:
-        df = df[(df["lon"] > lon_bounds[0]) & (df["lon"] < lon_bounds[1])]
-
-    # Remove nan and infinite values
-    df = df.replace(np.inf, np.nan)
-    df = df.dropna(how="any", axis=0)
+        df.drop(df[(df["lon"] <= lon_bounds[0]) | (df["lon"] >= lon_bounds[1])].index, inplace=True)
 
     # Include datetimes of file creation and start and end of scan (UTC-3)
-    df["start"] = scan_start  # - timedelta(hours=3)
-    df["end"] = scan_end  # - timedelta(hours=3)
+    # df["start"] = scan_start  # - timedelta(hours=3)
+    # df["end"] = scan_end  # - timedelta(hours=3)
     df["creation"] = creation  # - timedelta(hours=3)
 
     if include_dataset_name:
@@ -140,19 +123,17 @@ def process_file(
     return df
 
 
-def process_satellite(
-    product="ABI-L2-RRQPEF",
-    lat_min=-26.0,
-    lat_max=-19.0,
-    lon_min=-47.0,
-    lon_max=-40.0,
-    num_workers=16,
-    day=-1,
-    year=-1,
-    download_base_path="pipelines/precipitation_model/impa/data/raw/satellite",
-):
-    """Empty"""
-    log(f"Processing satellite {product}")
+def load_entire_day(
+    product, ts: pd.Timestamp, lat_bounds, lon_bounds, download_base_path
+) -> pd.DataFrame:
+    """Load and concatenate all files from that day"""
+    year = ts.year
+    day = ts.dayofyear
+
+    if not Path(f"{download_base_path}/{product}/{year}/{day:03d}").exists():
+        log(f"No files found for {product} {year} {day:03d}")
+        return pd.DataFrame()
+
     match product:
         case "ABI-L2-MCMIPF":  # Cloud and Moisture Imagery
             bands = ["CMI_C08", "CMI_C09", "CMI_C10", "CMI_C11"]
@@ -174,75 +155,47 @@ def process_satellite(
         case _:
             raise ValueError("Unsupported product selected.")
 
+    # Check if files exist inside path
+    path_ = f"{download_base_path}/{product}/{year}/"
+
+    all_files = []
+    for root, dirs, files in os.walk(path_):
+        for file in files:
+            all_files.append(os.path.join(root, file))
+
+    log(f"Files to be processed: {all_files[:5]} {len(all_files)}")
+
+    # return pd.concat(
+    #     Parallel(n_jobs=num_workers)(
+    #         delayed(process_file)(file, bands, lat_bounds, lon_bounds, include_dataset_name)
+    #         for file in glob(f"{download_base_path}/{product}/{year}/{day:03d}/*/*.nc")
+    #     )
+    # )
+    dfr_list = []
+    for file in glob(f"{download_base_path}/{product}/{year}/{day:03d}/*/*.nc"):
+        df = process_file(file, bands, lat_bounds, lon_bounds, include_dataset_name)
+        dfr_list.append(df)
+
+    return pd.concat(dfr_list, ignore_index=True)
+
+
+def process_satellite(
+    product="ABI-L2-RRQPEF",
+    lat_min=-26.0,
+    lat_max=-19.0,
+    lon_min=-47.0,
+    lon_max=-40.0,
+    num_workers=16,
+    day=-1,
+    year=-1,
+    n_historical_days=1,
+    download_base_path="pipelines/precipitation_model/impa/data/raw/satellite",
+):
+    """Empty"""
+    log(f"Processing satellite {product}")
+
     lat_bounds = lat_min, lat_max
     lon_bounds = lon_min, lon_max
-
-    # def load_entire_day(ts: pd.Timestamp, download_base_path) -> pd.DataFrame:
-    #     """ """
-    #     year = ts.year
-    #     day = ts.dayofyear
-    #     files = glob(f"{download_base_path}/{product}/{year}/{day:03d}/*/*.nc")
-
-    #     dfs = []
-    #     batch_size = 5  # Ajuste o tamanho do lote conforme necessário
-
-    #     for i in tqdm(range(0, len(files), batch_size)):
-    #         start = i + 1
-    #         end = min(i + batch_size, len(files))
-    #         log(f"Processando lote de arquivos {start} a {end}")
-    #         batch_files = files[i : i + batch_size]
-    #         batch_dfs = Parallel(n_jobs=num_workers)(
-    #             delayed(process_file)(file, bands, lat_bounds, lon_bounds, include_dataset_name)
-    #             for file in batch_files
-    #         )
-    #         dfs.append(pd.concat(batch_dfs))
-
-    #     return pd.concat(dfs)
-
-    def load_entire_day(ts: pd.Timestamp, download_base_path) -> pd.DataFrame:
-        # pipelines/precipitation_model/impa/data/raw/satellite
-        print("**" * 6)
-        year = ts.year
-        day = ts.dayofyear
-        print(year, day, download_base_path)
-        # print("--", os.listdir(f"{download_base_path}/{product}/{year}/{day:03d}/"))
-        # for file in tqdm(glob(f"{download_base_path}/{product}/{year}/{day:03d}/*/*.nc")):
-        # print("--", glob(f"{download_base_path}/{product}/{year}/{day:03d}/*/*.nc"))
-        # print(file)
-
-        # Obtém informações sobre o uso de memória e cpu
-        # pid = os.getpid()
-        # process = psutil.Process(pid)
-
-        # cpu_usage = process.cpu_percent(interval=1)
-        # memory_info = process.memory_info()
-
-        # print(f"Uso de CPU médio por esse processo em 1s: {cpu_usage}%")
-        # print(f"Uso de memória física por esse processo: {memory_info.rss / (1024 * 1024):.2f} MB")
-        # print(f"Uso de memória virtual por esse processo: {memory_info.vms / (1024 * 1024):.2f} MB")
-
-        cpu_usage = psutil.cpu_percent(interval=1, percpu=True)  # Lista de uso de cada núcleo
-        cpu_usage_total = sum(cpu_usage) / len(cpu_usage)  # Média de uso de CPU (total)
-
-        # Uso total de memória do sistema
-        memory_info = psutil.virtual_memory()
-        total_memory = memory_info.total / (1024**3)  # Convertendo para GB
-        used_memory = memory_info.used / (1024**3)  # Convertendo para GB
-        free_memory = memory_info.available / (1024**3)
-
-        # Exibir os resultados
-        print(f"Uso total de CPU por núcleo (%): {cpu_usage}")
-        print(f"Uso médio total de CPU (%): {cpu_usage_total:.2f}%")
-        print(f"Memória total: {total_memory:.2f} GB")
-        print(f"Memória usada: {used_memory:.2f} GB")
-        print(f"Memória livre: {free_memory:.2f} GB")
-
-        return pd.concat(
-            Parallel(n_jobs=num_workers)(
-                delayed(process_file)(file, bands, lat_bounds, lon_bounds, include_dataset_name)
-                for file in tqdm(glob(f"{download_base_path}/{product}/{year}/{day:03d}/*/*.nc"))
-            )
-        )
 
     end_date = datetime(year, 1, 1) + timedelta(day - 1)
     today_file = Path(
@@ -252,10 +205,13 @@ def process_satellite(
         # Do not process older dates
         start_date = end_date
     else:
-        start_date = datetime(year, 1, 1) + timedelta(day - 4)
+        start_date = datetime(year, 1, 1) + timedelta(day - n_historical_days - 1)
 
+    log(f"DEBUG start_date: {start_date}, end_date: {end_date}")
     log(f"Start loading entire day of start_date {start_date}")
-    df_current = load_entire_day(pd.Timestamp(start_date), download_base_path)
+    df_current = load_entire_day(
+        product, pd.Timestamp(start_date), lat_bounds, lon_bounds, download_base_path
+    )
     output_path = Path(f"pipelines/precipitation_model/impa/data/processed/satellite/{product}")
     output_path.mkdir(exist_ok=True, parents=True)
 
@@ -265,20 +221,22 @@ def process_satellite(
     ):
         next_date = date + timedelta(days=1)
         try:
-            log(f"Start loading entire day for {next_date}")
-            df_next = load_entire_day(next_date, download_base_path)
-            dfr = pd.concat([df_current, df_next])
+            df_next = load_entire_day(
+                product, next_date, lat_bounds, lon_bounds, download_base_path
+            )
+            df_current = pd.concat([df_current, df_next])
         except ValueError:
-            dfr = df_current
             df_next = None
-        dfr = dfr[dfr["creation"].dt.date == date.date()]
-        dfr = dfr.reset_index(drop=True)
-        dfr.to_feather(f"{output_path}/{date.date()}.feather")
+        df_current = df_current[df_current["creation"].dt.date == date.date()]
+        df_current.reset_index(drop=True, inplace=True)
+        df_current.to_feather(f"{output_path}/{date.date()}.feather")
+        del df_current
         try:
             df_current = df_next.copy()
         except AttributeError:
             pass
         del df_next
+        gc.collect()
 
 
 # if __name__ == "__main__":

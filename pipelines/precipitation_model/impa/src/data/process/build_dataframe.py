@@ -10,6 +10,7 @@ from functools import partial
 
 import h5py
 import numpy as np
+from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 from tqdm import tqdm
 
 from pipelines.precipitation_model.impa.src.data.process.SatelliteData import (
@@ -109,14 +110,18 @@ def build_dataframe(
             )
             exit(0)
 
+    log("Loading grids")
     grid_small = np.load(
         f"pipelines/precipitation_model/impa/data/dataframe_grids/{location}-res=2km-256x256.npy"
     )
     grid_large = np.load(
         f"pipelines/precipitation_model/impa/data/dataframe_grids/{location}-res=4km-256x256.npy"
     )
+    log(f"grid_small.shape: {grid_small.shape}, grid_large.shape: {grid_large.shape}")
     assert grid_small.shape == grid_large.shape
     ni, nj = grid_small.shape[:2]
+
+    log("Start saving files as h5")
     with h5py.File(output_filepath, "w") as f:
         what = f.create_group("what")
         what.attrs["feature"] = product
