@@ -64,7 +64,6 @@ last_obs_dt = pd.to_datetime(last_obs)
 past_obs_dt = pd.to_datetime(past_obs)
 
 log(f"last_obs: {last_obs}, last_obs_dt: {last_obs_dt}")
-log(f"past_obs: {past_obs}, past_obs_dt: {past_obs_dt}")
 
 preds = [ground_truth_df]
 log(f"preds: {preds}")
@@ -240,4 +239,4 @@ def task_lag(lag: int):
 
 
 with Pool(min(NLAGS, args.num_workers)) as pool:
-    list(tqdm.tqdm(pool.imap(task_lag, list(range(1, NLAGS + 1))), total=NLAGS))
+    list(tqdm.tqdm(pool.imap(task_lag, list(range(NLAGS, NLAGS + 1))), total=NLAGS))
