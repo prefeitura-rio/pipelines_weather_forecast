@@ -140,12 +140,12 @@ def get_img(
         margin=dict(l=5, r=5, t=40, b=20),
         height=height,
         width=width,
-        title_text=(
-            f"{model_name} T{'+'*(delta >= 0)}{delta} minutes" if delta is not None else model_name
-        ),
-        title_x=0.5,
-        title_font_size=25,
-        title_font_family="Open Sans",
+        # title_text=(
+        #     f"{model_name} T{'+'*(delta >= 0)}{delta} minutes" if delta is not None else model_name
+        # ),
+        # title_x=0.5,
+        # title_font_size=25,
+        # title_font_family="Open Sans",
         plot_bgcolor=bg_color,
         paper_bgcolor=bg_color,
     )
