@@ -20,8 +20,6 @@ from tqdm import tqdm  # pylint: disable=E0611, E0401
 # import pyspark.pandas as pd
 
 
-
-
 def process_file(
     product,
     file_path: str,

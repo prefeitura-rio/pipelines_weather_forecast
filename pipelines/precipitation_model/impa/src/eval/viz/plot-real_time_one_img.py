@@ -15,7 +15,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import tqdm
-
 from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.precipitation_model.impa.src.eval.metrics.metrics import metrics_dict
@@ -47,7 +46,9 @@ order = np.array([[1, 1, -1, -1]]).reshape(1, -1)
 HEIGHT = 500
 WIDTH = 500
 
-config = pathlib.Path(f"pipelines/precipitation_model/impa/src/eval/real_time_config_{args.dataset}.json")
+config = pathlib.Path(
+    f"pipelines/precipitation_model/impa/src/eval/real_time_config_{args.dataset}.json"
+)
 with open(config, "r") as json_file:
     specs_dict = json.load(json_file)
 
@@ -91,7 +92,9 @@ model_names = model_names[:3]
 def task_lag(lag: int):
     future_dt = last_obs_dt + datetime.timedelta(minutes=lag * timestep)
     past_dt = past_obs_dt + datetime.timedelta(minutes=lag * timestep)
-    output_filepath = pathlib.Path(f"pipelines/precipitation_model/impa/eval/viz/test/plot-real_time-{args.dataset}/lag={lag}")
+    output_filepath = pathlib.Path(
+        f"pipelines/precipitation_model/impa/eval/viz/test/plot-real_time-{args.dataset}/lag={lag}"
+    )
 
     future_time = (future_dt - datetime.timedelta(hours=3)).strftime("%H:%M")
     past_time = (past_dt - datetime.timedelta(hours=3)).strftime("%H:%M")
@@ -176,12 +179,12 @@ def task_lag(lag: int):
     worst_metrics = np.argmax(metrics_array * order, axis=0)
     pathlib.Path(output_filepath).parents[0].mkdir(parents=True, exist_ok=True)
     # fig, axs = plt.subplots(figsize=(5 * len(preds), 10), ncols=len(preds), nrows=1)
-    imgs = future_imgs# + past_imgs
+    imgs = future_imgs  # + past_imgs
     present_dt = last_obs_dt - datetime.timedelta(hours=3)
     textstr_up = f"Predictions based on data up to {present_time}"
     for i in range(1):
         for j in range(len(preds)):
-            fig, ax = plt.subplots(figsize=(15,8))
+            fig, ax = plt.subplots(figsize=(15, 8))
             ax.imshow(imgs[len(preds) * i + j])
             if j == 0:
                 ax.set_facecolor((0.1, 0.2, 0.5))
