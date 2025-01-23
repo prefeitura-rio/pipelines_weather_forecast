@@ -1,0 +1,32 @@
+{
+    "models":{
+        "UNET":{
+            "model_file": "pipelines/precipitation_model/impa/models/3--best-epoch=4.ckpt"
+        },
+        "EVONET":{
+            "model_file": "pipelines/precipitation_model/impa/models/1--best-epoch=3.ckpt",
+            "plot": false
+        },
+        "NowcastNet":{
+            "args":{
+                "locations": ["rio_de_janeiro"],
+                "overwrite": true,
+                "output_predict_filepaths": ["pipelines/precipitation_model/impa/predictions/NowcastNet.hdf"],
+                "dataframe_filepath": "pipelines/precipitation_model/impa/data/dataframes/SAT-CORRECTED-ABI-L2-RRQPEF-real_time-{location}/test.hdf",
+                "dataframe": "SAT-ABI-L2-RRQPEF-{location}-file=thr=0_split2",
+                "predict_dataframe": "pipelines/precipitation_model/impa/predictions/EVONET.hdf",
+                "input_model_filepath": "pipelines/precipitation_model/impa/models/NowcastNet/0--best-epoch=4-v1.ckpt",
+                "compile": false,
+                "batch_to_predict": 8
+            },
+            "params_filepath": "pipelines/precipitation_model/impa/models/NowcastNet/params.json"
+        },
+        "MetNet3":{
+            "model_file": "pipelines/precipitation_model/impa/models/3--best-epoch=3.ckpt"
+        },
+        "Mamba":{
+            "model_file": "pipelines/precipitation_model/impa/models/7--best-epoch=18.ckpt",
+            "needs_cuda": true
+        }
+    }
+}
