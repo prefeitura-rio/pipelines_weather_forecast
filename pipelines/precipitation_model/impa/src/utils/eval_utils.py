@@ -55,6 +55,26 @@ def get_img(
     width=1000,
     no_colorbar=False,
 ):
+    """
+    Generates a Plotly map with colored markers representing the values of a given feature.
+
+    Parameters:
+    - values (numpy array): The values to be plotted.
+    - latlons (numpy array): The latitude and longitude coordinates for the values.
+    - model_name (str): The name of the model or dataset being plotted.
+    - feature (str): The name of the feature being plotted.
+    - delta (float): The delta value for the color scale.
+    - metric_names (list of str, optional): The names of the metrics to be displayed.
+    - ground_truth (numpy array, optional): The ground truth values for metric calculation.
+    - zoom (int, optional): The zoom level for the map. Defaults to ZOOM.
+    - bg_color (str, optional): The background color of the map. Defaults to "rgba(255,255,255,255)".
+    - height (int, optional): The height of the plot. Defaults to 500.
+    - width (int, optional): The width of the plot. Defaults to 1000.
+    - no_colorbar (bool, optional): If True, the colorbar is not displayed. Defaults to False.
+
+    Returns:
+    - fig (go.Figure): The Plotly figure object.
+    """
     if metric_names is not None and ground_truth is not None:
         metrics = [
             metrics_dict[metric_name](

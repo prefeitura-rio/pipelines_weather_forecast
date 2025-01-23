@@ -1,3 +1,9 @@
+# -*- coding: utf-8 -*-
+# flake8: noqa: E501
+
+
+
+
 import datetime
 import json
 import pathlib
@@ -9,6 +15,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import tqdm
+
+from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.precipitation_model.impa.src.eval.metrics.metrics import metrics_dict
 from pipelines.precipitation_model.impa.src.utils.eval_utils import get_img
@@ -57,7 +65,7 @@ past_obs_dt = pd.to_datetime(past_obs)
 preds = [ground_truth_df]
 model_names = ["Ground truth"]
 for model_name in specs_dict["models"].keys():
-    predictions = f"predictions_{args.dataset}/{model_name}.hdf"
+    predictions = f"pipelines/precipitation_model/impa/predictions_{args.dataset}/{model_name}.hdf"
     if (
         "plot" in specs_dict["models"][model_name].keys()
         and specs_dict["models"][model_name]["plot"] == False

@@ -24,7 +24,7 @@ from pipelines.precipitation_model.impa.schedules import (  # pylint: disable=E0
     prediction_schedule,
 )
 
-# from pipelines.precipitation_model.impa.src.eval.viz.plot_real_time import create_images
+# from pipelines.precipitation_model.impa.src.eval.viz.plot-real_time import create_images
 from pipelines.precipitation_model.impa.tasks import (  # pylint: disable=E0611, E0401
     build_dataframe_task,
     concat_processed_satellite_task,

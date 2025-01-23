@@ -4,7 +4,7 @@
 Download sattelite goes 16 data, treat then and predict
 """
 
-# from pipelines.precipitation_model.impa.src.eval.viz.plot_real_time import create_images
+# from pipelines.precipitation_model.impa.src.eval.viz.plot-real_time import create_images
 from pipelines.precipitation_model.impa.utils import (  # pylint: disable=E0611, E0401
     concat_processed_satellite,
     download_file_from_s3,
