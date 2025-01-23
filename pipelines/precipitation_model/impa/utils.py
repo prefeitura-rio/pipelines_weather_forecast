@@ -9,9 +9,9 @@ from pathlib import Path
 from typing import List, Tuple
 
 import boto3  # pylint: disable=E0611, E0401
+import pandas as pd
 from botocore import UNSIGNED  # pylint: disable=E0611, E0401
 from botocore.config import Config  # pylint: disable=E0611, E0401
-import pandas as pd
 from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 
 

@@ -5,8 +5,20 @@ import torch
 import torch.nn as nn
 from torch.nn.utils import spectral_norm
 
-from pipelines.precipitation_model.impa.src.models.gan.gan_unet.unet_parts import DoubleConv, Down, OutConv, S, Up, Up2
-from pipelines.precipitation_model.impa.src.models.gan.parts_gan import AvgPool, L2_Block, L3_Block, Noise_Projector
+from pipelines.precipitation_model.impa.src.models.gan.gan_unet.unet_parts import (
+    DoubleConv,
+    Down,
+    OutConv,
+    S,
+    Up,
+    Up2,
+)
+from pipelines.precipitation_model.impa.src.models.gan.parts_gan import (
+    AvgPool,
+    L2_Block,
+    L3_Block,
+    Noise_Projector,
+)
 from pipelines.precipitation_model.impa.src.models.nowcasting.layers.generation.generative_network import (
     Generative_Decoder,
     Generative_Encoder,

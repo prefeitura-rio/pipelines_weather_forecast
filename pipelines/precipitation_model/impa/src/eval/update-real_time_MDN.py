@@ -1,10 +1,17 @@
+# -*- coding: utf-8 -*-
 import datetime
 import subprocess
 from argparse import ArgumentParser
 
-from pipelines.precipitation_model.impa.src.data.process.build_dataframe_from_radar import build_dataframe_from_radar
-from pipelines.precipitation_model.impa.src.data.process.despeckle_radar_data import despeckle_radar_data
-from pipelines.precipitation_model.impa.src.data.process.process_MDN import process_radar
+from pipelines.precipitation_model.impa.src.data.process.build_dataframe_from_radar import (
+    build_dataframe_from_radar,
+)
+from pipelines.precipitation_model.impa.src.data.process.despeckle_radar_data import (
+    despeckle_radar_data,
+)
+from pipelines.precipitation_model.impa.src.data.process.process_MDN import (
+    process_radar,
+)
 from pipelines.precipitation_model.impa.src.eval.predict_real_time import predict
 
 # Consider 8 hours of data
@@ -38,14 +45,19 @@ if __name__ == "__main__":
     first_dt = (dt - datetime.timedelta(hours=N_HOURS)).strftime("%Y%m%dT%H%M%SZ")
 
     # Download the latest data
-    result = subprocess.call(["pipelines/precipitation_model/impa/src/data/download_MDN.sh", first_dt, last_dt])
+    result = subprocess.call(
+        ["pipelines/precipitation_model/impa/src/data/download_MDN.sh", first_dt, last_dt]
+    )
 
     # process data
     print("Processing radar data...")
     process_radar(num_workers=args.num_workers)
 
     # despeckle radar data
-    with open("pipelines/precipitation_model/impa/data/processed/processed_PPI_MDN/processed_files.log", "r") as f:
+    with open(
+        "pipelines/precipitation_model/impa/data/processed/processed_PPI_MDN/processed_files.log",
+        "r",
+    ) as f:
         processed_files = [line.strip() for line in f.readlines()]
     despeckle_radar_data(processed_files, num_workers=args.num_workers)
 

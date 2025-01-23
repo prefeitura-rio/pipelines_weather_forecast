@@ -5,19 +5,21 @@ Process satellite data
 # flake8: noqa: E501
 # pylint: disable=invalid-name, line-too-long, too-many-locals, too-many-arguments
 import gc
+
 # from argparse import ArgumentParser  # aqui
 from datetime import datetime
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
-# import pyspark.pandas as pd
-
 import xarray as xr
-
 from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 from pyproj import Proj
 from tqdm import tqdm  # pylint: disable=E0611, E0401
+
+# import pyspark.pandas as pd
+
+
 
 
 def process_file(
@@ -123,7 +125,9 @@ def process_file(
         df["name"] = "_".join(dataset.dataset_name.split("_")[:2])
     gc.collect()
 
-    output_path = Path(f"pipelines/precipitation_model/impa/data/processed_temp/satellite/{product}/")
+    output_path = Path(
+        f"pipelines/precipitation_model/impa/data/processed_temp/satellite/{product}/"
+    )
     output_path.mkdir(exist_ok=True, parents=True)
     filename = file_path.split("/")[-1].split(".")[0] + ".csv"
     output_filename = output_path / filename

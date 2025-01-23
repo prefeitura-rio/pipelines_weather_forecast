@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import pathlib
 
 import h5py
@@ -498,7 +499,9 @@ class RadarData:
     def interp_at_grid(self, target_grid):
         assert not self.compressed
         if self.rscale == RSCALE and self.rstart == RSTART and self.nbins >= 500:
-            polar_grid = np.load("pipelines/precipitation_model/impa/data/dataframe_grids/radar_grid.npy")
+            polar_grid = np.load(
+                "pipelines/precipitation_model/impa/data/dataframe_grids/radar_grid.npy"
+            )
         else:
             try:
                 polar_grid = np.load(

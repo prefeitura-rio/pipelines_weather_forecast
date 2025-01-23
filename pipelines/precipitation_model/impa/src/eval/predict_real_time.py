@@ -3,8 +3,8 @@
 
 import json
 import pathlib
-from typing import List
 from argparse import ArgumentParser
+from typing import List
 
 from prefeitura_rio.pipelines_utils.logging import log
 
@@ -30,7 +30,9 @@ dataframe_dict = {
 def predict(dataframe_key, num_workers=8, cuda=False) -> List:
     accelerator = "gpu" if cuda else "cpu"
 
-    config = pathlib.Path(f"pipelines/precipitation_model/impa/src/eval/real_time_config_{dataframe_key}.json")
+    config = pathlib.Path(
+        f"pipelines/precipitation_model/impa/src/eval/real_time_config_{dataframe_key}.json"
+    )
     with open(config, "r") as json_file:
         specs_dict = json.load(json_file)
 
@@ -67,10 +69,14 @@ def predict(dataframe_key, num_workers=8, cuda=False) -> List:
                 predict_func(args)
             continue
 
-        model_path = pathlib.Path(f"pipelines/precipitation_model/impa/models_{dataframe_key}/{model_name}/")
+        model_path = pathlib.Path(
+            f"pipelines/precipitation_model/impa/models_{dataframe_key}/{model_name}/"
+        )
         model_file = model_path / info["model_file"]
 
-        output_predict_filepaths = [f"pipelines/precipitation_model/impa/predictions_{dataframe_key}/{model_name}.hdf"]
+        output_predict_filepaths = [
+            f"pipelines/precipitation_model/impa/predictions_{dataframe_key}/{model_name}.hdf"
+        ]
 
         # Standard arguments
         args = {

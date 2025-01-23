@@ -33,8 +33,8 @@ from pipelines.precipitation_model.rionowcast.tasks import (  # pylint: disable=
 from pipelines.tasks import (  # pylint: disable=E0611, E0401;; create_table_and_upload_to_gcs,; task_create_partitions,
     convert_parameter_to_type,
     get_storage_destination,
-    upload_files_to_storage,
     unzip_files,
+    upload_files_to_storage,
 )
 from pipelines.utils.gypscie.tasks import (  # pylint: disable=E0611, E0401
     access_api,

@@ -2,10 +2,16 @@
 # flake8: noqa: E501
 
 from pipelines.precipitation_model.impa.src.data.HDFDataset2 import HDFDataset2
-from pipelines.precipitation_model.impa.src.data.HDFDatasetLocations import HDFDatasetLocations
-from pipelines.precipitation_model.impa.src.data.HDFDatasetMerged import HDFDatasetMerged
+from pipelines.precipitation_model.impa.src.data.HDFDatasetLocations import (
+    HDFDatasetLocations,
+)
+from pipelines.precipitation_model.impa.src.data.HDFDatasetMerged import (
+    HDFDatasetMerged,
+)
 from pipelines.precipitation_model.impa.src.data.PredHDFDataset2 import PredHDFDataset2
-from pipelines.precipitation_model.impa.src.data.PredHDFDatasetLocations import PredHDFDatasetLocations
+from pipelines.precipitation_model.impa.src.data.PredHDFDatasetLocations import (
+    PredHDFDatasetLocations,
+)
 
 options_pretrained = {
     1: {

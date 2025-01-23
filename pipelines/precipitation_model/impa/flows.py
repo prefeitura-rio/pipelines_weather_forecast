@@ -35,11 +35,10 @@ from pipelines.precipitation_model.impa.tasks import (  # pylint: disable=E0611,
     get_start_datetime_task,
     process_satellite_task,
 )
-from pipelines.tasks import (  # pylint: disable=E0611, E0401
+from pipelines.tasks import (  # pylint: disable=E0611, E0401; upload_files_to_storage,
     download_files_from_storage,
     get_storage_destination,
     unzip_files,
-    # upload_files_to_storage,
 )
 
 # from prefeitura_rio.pipelines_utils.tasks import (  # pylint: disable=E0611, E0401

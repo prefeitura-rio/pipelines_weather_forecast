@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import argparse
 import datetime
 import gzip
@@ -10,8 +11,14 @@ import numpy as np
 from tqdm import tqdm
 
 from pipelines.precipitation_model.impa.src.data.process.RadarData import RadarData
-from pipelines.precipitation_model.impa.src.utils.data_utils import NRAYS, VARIABLES_DICT
-from pipelines.precipitation_model.impa.src.utils.general_utils import print_error, print_warning
+from pipelines.precipitation_model.impa.src.utils.data_utils import (
+    NRAYS,
+    VARIABLES_DICT,
+)
+from pipelines.precipitation_model.impa.src.utils.general_utils import (
+    print_error,
+    print_warning,
+)
 
 
 def prj0(x, y):
@@ -364,7 +371,9 @@ def process_radar(
         print_error(f"Error: Specified process type {process_type} not allowed.")
         exit()
 
-    with open("pipelines/precipitation_model/impa/data/raw/radar_PPI_MDN/downloaded_files.log", "r") as f:
+    with open(
+        "pipelines/precipitation_model/impa/data/raw/radar_PPI_MDN/downloaded_files.log", "r"
+    ) as f:
         filepaths = [pathlib.Path(line.strip()) for line in f]
 
     task_filepath_partial = partial(
@@ -381,7 +390,10 @@ def process_radar(
         )
 
     # log output filepaths
-    with open("pipelines/precipitation_model/impa/data/processed/processed_PPI_MDN/processed_files.log", "w") as f:
+    with open(
+        "pipelines/precipitation_model/impa/data/processed/processed_PPI_MDN/processed_files.log",
+        "w",
+    ) as f:
         for output_filepath in output_filepaths:
             if output_filepath is not None:
                 f.write(f"{output_filepath}\n")

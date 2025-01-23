@@ -4,6 +4,14 @@
 Download sattelite goes 16 data, treat then and predict
 """
 
+from pipelines.precipitation_model.impa.src.data.process.build_dataframe_from_sat import (
+    build_dataframe_from_sat,
+)
+from pipelines.precipitation_model.impa.src.data.process.process_satellite import (
+    process_file,
+)
+from pipelines.precipitation_model.impa.src.eval.predict_real_time import predict
+
 # from pipelines.precipitation_model.impa.src.eval.viz.plot_real_time import create_images
 from pipelines.precipitation_model.impa.utils import (  # pylint: disable=E0611, E0401
     concat_processed_satellite,
@@ -12,18 +20,10 @@ from pipelines.precipitation_model.impa.utils import (  # pylint: disable=E0611,
     get_relevant_dates_informations,
     get_start_datetime,
 )
-from pipelines.precipitation_model.impa.src.data.process.build_dataframe_from_sat import (
-    build_dataframe_from_sat,
-)
-from pipelines.precipitation_model.impa.src.data.process.process_satellite import (
-    process_file,
-)
-from pipelines.precipitation_model.impa.src.eval.predict_real_time import predict
 from pipelines.tasks import (  # pylint: disable=E0611, E0401
     get_storage_destination,
     upload_files_to_storage,
 )
-
 
 #########################
 #  Define parameters    #
@@ -47,7 +47,8 @@ download_base_path = "pipelines/precipitation_model/impa/data/raw/satellite"
 
 
 get_predictions = predict
-log=print
+log = print
+
 
 def process_satellite(
     file_paths,
@@ -67,6 +68,7 @@ def process_satellite(
     log(f"End processing {product} satellite data...")
     return True
 
+
 def download_files_from_s3(
     product,
     relevant_times,
@@ -75,6 +77,7 @@ def download_files_from_s3(
     for relevant_time in relevant_times:
         download_file_from_s3(product, *relevant_time, download_base_path)
     return True
+
 
 dt = get_start_datetime(start_datetime=start_datetime)
 relevant_dts, relevant_times = get_relevant_dates_informations(
