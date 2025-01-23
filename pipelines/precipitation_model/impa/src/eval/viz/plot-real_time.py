@@ -47,7 +47,9 @@ order = np.array([[1, 1, -1, -1]]).reshape(1, -1)
 HEIGHT = 500
 WIDTH = 500
 
-config = pathlib.Path(f"pipelines/precipitation_model/impa/src/eval/real_time_config_{args.dataset}.json")
+config = pathlib.Path(
+    f"pipelines/precipitation_model/impa/src/eval/real_time_config_{args.dataset}.json"
+)
 with open(config, "r") as json_file:
     specs_dict = json.load(json_file)
 
@@ -84,7 +86,9 @@ for model_name in specs_dict["models"].keys():
 def task_lag(lag: int):
     future_dt = last_obs_dt + datetime.timedelta(minutes=lag * timestep)
     past_dt = past_obs_dt + datetime.timedelta(minutes=lag * timestep)
-    output_filepath = pathlib.Path(f"pipelines/precipitation_model/impa/eval/viz/plot-real_time-{args.dataset}/lag={lag}.png")
+    output_filepath = pathlib.Path(
+        f"pipelines/precipitation_model/impa/eval/viz/plot-real_time-{args.dataset}/lag={lag}.png"
+    )
 
     future_time = (future_dt - datetime.timedelta(hours=3)).strftime("%H:%M")
     past_time = (past_dt - datetime.timedelta(hours=3)).strftime("%H:%M")

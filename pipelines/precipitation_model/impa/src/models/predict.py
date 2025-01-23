@@ -20,9 +20,7 @@ from pipelines.precipitation_model.impa.src.data.PredHDFDatasetLocations import 
 from pipelines.precipitation_model.impa.src.utils.data_utils import sat_dataframe
 from pipelines.precipitation_model.impa.src.utils.general_utils import print_ok
 from pipelines.precipitation_model.impa.src.utils.hdf_utils import array_to_pred_hdf
-from pipelines.precipitation_model.impa.src.utils.models_utils import (
-    get_ds,
-)
+from pipelines.precipitation_model.impa.src.utils.models_utils import get_ds
 
 MEAN_LOG_SAT = 0.08
 STD_LOG_SAT = 0.39

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import datetime
 import pathlib
 from argparse import ArgumentParser
@@ -6,8 +7,12 @@ import boto3
 from botocore import UNSIGNED
 from botocore.config import Config
 
-from pipelines.precipitation_model.impa.src.data.process.build_dataframe_from_sat import build_dataframe_from_sat
-from pipelines.precipitation_model.impa.src.data.process.process_satellite import process_satellite
+from pipelines.precipitation_model.impa.src.data.process.build_dataframe_from_sat import (
+    build_dataframe_from_sat,
+)
+from pipelines.precipitation_model.impa.src.data.process.process_satellite import (
+    process_satellite,
+)
 from pipelines.precipitation_model.impa.src.eval.predict_real_time import predict
 
 BUCKET_NAME = "noaa-goes16"
@@ -24,7 +29,9 @@ def download_data(s3, product, year, day_of_year, hour):
     for obj in s3_result.get("Contents", []):
         key = obj["Key"]
         file_name = key.split("/")[-1].split(".")[0]
-        filepath = pathlib.Path(f"pipelines/precipitation_model/impa/data/raw/satellite/{prefix}/{file_name}.nc")
+        filepath = pathlib.Path(
+            f"pipelines/precipitation_model/impa/data/raw/satellite/{prefix}/{file_name}.nc"
+        )
         if filepath.exists():
             continue
         s3.download_file(BUCKET_NAME, key, filepath)

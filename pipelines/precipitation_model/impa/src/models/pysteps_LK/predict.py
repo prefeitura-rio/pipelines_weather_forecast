@@ -1,15 +1,18 @@
+# -*- coding: utf-8 -*-
 import pathlib
 from functools import partial
 
 import numpy as np
 import torch
 from joblib import Parallel, delayed
+from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 from pysteps import motion, nowcasts
 from pysteps.utils import conversion, transformation
 
-from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 from pipelines.precipitation_model.impa.src.data.HDFDataset2 import HDFDataset2
-from pipelines.precipitation_model.impa.src.data.HDFDatasetLocations import HDFDatasetLocations
+from pipelines.precipitation_model.impa.src.data.HDFDatasetLocations import (
+    HDFDatasetLocations,
+)
 from pipelines.precipitation_model.impa.src.utils.general_utils import print_ok
 from pipelines.precipitation_model.impa.src.utils.hdf_utils import array_to_pred_hdf
 

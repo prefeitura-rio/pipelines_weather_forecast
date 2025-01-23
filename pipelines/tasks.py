@@ -4,12 +4,12 @@
 Common  Tasks for rj-cor
 """
 
-import json
-from datetime import timedelta
 import gzip
+import json
 import os
 import shutil
 import zipfile
+from datetime import timedelta
 from pathlib import Path
 from typing import List, Union
 

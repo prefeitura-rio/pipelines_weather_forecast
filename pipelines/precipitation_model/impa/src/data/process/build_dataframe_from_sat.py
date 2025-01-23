@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import argparse
 import datetime
 import glob
@@ -7,10 +8,12 @@ from functools import partial
 
 import h5py
 import numpy as np
+from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 from tqdm import tqdm
 
-from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
-from pipelines.precipitation_model.impa.src.data.process.SatelliteData import SatelliteData
+from pipelines.precipitation_model.impa.src.data.process.SatelliteData import (
+    SatelliteData,
+)
 from pipelines.precipitation_model.impa.src.utils.general_utils import print_warning
 
 HEAVY_RAIN_TRAIN_LOG_MEAN = 0.15839338
@@ -77,8 +80,12 @@ def build_dataframe_from_sat(
             )
             exit(0)
 
-    grid_small = np.load(f"pipelines/precipitation_model/impa/data/dataframe_grids/{location}-res=2km-256x256.npy")
-    grid_large = np.load(f"pipelines/precipitation_model/impa/data/dataframe_grids/{location}-res=4km-256x256.npy")
+    grid_small = np.load(
+        f"pipelines/precipitation_model/impa/data/dataframe_grids/{location}-res=2km-256x256.npy"
+    )
+    grid_large = np.load(
+        f"pipelines/precipitation_model/impa/data/dataframe_grids/{location}-res=4km-256x256.npy"
+    )
     assert grid_small.shape == grid_large.shape
     ni, nj = grid_small.shape[:2]
     with h5py.File(output_filepath, "w") as f:

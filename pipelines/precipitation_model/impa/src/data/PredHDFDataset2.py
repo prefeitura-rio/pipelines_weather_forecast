@@ -4,9 +4,9 @@ from pathlib import Path
 import h5py
 import numpy as np
 import torch
+from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 from torch.utils import data
 
-from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 from pipelines.precipitation_model.impa.src.utils.dataframe_utils import (
     N_AFTER,
     N_BEFORE,

@@ -16,7 +16,11 @@ from timm.layers import DropPath, trunc_normal_
 DropPath.__repr__ = lambda self: f"timm.DropPath({self.drop_prob})"
 
 # triton cross scan, 2x speed than pytorch implementation =========================
-from pipelines.precipitation_model.impa.src.models.mamba.csm_triton import CrossMergeTriton, CrossScanTriton, CrossScanTriton1b1
+from pipelines.precipitation_model.impa.src.models.mamba.csm_triton import (
+    CrossMergeTriton,
+    CrossScanTriton,
+    CrossScanTriton1b1,
+)
 
 # except:
 #     from csm_triton import CrossMergeTriton, CrossScanTriton, CrossScanTriton1b1
