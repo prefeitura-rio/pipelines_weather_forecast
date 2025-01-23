@@ -172,16 +172,17 @@ def task_lag(lag: int):
                         metrics_array[i - 1, j] = np.nan
         except KeyError:
             pass
+
     best_metrics = np.argmin(metrics_array * order, axis=0)
     worst_metrics = np.argmax(metrics_array * order, axis=0)
     pathlib.Path(output_filepath).parents[0].mkdir(parents=True, exist_ok=True)
     # fig, axs = plt.subplots(figsize=(5 * len(preds), 10), ncols=len(preds), nrows=1)
     imgs = future_imgs# + past_imgs
     present_dt = last_obs_dt - datetime.timedelta(hours=3)
-    textstr_up = f"Predictions based on data up to {present_time}"
     for i in range(1):
         for j in range(len(preds)):
-            fig, ax = plt.subplots(figsize=(15,8))
+            log(f"Start creating image for {model_names[j]}")
+            fig, ax = plt.subplots(figsize=(10,8))
             ax.imshow(imgs[len(preds) * i + j])
             if j == 0:
                 ax.set_facecolor((0.1, 0.2, 0.5))
@@ -195,18 +196,6 @@ def task_lag(lag: int):
                 time = future_time
             else:
                 time = past_time
-            props = dict(boxstyle="round", facecolor="black", alpha=0.9)
-            ax.text(
-                0.15,
-                0.1,
-                time,
-                backgroundcolor="black",
-                horizontalalignment="center",
-                verticalalignment="center",
-                transform=ax.transAxes,
-                fontdict={"fontsize": 24, "family": "alarm clock", "color": "red"},
-                bbox=props,
-            )
 
             if i == 1 and j != 0:
                 for k, metric_name in enumerate(METRICS_NAMES):
@@ -240,9 +229,9 @@ def task_lag(lag: int):
             fig.add_artist(line)
             xpos = 1 / len(preds)
             fig.subplots_adjust(bottom=0.1, top=0.9)
-            plt.text(0.5, 0.975, str(present_dt.date()), fontsize=22, transform=fig.transFigure)
-            plt.text(xpos, 0.945, textstr_up, fontsize=18, transform=fig.transFigure)
-            fig.savefig(f"output_filepath_{model_name}.png", transparent=True)
+            filename = f"{output_filepath}_{model_names[j]}.png"
+            log(f"Figure saved on {filename}")
+            fig.savefig(filename, transparent=True)
             fig.clf()
             plt.close()
 

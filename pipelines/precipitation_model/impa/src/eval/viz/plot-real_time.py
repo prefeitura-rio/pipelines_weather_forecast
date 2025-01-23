@@ -193,6 +193,7 @@ def task_lag(lag: int):
                 time = future_time
             else:
                 time = past_time
+            # Create box with prediction time left down corner
             props = dict(boxstyle="round", facecolor="black", alpha=0.9)
             ax.text(
                 0.15,
