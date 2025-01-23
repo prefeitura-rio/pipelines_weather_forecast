@@ -2,8 +2,6 @@
 # flake8: noqa: E501
 
 
-
-
 import datetime
 import json
 import pathlib
@@ -15,7 +13,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import tqdm
-
 from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.precipitation_model.impa.src.eval.metrics.metrics import metrics_dict
