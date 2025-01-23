@@ -185,7 +185,7 @@ def task_lag(lag: int):
     for i in range(1):
         for j in range(len(preds)):
             log(f"Start creating image for {model_names[j]}")
-            fig, ax = plt.subplots(figsize=(10,8))
+            fig, ax = plt.subplots(figsize=(10, 8))
             ax.imshow(imgs[len(preds) * i + j])
             if j == 0:
                 ax.set_facecolor((0.1, 0.2, 0.5))
