@@ -180,7 +180,6 @@ def task_lag(lag: int):
     pathlib.Path(output_filepath).parents[0].mkdir(parents=True, exist_ok=True)
     # fig, axs = plt.subplots(figsize=(5 * len(preds), 10), ncols=len(preds), nrows=1)
     imgs = future_imgs  # + past_imgs
-    present_dt = last_obs_dt - datetime.timedelta(hours=3)
     for i in range(1):
         for j in range(len(preds)):
             log(f"Start creating image for {model_names[j]}")
