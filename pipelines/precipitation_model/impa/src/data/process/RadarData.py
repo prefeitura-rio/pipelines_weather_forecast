@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# flake8: noqa: E501
+
 import pathlib
 
 import h5py
@@ -496,7 +498,7 @@ class RadarData:
         )
         return np.dstack([latlons[1], latlons[0]])
 
-    def interp_at_grid(self, target_grid):
+    def interpolate_at_grid(self, target_grid):
         assert not self.compressed
         if self.rscale == RSCALE and self.rstart == RSTART and self.nbins >= 500:
             polar_grid = np.load(

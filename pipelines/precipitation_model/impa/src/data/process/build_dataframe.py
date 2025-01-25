@@ -50,8 +50,8 @@ def task_dt(
         file = file_list[0]
         sd = SatelliteData.load_data(file, value)
         sd = sd.correct_parallax()
-        data_small = sd.interp_at_grid(band, dt + datetime.timedelta(minutes=5), grid_small)
-        data_large = sd.interp_at_grid(band, dt + datetime.timedelta(minutes=5), grid_large)
+        data_small = sd.interpolate_at_grid(band, dt + datetime.timedelta(minutes=5), grid_small)
+        data_large = sd.interpolate_at_grid(band, dt + datetime.timedelta(minutes=5), grid_large)
         assert data_small.shape == (ni, nj)
         assert data_large.shape == (ni, nj)
         data = np.dstack([data_small, data_large])

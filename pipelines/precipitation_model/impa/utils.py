@@ -9,10 +9,14 @@ from pathlib import Path
 from typing import List, Tuple
 
 import boto3  # pylint: disable=E0611, E0401
+import h5py
+import matplotlib.pyplot as plt  # pylint: disable=E0611, E0401
+import numpy as np
 import pandas as pd
 from botocore import UNSIGNED  # pylint: disable=E0611, E0401
 from botocore.config import Config  # pylint: disable=E0611, E0401
 from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
+from pipelines.precipitation_model.impa.src.utils.eval_utils import get_img
 
 
 def download_file_from_s3(
@@ -100,7 +104,8 @@ def get_relevant_dates_informations(dt=None, n_historical_hours: int = 6) -> Tup
     This function calculates the relevant dates and their information.
 
     Args:
-        dt (datetime.datetime, optional): The datetime for which the relevant dates are to be calculated.
+        dt (datetime.datetime, optional): The datetime for which the relevant dates are to be
+        calculated.
         n_historical_hours (int, optional): The number of historical hours to consider.
 
     Returns:
@@ -158,7 +163,7 @@ def get_filenames_to_process(
     files = set()
     files = files.union(glob(f"{download_base_path}/{product}/*/*/*/*.nc"))
     files = list(files)
-    print(files)
+    log(f"First and las filename to be processed: {files[0]} {files[-1]}")
     return files, bands, include_dataset_name
 
 
@@ -170,7 +175,8 @@ def concat_processed_satellite(
     Concatenates processed satellite data files into a single dataframe.
 
     This function concatenates all CSV files in the specified path into a single pandas dataframe.
-    It then resets the index of the dataframe and saves it to a feather file in a specified output path.
+    It then resets the index of the dataframe and saves it to a feather file in a specified output
+    path.
 
     Args:
         path (str): The path to the directory containing the CSV files to be concatenated.
@@ -179,10 +185,106 @@ def concat_processed_satellite(
     Returns:
         bool: Returns True if the concatenation and saving process is successful.
     """
-
+    log(f"Start concating {product} processed files")
     dataframe = pd.concat(map(pd.read_csv, glob(path + "/*.csv")))
     dataframe.reset_index(drop=True, inplace=True)
     output_path = Path(f"pipelines/precipitation_model/impa/data/processed/satellite/{product}")
     output_path.mkdir(exist_ok=True, parents=True)
     dataframe.to_feather(f"{output_path}/SAT-real_time.feather")
+    log(f"End concating {product} processed files")
     return True
+
+
+# flake8: noqa: C901
+def task_lag_img(
+    lag: int,
+    last_obs,
+    last_obs_dt,
+    timestep,
+    data_source: str,
+    model_names,
+    preds,
+    latlons,
+    feature,
+):
+
+    BG_COLOR = "white"
+    HEIGHT = 500
+    WIDTH = 500
+
+    future_dt = last_obs_dt + datetime.timedelta(minutes=lag * timestep)
+    future_dt_str = future_dt.strftime("%Y-%m-%d %H:%M:%S")
+    output_filepath = Path(
+        f"pipelines/precipitation_model/impa/eval/viz/test/plot-real_time-{data_source}/lag={lag}"
+    )
+
+    future_imgs = len(preds) * [np.zeros((HEIGHT, WIDTH, 4), dtype=int)]
+
+    # Treat data for Predict future
+    for i, model_name in enumerate(model_names):
+        # pred = preds[i]
+        pred = h5py.File(preds[i])
+        if i == 0:
+            future_key = last_obs
+        else:
+            future_key = future_dt.strftime("%Y%m%d-%H%M")
+            future_key = f"{last_obs}/{future_key}"
+        try:
+            if i == 0:
+                values = np.array(pred[future_key]).reshape((*latlons.shape[:2], -1))[:, :, 0]
+                future_imgs[i] = get_img(
+                    values,
+                    latlons,
+                    "Last observation",
+                    feature,
+                    None,
+                    bg_color=BG_COLOR,
+                    height=HEIGHT,
+                    width=WIDTH,
+                    no_colorbar=True,
+                    background=True,
+                )
+            else:
+                values = np.array(pred[future_key])
+                future_imgs[i] = get_img(
+                    values,
+                    latlons,
+                    model_name,
+                    feature,
+                    None,
+                    bg_color=BG_COLOR,
+                    height=HEIGHT,
+                    width=WIDTH,
+                    no_colorbar=True,
+                    background=True,
+                )
+        except KeyError:
+            pass
+
+    # Path(output_filepath).parents[0].mkdir(parents=True, exist_ok=True)
+    imgs = future_imgs
+    filenames = []
+
+    for j in range(len(preds)):
+        log(f"Start creating image for {model_names[j]}")
+        fig, ax = plt.subplots(figsize=(10, 8))
+        ax.imshow(imgs[j])
+        if j == 0:
+            ax.set_facecolor((0.1, 0.2, 0.5))
+            ax.tick_params(bottom=False, labelbottom=False, left=False, labelleft=False)
+        else:
+            ax.axis("off")
+        ax.axis("tight")
+
+        fig.tight_layout()
+
+        fig.subplots_adjust(bottom=0.1, top=0.9)
+        save_path = Path(output_filepath / model_names[j])
+        save_path.mkdir(parents=True, exist_ok=True)
+        filename = save_path / f"{future_dt_str}.png"
+        filenames.append(str(filename))
+        log(f"\nFigure saved on {filename}. This prediction is for {future_dt}\n")
+        fig.savefig(filename, transparent=True)
+        fig.clf()
+        plt.close()
+    return filenames

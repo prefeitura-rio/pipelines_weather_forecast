@@ -9,6 +9,8 @@ pipelines/precipitation_model/rionowcast/gypscie/
 **/gypscie/**
 **/test_flow/**
 *.nc
+**/run_local.py
+run_local.py
 
 # Exclude models_.zip from being ignored
 !pipelines/precipitation_model/impa/models_.zip

@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# flake8: noqa: E501
+
 import numpy as np
 
 from pipelines.precipitation_model.impa.src.data.HDFDatasetMultiple import (

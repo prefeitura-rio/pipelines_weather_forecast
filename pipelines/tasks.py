@@ -224,6 +224,16 @@ def get_storage_destination(path: str, filename: str = None) -> str:
 
 
 @task
+def get_storage_destination_model(path: str, filename: str = None) -> str:
+    """
+    Get storage blob destinationa and the name of the source file
+    """
+    destination_blob_name = f"{path}/{filename}" if filename else path
+    log(f"File destination_blob_name {destination_blob_name}")
+    return destination_blob_name
+
+
+@task
 def upload_files_to_storage(
     project: str, bucket_name: str, destination_folder: str, source_file_names: List[str]
 ) -> None:
@@ -245,7 +255,7 @@ def upload_files_to_storage(
         blob = bucket.blob(f"{destination_folder}/{file_name}")
         blob.upload_from_filename(file_path)
 
-        log(f"File {file_name} sent to {destination_folder} on bucket {bucket_name}.")
+        log(f"File {file_name} from {file_path} sent to {destination_folder} on bucket {bucket_name}.")
 
 
 # def upload_files_to_storage(

@@ -67,7 +67,7 @@ def process_file(
     lon_bounds = lon_min, lon_max
 
     # Read satellite data
-    dataset = xr.open_dataset(file_path)
+    dataset = xr.open_dataset(file_path, engine="netcdf4")
 
     # Retrieve datetimes of file creation and start and end of scan (UTC)
     # scan_start = datetime.strptime(dataset.time_coverage_start, "%Y-%m-%dT%H:%M:%S.%fZ")

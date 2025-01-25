@@ -20,9 +20,6 @@
                 "batch_to_predict": 8
             },
             "params_filepath": "pipelines/precipitation_model/impa/models_SAT/NowcastNet/params.json"
-        },
-        "MetNet3":{
-            "model_file": "3--best-epoch=3.ckpt"
         }
     }
 }

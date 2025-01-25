@@ -59,6 +59,7 @@ def get_img(
     height=500,
     width=1000,
     no_colorbar=False,
+    background=False,
 ):
     """
     Generates a Plotly map with colored markers representing the values of a given feature.
@@ -150,7 +151,10 @@ def get_img(
         paper_bgcolor=bg_color,
     )
     fig.update(layout_showlegend=False)
-    fig.update_mapboxes(center=MAP_CENTER, zoom=zoom, style="open-street-map")
+
+    style = "open-street-map" if background else "white-bg"
+    fig.update_mapboxes(center=MAP_CENTER, zoom=zoom, style=style)
+    # fig.update_mapboxes(center=MAP_CENTER, zoom=zoom, style="open-street-map")
     bytes = fig.to_image(format="png")
     buf = io.BytesIO(bytes)
     img = Image.open(buf)

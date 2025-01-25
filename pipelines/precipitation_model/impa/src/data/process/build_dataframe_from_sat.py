@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# flake8: noqa: E501
+
 import argparse
 import datetime
 import glob
@@ -36,8 +38,8 @@ def task_dt(
     datetime_key = (dt).strftime("%Y%m%d/%H%M")
 
     sat_df = sat_df.correct_parallax()
-    data_small = sat_df.interp_at_grid(band, dt + datetime.timedelta(minutes=5), grid_small)
-    data_large = sat_df.interp_at_grid(band, dt + datetime.timedelta(minutes=5), grid_large)
+    data_small = sat_df.interpolate_at_grid(band, dt + datetime.timedelta(minutes=5), grid_small)
+    data_large = sat_df.interpolate_at_grid(band, dt + datetime.timedelta(minutes=5), grid_large)
     assert data_small.shape == (ni, nj)
     assert data_large.shape == (ni, nj)
     data = np.dstack([data_small, data_large])
@@ -125,9 +127,12 @@ def build_dataframe_from_sat(
             value=value,
             band=band,
         )
-        log(f"\n\n[>>>>>] datetimes {datetimes}")
+        log(f"\n\n Datetimes interval were we want to predict {relevant_datetimes}")
+        log(f"\n\n[DEBUG] Datetimes used to create interpolated product data {datetimes}\n\n")
         for i, j in tqdm(zip(chunk_indices, chunk_indices[1:]), total=len(chunk_indices)):
             chunk_iterable = datetimes[i:j]
+            log(f"\n\nChunk indices: {i}, {j}")
+            log(f"\n\nChunk iterable datetimes: {chunk_iterable}")
             with multiprocessing.Pool(num_workers) as pool:
                 datasets = list(pool.map(task_dt_partial, chunk_iterable))
             for datetime_key, data in datasets:
@@ -173,3 +178,5 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     build_dataframe_from_sat(**vars(args))
+# pipelines/precipitation_model/impa/data/dataframe_grids/rio_de_janeiro-res=2km-256x256.npy
+# pipelines/precipitation_model/impa/data/dataframe_grids/rio_de_janeiro-res=2km-256x256.npy

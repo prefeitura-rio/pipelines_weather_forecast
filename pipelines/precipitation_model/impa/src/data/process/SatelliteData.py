@@ -9,6 +9,10 @@ import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 from scipy import interpolate
+from satpy.modifiers.parallax import get_parallax_corrected_lonlats
+
+from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
+
 
 # MAP_CENTER = {"lat": -22.9932804107666, "lon": -43.26795928955078}
 # LAT_LON_BOUNDS = {"lon_min": -44.4458, "lon_max": -42.5939, "lat_min": -23.3282, "lat_max": -22.4758}
@@ -49,7 +53,6 @@ class SatelliteData:
         return pd.read_feather(f"{self.folder}/ABI-L2-ACHAF/{self.stem}.feather")
 
     def correct_parallax(self):
-        from satpy.modifiers.parallax import get_parallax_corrected_lonlats
 
         df_height = self._load_cloud_height()
         timestamps = self.data.creation.unique()
@@ -85,17 +88,27 @@ class SatelliteData:
         new_sd.data.lon = updated_lons
         return new_sd
 
-    def interp_at_grid(self, band: str, timestamp: datetime, target_grid: NDArray):
-        # print("\ntimestamp", timestamp)
-        # print(self.data["creation"].iloc[0])
+    def interpolate_at_grid(self, band: str, timestamp: datetime, target_grid: NDArray):
+        """
+        Interpolates the satellite data at a given timestamp onto a target grid for a specified
+        band.
+
+        Parameters:
+        - band (str): The band of the satellite data to interpolate.
+        - timestamp (datetime): The timestamp for which to interpolate the data.
+        - target_grid (NDArray): The target grid onto which to interpolate the data.
+
+        Returns:
+        - interp_values (NDArray): The interpolated values on the target grid.
+        """
         self.data["creation"] = pd.to_datetime(self.data["creation"], format="mixed")
         # print(self.data["creation"].unique())
-        if not (timestamp >= self.data["creation"]).any():
-            print("\n\nnão tem dado")
-            print(timestamp)
-            print(print(self.data["creation"].unique()))
-            print(timestamp >= self.data["creation"])
-            print("\n\n")
+        # if not (timestamp >= self.data["creation"]).any():
+        #     print("\n\nnão tem dado")
+        #     print(timestamp)
+        #     print(self.data["creation"].unique())
+        #     print(timestamp >= self.data["creation"])
+        #     print("\n\n")
         # print("------DEBUG:", (
         #     timestamp >= self.data["creation"]
         # ).any())
@@ -115,8 +128,11 @@ class SatelliteData:
         values = values[~nan_indices]
         points = np.stack((x, y)).T
         shape = target_grid.shape[:2]
-        print("\n\n>> points", points)
-        print(">> values", values)
+        if len(points) < 1:
+            log(f"\n\n[DEBUG] Points and values are empty for timestamp {timestamp}")
+            unique_timestamps = self.data["creation"].unique()
+            log(f"Dataframe contains {unique_timestamps}\n\n")
+
         interp_values = interpolate.griddata(
             points,
             values,

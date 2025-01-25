@@ -37,9 +37,9 @@ def task_dt(dt, ni: int, nj: int, radar_folder: str, grid: np.ndarray, feature: 
         file = file_list[0]
         radar_data = RadarData.load_hdf(file)
         if radar_data.compressed:
-            data = radar_data.unwrap_data().interp_at_grid(grid)
+            data = radar_data.unwrap_data().interpolate_at_grid(grid)
         else:
-            data = radar_data.interp_at_grid(grid)
+            data = radar_data.interpolate_at_grid(grid)
         assert data.shape == (ni, nj)
     return (datetime_key, data)
 
