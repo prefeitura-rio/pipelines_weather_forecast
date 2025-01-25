@@ -4,8 +4,8 @@
 Tasks
 """
 
-from functools import partial
 import json
+from functools import partial
 from multiprocessing.pool import Pool
 from pathlib import Path
 from typing import List, Set, Tuple, Union
@@ -14,7 +14,6 @@ import h5py
 import numpy as np
 import pandas as pd
 import tqdm
-
 from prefect import task  # pylint: disable=E0611, E0401
 from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 

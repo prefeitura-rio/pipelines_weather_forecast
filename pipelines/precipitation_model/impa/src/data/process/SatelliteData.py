@@ -8,11 +8,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
-from scipy import interpolate
-from satpy.modifiers.parallax import get_parallax_corrected_lonlats
-
 from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
-
+from satpy.modifiers.parallax import get_parallax_corrected_lonlats
+from scipy import interpolate
 
 # MAP_CENTER = {"lat": -22.9932804107666, "lon": -43.26795928955078}
 # LAT_LON_BOUNDS = {"lon_min": -44.4458, "lon_max": -42.5939, "lat_min": -23.3282, "lat_max": -22.4758}

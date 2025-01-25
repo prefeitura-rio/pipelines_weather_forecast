@@ -255,7 +255,9 @@ def upload_files_to_storage(
         blob = bucket.blob(f"{destination_folder}/{file_name}")
         blob.upload_from_filename(file_path)
 
-        log(f"File {file_name} from {file_path} sent to {destination_folder} on bucket {bucket_name}.")
+        log(
+            f"File {file_name} from {file_path} sent to {destination_folder} on bucket {bucket_name}."
+        )
 
 
 # def upload_files_to_storage(
