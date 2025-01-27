@@ -8,7 +8,6 @@ from prefect import Parameter, unmapped  # pylint: disable=E0611, E0401
 from prefect.executors import LocalDaskExecutor  # pylint: disable=E0611, E0401
 from prefect.run_configs import KubernetesRun  # pylint: disable=E0611, E0401
 from prefect.storage import GCS  # pylint: disable=E0611, E0401
-
 from prefeitura_rio.pipelines_utils.custom import Flow  # pylint: disable=E0611, E0401
 
 # pylint: disable=E0611, E0401
@@ -21,7 +20,6 @@ from pipelines.constants import constants  # pylint: disable=E0611, E0401
 from pipelines.precipitation_model.impa.schedules import (  # pylint: disable=E0611, E0401
     prediction_schedule,
 )
-
 from pipelines.precipitation_model.impa.tasks import (  # pylint: disable=E0611, E0401
     build_dataframe_task,
     concat_processed_satellite_task,
@@ -34,11 +32,10 @@ from pipelines.precipitation_model.impa.tasks import (  # pylint: disable=E0611,
     get_storage_destination_impa,
     process_satellite_task,
 )
-from pipelines.tasks import (  # pylint: disable=E0611, E0401; upload_files_to_storage,
+from pipelines.tasks import (  # pylint: disable=E0611, E0401; upload_files_to_storage,; task_create_partitions,
     download_files_from_storage,
     unzip_files,
     upload_files_to_storage,
-    # task_create_partitions,
 )
 
 # from prefeitura_rio.pipelines_utils.tasks import (  # pylint: disable=E0611, E0401

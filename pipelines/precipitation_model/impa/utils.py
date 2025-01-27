@@ -16,6 +16,7 @@ import pandas as pd
 from botocore import UNSIGNED  # pylint: disable=E0611, E0401
 from botocore.config import Config  # pylint: disable=E0611, E0401
 from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
+
 from pipelines.precipitation_model.impa.src.utils.eval_utils import get_img
 
 
