@@ -116,7 +116,7 @@ with Flow(
     # Download data from s3 from last 6h for RRQPE
     downloaded_files_rr = download_files_from_s3_task.map(
         product=unmapped("ABI-L2-RRQPEF"),
-        relevant_times=relevant_times[:8],
+        relevant_times=relevant_times[:10],
         download_base_path=unmapped(download_base_path),
     )
     # Download data from s3 from more hours for ACHAF because we need a dalay in this compared
@@ -180,6 +180,7 @@ with Flow(
         data_source=data_source,
         num_workers=num_workers,
         nlags=18,
+        wait=output_predict_filepaths,
     )
     destination_folder_images_ = get_storage_destination_impa(
         path="cor-clima-imagens/predicao_precipitacao/impa/",

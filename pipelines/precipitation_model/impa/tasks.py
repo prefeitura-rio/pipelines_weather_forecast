@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=import-error, invalid-name, missing-function-docstring, too-many-arguments
+# flake8: noqa: E501
 """
 Tasks
 """
@@ -129,7 +130,7 @@ def process_satellite_task(
     This function logs the processing activity, processes satellite data for specified
     products using `process_satellite`, and then builds a dataframe with `build_dataframe`.
     """
-    log(f"Start processing {product} satellite data...")
+    # log(f"Start processing {product} satellite data...")
     file_paths = [file_paths] if not isinstance(file_paths, list) else file_paths
 
     for i in range(len(file_paths)):
@@ -139,7 +140,7 @@ def process_satellite_task(
             include_dataset_name=include_dataset_name,
             product=product,
         )
-    log(f"End processing {product} satellite data...")
+    # log(f"End processing {product} satellite data...")
     return True
 
 
@@ -206,6 +207,7 @@ def create_images(
     data_source: str = "SAT",
     num_workers: int = 10,
     nlags: int = 18,
+    wait=None,  # pylint: disable=unused-argument
 ) -> List[str]:
     """
     Generate one image for each PNG file using a 3-hour forecast window (NLAGS=18).

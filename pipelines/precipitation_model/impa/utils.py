@@ -60,7 +60,7 @@ def download_file_from_s3(
     parent_folder.mkdir(parents=True, exist_ok=True)
 
     # download files
-    log(f"Bucket name = {BUCKET_NAME} and prefix = {prefix}")
+    # log(f"Bucket name = {BUCKET_NAME} and prefix = {prefix}")
     s3_result = s3.list_objects_v2(Bucket=BUCKET_NAME, Prefix=prefix, Delimiter="/")
     for obj in s3_result.get("Contents", []):
         key = obj["Key"]
@@ -128,6 +128,7 @@ def get_relevant_dates_informations(dt=None, n_historical_hours: int = 6) -> Tup
         (relevant_time.year, relevant_time.timetuple().tm_yday, relevant_time.hour)
         for relevant_time in relevant_dts
     )
+    log(f"Relevant date hours to be used: {relevant_times}")
     return relevant_dts, sorted(relevant_times, key=lambda x: (-x[0], -x[1], -x[2]))
 
 
@@ -163,7 +164,9 @@ def get_filenames_to_process(
     files = set()
     files = files.union(glob(f"{download_base_path}/{product}/*/*/*/*.nc"))
     files = list(files)
-    log(f"First and las filename to be processed: {files[0]} {files[-1]}")
+    files.sort()
+    log(f">>> files\n {files}")
+    log(f"First and last filename to be processed: {files[0]} {files[-1]}")
     return files, bands, include_dataset_name
 
 
