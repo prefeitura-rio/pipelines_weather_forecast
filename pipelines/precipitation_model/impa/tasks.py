@@ -91,6 +91,7 @@ def download_files_from_s3_task(
     None
     """
     relevant_times = [relevant_times] if not isinstance(relevant_times, list) else relevant_times
+    log(f"\n\nDownloading relevant times for product {product}:\n{relevant_times}\n\n")
     for relevant_time in relevant_times:
         download_file_from_s3(product, *relevant_time, download_base_path)
     return True

@@ -62,7 +62,6 @@ with Flow(
     # Model parameters
     start_datetime = Parameter(
         "start_datetime",
-        # default="2024-05-26 10:00:00",
         default=None,
         required=False,
         # description="Datetime in YYYY-MM-dd HH:mm:ss format, UTC timezone",
@@ -113,7 +112,7 @@ with Flow(
     # Download data from s3 from last 6h for RRQPE
     downloaded_files_rr = download_files_from_s3_task.map(
         product=unmapped("ABI-L2-RRQPEF"),
-        relevant_times=relevant_times[:10],
+        relevant_times=relevant_times[:8],
         download_base_path=unmapped(download_base_path),
     )
     # Download data from s3 from more hours for ACHAF because we need a dalay in this compared

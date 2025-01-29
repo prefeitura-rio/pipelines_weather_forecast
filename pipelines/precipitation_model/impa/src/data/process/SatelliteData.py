@@ -64,13 +64,24 @@ class SatelliteData:
             lats = np.array(filtered_df.lat)
             lons = np.array(filtered_df.lon)
 
-            closest_timestamp = df_height.loc[df_height["creation"] <= timestamp, "creation"].max()
-            filtered_df_height = df_height[df_height["creation"] == closest_timestamp]
-            height_lats = np.array(filtered_df_height.lat)
-            height_lons = np.array(filtered_df_height.lon)
-            heights = np.array(filtered_df_height.HT)
-            points = np.stack((height_lons, height_lats)).T
-            h_interp = interpolate.griddata(points, heights, (lons, lats), method="linear")
+            try:
+                closest_timestamp = df_height.loc[
+                    df_height["creation"] <= timestamp, "creation"
+                ].max()
+                filtered_df_height = df_height[df_height["creation"] == closest_timestamp]
+                height_lats = np.array(filtered_df_height.lat)
+                height_lons = np.array(filtered_df_height.lon)
+                heights = np.array(filtered_df_height.HT)
+                points = np.stack((height_lons, height_lats)).T
+                h_interp = interpolate.griddata(points, heights, (lons, lats), method="linear")
+            except Exception as e:
+                log(f"\n\nError in correct_parallax: {str(e)}")
+                log(
+                    f"Error in correct_parallax: no points for {timestamp}. Available times df_height: {df_height['creation'].unique()}"
+                )
+                log(
+                    f"Error in correct_parallax: no points for {timestamp}. Available times filtered_df_height: {filtered_df_height['creation'].unique()}\n\n"
+                )
 
             new_lons, new_lats = get_parallax_corrected_lonlats(
                 SAT_LON, SAT_LAT, SAT_ALT, lons, lats, h_interp
