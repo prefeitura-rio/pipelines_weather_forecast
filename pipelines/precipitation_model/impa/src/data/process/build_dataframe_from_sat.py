@@ -10,8 +10,10 @@ from functools import partial
 
 import h5py
 import numpy as np
-from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
+import pandas as pd
 from tqdm import tqdm
+
+from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 
 from pipelines.precipitation_model.impa.src.data.process.SatelliteData import (
     SatelliteData,
@@ -116,7 +118,7 @@ def build_dataframe_from_sat(
         chunk_indices = np.arange(0, size, step)
         if chunk_indices[-1] != size:
             chunk_indices = np.append(chunk_indices, [size])
-
+        # comentario
         task_dt_partial = partial(
             task_dt,
             ni=ni,
@@ -127,6 +129,11 @@ def build_dataframe_from_sat(
             value=value,
             band=band,
         )
+        # print(f"\n\n {sat_df.data.columns}")
+        df_height = pd.read_feather("pipelines/precipitation_model/impa/data/processed/satellite/ABI-L2-ACHAF/SAT-real_time.feather")
+
+        # log(f"\n\n [DEBUG] {sat_df.data.creation.unique()}")
+        log(f"\n\n [DEBUG] {df_height.creation.unique()}")
         log(f"\n\n Datetimes interval were we want to predict {relevant_datetimes}")
         log(f"\n\n[DEBUG] Datetimes used to create interpolated product data {datetimes}\n\n")
         for i, j in tqdm(zip(chunk_indices, chunk_indices[1:]), total=len(chunk_indices)):
