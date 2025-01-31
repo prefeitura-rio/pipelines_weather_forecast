@@ -194,8 +194,15 @@ def concat_processed_satellite(
     dataframe.reset_index(drop=True, inplace=True)
     output_path = Path(f"pipelines/precipitation_model/impa/data/processed/satellite/{product}")
     output_path.mkdir(exist_ok=True, parents=True)
+    try:
+        path_temp = "pipelines/precipitation_model/impa/data/processed/satellite"
+        df_height = pd.read_feather(f"{path_temp}/ABI-L2-ACHAF/SAT-real_time.feather")
+        log(f"\n\nFeather file for ACHA found before saving.\n{df_height.creation.unique()}")
+    except FileNotFoundError:
+        log("Feather file for ACHA not found.")
+    log(f"Distinct times for {product} saved on feather {dataframe.creation.unique()}")
     dataframe.to_feather(f"{output_path}/SAT-real_time.feather")
-    log(f"End concating {product} processed files")
+    log(f"End concating {product} processed files. Saved on {output_path}/SAT-real_time.feather")
     return True
 
 
