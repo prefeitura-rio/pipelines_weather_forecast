@@ -11,9 +11,8 @@ from functools import partial
 import h5py
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
-
 from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
+from tqdm import tqdm
 
 from pipelines.precipitation_model.impa.src.data.process.SatelliteData import (
     SatelliteData,
@@ -130,7 +129,9 @@ def build_dataframe_from_sat(
             band=band,
         )
         # print(f"\n\n {sat_df.data.columns}")
-        df_height = pd.read_feather("pipelines/precipitation_model/impa/data/processed/satellite/ABI-L2-ACHAF/SAT-real_time.feather")
+        df_height = pd.read_feather(
+            "pipelines/precipitation_model/impa/data/processed/satellite/ABI-L2-ACHAF/SAT-real_time.feather"
+        )
 
         # log(f"\n\n [DEBUG] {sat_df.data.creation.unique()}")
         log(f"\n\n [DEBUG] {df_height.creation.unique()}")
