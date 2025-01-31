@@ -33,6 +33,7 @@ from pipelines.precipitation_model.impa.tasks import (  # pylint: disable=E0611,
     process_satellite_task,
 )
 from pipelines.tasks import (  # pylint: disable=E0611, E0401; upload_files_to_storage,; task_create_partitions,
+    clear_directories,
     download_files_from_storage,
     unzip_files,
     upload_files_to_storage,
@@ -165,6 +166,13 @@ with Flow(
         # wait=[data_concat_rr, data_concat_achaf],
         wait=[data_concat_rr, data_concat_achaf, unziped_files],
     )
+    clear_directories(
+        paths=[
+        "pipelines/precipitation_model/impa/data/processed_temp",
+        "pipelines/precipitation_model/impa/data/raw",
+        ],
+        wait=dfr,
+    )
     output_predict_filepaths = get_predictions(
         dataframe_key=data_source,
         num_workers=num_workers,
@@ -230,4 +238,4 @@ prediction_previsao_chuva_impa.run_config = KubernetesRun(
     memory_request="15Gi",
 )
 prediction_previsao_chuva_impa.schedule = prediction_schedule
-prediction_previsao_chuva_impa.executor = LocalDaskExecutor(num_workers=1)
+prediction_previsao_chuva_impa.executor = LocalDaskExecutor(num_workers=5)

@@ -555,3 +555,24 @@ def unzip_files(
             extracted_files.append(output_file)
     log(f"Extracted files: {extracted_files}")
     return extracted_files
+
+
+@task
+def clear_directories(
+    paths: List[str],
+    wait=None,  # pylint: disable=unused-argument
+) -> bool:
+    """
+    Clear directories
+    """
+    for path in paths:
+        dir_path = Path(path)
+        if dir_path.exists() and dir_path.is_dir():  # Verifica se o diretório existe
+            for file in dir_path.glob("*"):
+                try:
+                    file.unlink()
+                except Exception as e:
+                    print(f"Error while removing file {file}: {e}")
+        else:
+            print(f"Warning: {path} is not a valid directory or doesn't exist.")
+    return True
