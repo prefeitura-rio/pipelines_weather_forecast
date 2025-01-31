@@ -33,8 +33,8 @@ from pipelines.precipitation_model.impa.tasks import (  # pylint: disable=E0611,
     process_satellite_task,
 )
 from pipelines.tasks import (  # pylint: disable=E0611, E0401; upload_files_to_storage,; task_create_partitions,
-    remove_paths,
     download_files_from_storage,
+    remove_paths,
     unzip_files,
     upload_files_to_storage,
 )
