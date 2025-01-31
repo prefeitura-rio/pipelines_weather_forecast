@@ -558,21 +558,33 @@ def unzip_files(
 
 
 @task
-def clear_directories(
+def remove_paths(
     paths: List[str],
     wait=None,  # pylint: disable=unused-argument
 ) -> bool:
     """
-    Clear directories
+    If path is a file, remove it. If path is a directory, remove all files inside it.
     """
     for path in paths:
-        dir_path = Path(path)
-        if dir_path.exists() and dir_path.is_dir():  # Verifica se o diretório existe
-            for file in dir_path.glob("*"):
+        path_obj = Path(path)
+
+        if path_obj.is_file():
+            try:
+                path_obj.unlink()
+                log(f"File removed: {path}")
+            except Exception as e:
+                log(f"Error removing file {path}: {e}")
+
+        elif path_obj.is_dir():
+            # Se for um diretório, remove os arquivos dentro dele
+            for file in path_obj.glob("*"):
                 try:
                     file.unlink()
                 except Exception as e:
-                    print(f"Error while removing file {file}: {e}")
+                    log(f"Error removing file {file}: {e}")
+            log(f"Files from {path} removed.")
+
         else:
-            print(f"Warning: {path} is not a valid directory or doesn't exist.")
+            log(f"Path: {path} doesn't exist.")
+
     return True
