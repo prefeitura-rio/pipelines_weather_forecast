@@ -168,8 +168,8 @@ with Flow(
     )
     clear_directories(
         paths=[
-        "pipelines/precipitation_model/impa/data/processed_temp",
-        "pipelines/precipitation_model/impa/data/raw",
+            "pipelines/precipitation_model/impa/data/processed_temp",
+            "pipelines/precipitation_model/impa/data/raw",
         ],
         wait=dfr,
     )
