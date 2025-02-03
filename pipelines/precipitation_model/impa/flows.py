@@ -38,6 +38,7 @@ from pipelines.tasks import (  # pylint: disable=E0611, E0401; upload_files_to_s
     get_memory_usage,
     remove_paths,
     download_files_from_storage,
+    remove_paths,
     unzip_files,
     upload_files_to_storage,
 )
