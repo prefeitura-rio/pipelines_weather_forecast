@@ -643,5 +643,5 @@ def get_cpu_usage(wait=None):  # pylint: disable=unused-argument)
     # Estimando quantos núcleos estão sendo usados (aproximadamente)
     used_cores = (cpu_percent / 100) * total_cores
     cpu_usage = {"used_cores": used_cores, "cpu_percent": cpu_percent}
-    print(f"Uso da CPU: {cpu_usage['used_cores']:.2f} núcleos (~{cpu_usage['cpu_percent']}%)")
+    log(f"Uso da CPU: {cpu_usage['used_cores']:.2f} núcleos (~{cpu_usage['cpu_percent']}%)")
     return cpu_usage
