@@ -7,7 +7,6 @@ Common  Tasks for rj-cor
 import gzip
 import json
 import os
-import psutil
 import shutil
 import zipfile
 from datetime import timedelta
@@ -17,6 +16,7 @@ from typing import List, Union
 import basedosdados as bd  # pylint: disable=E0611, E0401
 import pandas as pd
 import pendulum  # pylint: disable=E0611, E0401
+import psutil
 from google.cloud import storage  # pylint: disable=E0611, E0401
 from prefect import task  # pylint: disable=E0611, E0401
 from prefect.triggers import all_successful  # pylint: disable=E0611, E0401
