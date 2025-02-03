@@ -7,6 +7,7 @@ Common  Tasks for rj-cor
 import gzip
 import json
 import os
+import psutil
 import shutil
 import zipfile
 from datetime import timedelta
@@ -588,3 +589,59 @@ def remove_paths(
             log(f"Path: {path} doesn't exist.")
 
     return True
+
+
+@task
+def get_disk_usage(path="/", wait=None):  # pylint: disable=unused-argument)
+    """
+    Retorna o uso atual do disco para o caminho especificado.
+    Por padrão, verifica o uso no diretório raiz (/).
+    """
+    disk = psutil.disk_usage(path)
+    total_gb = disk.total / 1e9
+    used_gb = disk.used / 1e9
+    free_gb = disk.free / 1e9
+    percent_used = disk.percent
+    disk_usage = {
+        "total_gb": total_gb,
+        "used_gb": used_gb,
+        "free_gb": free_gb,
+        "percent_used": percent_used,
+    }
+    log(
+        f"Espaço em disco: {disk_usage['used_gb']:.2f}GB usados \
+            / {disk_usage['total_gb']:.2f}GB totais ({disk_usage['percent_used']}%)"
+    )
+    return disk_usage
+
+
+@task
+def get_memory_usage(wait=None):  # pylint: disable=unused-argument)
+    """
+    Retorna o uso atual de memória RAM em GB e a porcentagem utilizada.
+    """
+    mem = psutil.virtual_memory()
+    total_gb = mem.total / 1e9
+    used_gb = mem.used / 1e9
+    percent_used = mem.percent
+    mem_usage = {"total_gb": total_gb, "used_gb": used_gb, "percent_used": percent_used}
+    log(
+        f"Memória RAM: {mem_usage['used_gb']:.2f}GB \
+            / {mem_usage['total_gb']:.2f}GB ({mem_usage['percent_used']}%)"
+    )
+    return mem_usage
+
+
+@task
+def get_cpu_usage(wait=None):  # pylint: disable=unused-argument)
+    """
+    Retorna o uso atual da CPU em núcleos utilizados e em porcentagem.
+    """
+    total_cores = psutil.cpu_count(logical=True)  # Número total de cores lógicos
+    cpu_percent = psutil.cpu_percent(interval=1)  # Uso da CPU em %
+
+    # Estimando quantos núcleos estão sendo usados (aproximadamente)
+    used_cores = (cpu_percent / 100) * total_cores
+    cpu_usage = {"used_cores": used_cores, "cpu_percent": cpu_percent}
+    print(f"Uso da CPU: {cpu_usage['used_cores']:.2f} núcleos (~{cpu_usage['cpu_percent']}%)")
+    return cpu_usage

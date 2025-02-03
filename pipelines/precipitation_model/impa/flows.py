@@ -33,6 +33,9 @@ from pipelines.precipitation_model.impa.tasks import (  # pylint: disable=E0611,
     process_satellite_task,
 )
 from pipelines.tasks import (  # pylint: disable=E0611, E0401; upload_files_to_storage,; task_create_partitions,
+    get_cpu_usage,
+    get_disk_usage,
+    get_memory_usage,
     remove_paths,
     download_files_from_storage,
     unzip_files,
@@ -174,11 +177,14 @@ with Flow(
         ],
         wait=dfr,
     )
+    cpu_usage = get_cpu_usage(wait=removed_paths)
+    disk_usage = get_disk_usage(wait=removed_paths)
+    memory_usage = get_memory_usage(wait=removed_paths)
     output_predict_filepaths = get_predictions(
         dataframe_key=data_source,
         num_workers=num_workers,
         cuda=cuda,
-        wait=[dfr, removed_paths],
+        wait=[dfr, removed_paths, disk_usage, memory_usage, cpu_usage],
     )
 
     prediction_images_path, model_names = create_images(
@@ -235,7 +241,7 @@ prediction_previsao_chuva_impa.run_config = KubernetesRun(
         constants.WEATHER_FORECAST_AGENT_LABEL.value,
     ],
     cpu_request="500m",
-    memory_limit="30Gi",
+    memory_limit="60Gi",
     memory_request="15Gi",
 )
 prediction_previsao_chuva_impa.schedule = prediction_schedule
