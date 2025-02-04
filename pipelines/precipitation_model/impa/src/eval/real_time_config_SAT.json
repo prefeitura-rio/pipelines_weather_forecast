@@ -1,8 +1,5 @@
 {
     "models":{
-        "UNET":{
-            "model_file": "3--best-epoch=4.ckpt"
-        },
         "EVONET":{
             "model_file": "1--best-epoch=3.ckpt",
             "plot": false
