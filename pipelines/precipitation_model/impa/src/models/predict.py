@@ -11,6 +11,8 @@ import torch
 from einops import rearrange
 from torch.utils.data import DataLoader
 
+from prefeitura_rio.pipelines_utils.logging import log
+
 from pipelines.precipitation_model.impa.src.data.HDFDatasetLocations import (
     HDFDatasetLocations,
 )
@@ -180,7 +182,7 @@ def main(args_dict, parameters_dict):
         transform = transform5
         inv_transform = inv_transform5
 
-    print("Predicting using the model: ", input_model_filepath)
+    log("\nPredicting using the model: {input_model_filepath} and arguments: {args_dict}")
 
     if pathlib.Path(input_model_filepath).suffix == ".joblib":
         if not needs_prediction:
