@@ -96,7 +96,7 @@ def get_start_datetime(start_datetime=None):
                 f"Formato inválido: {start_datetime}. Use 'YYYY-mm-dd HH:mm:ss'"
             ) from e
 
-    print(f"Running predictions on datetime [{dt.strftime('%Y-%m-%d %H:%M:%S')} UTC]")
+    log(f"Running predictions on datetime [{dt.strftime('%Y-%m-%d %H:%M:%S')} UTC]")
     return dt
 
 

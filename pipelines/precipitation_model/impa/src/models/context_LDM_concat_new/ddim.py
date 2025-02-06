@@ -7,6 +7,7 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
+from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 from pipelines.precipitation_model.impa.src.models.context_LDM_concat_new.utils import (
     make_ddim_sampling_parameters,
     make_ddim_timesteps,
@@ -101,10 +102,10 @@ class DDIMSampler(object):
             if isinstance(conditioning, dict):
                 cbs = conditioning[list(conditioning.keys())[0]].shape[0]
                 if cbs != batch_size:
-                    print(f"Warning: Got {cbs} conditionings but batch-size is {batch_size}")
+                    log(f"Warning: Got {cbs} conditionings but batch-size is {batch_size}")
             else:
                 if conditioning.shape[0] != batch_size:
-                    print(
+                    log(
                         f"Warning: Got {conditioning.shape[0]} conditionings but batch-size is {batch_size}"
                     )
 
@@ -112,7 +113,7 @@ class DDIMSampler(object):
         # sampling
         C, H, W = shape
         size = (batch_size, C, H, W)
-        # print(f'Data shape for DDIM sampling is {size}, eta {eta}')
+        # log(f'Data shape for DDIM sampling is {size}, eta {eta}')
 
         samples, intermediates = self.ddim_sampling(
             conditioning,
@@ -176,7 +177,7 @@ class DDIMSampler(object):
             reversed(range(0, timesteps)) if ddim_use_original_steps else np.flip(timesteps)
         )
         total_steps = timesteps if ddim_use_original_steps else timesteps.shape[0]
-        # print(f"Running DDIM Sampling with {total_steps} timesteps")
+        # log(f"Running DDIM Sampling with {total_steps} timesteps")
 
         iterator = tqdm(time_range, desc="DDIM Sampler", total=total_steps)
 

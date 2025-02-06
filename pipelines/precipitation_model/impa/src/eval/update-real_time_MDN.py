@@ -3,6 +3,7 @@ import datetime
 import subprocess
 from argparse import ArgumentParser
 
+from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 from pipelines.precipitation_model.impa.src.data.process.build_dataframe_from_radar import (
     build_dataframe_from_radar,
 )
@@ -39,7 +40,7 @@ if __name__ == "__main__":
     else:
         dt = datetime.datetime.fromisoformat(args.datetime)
 
-    print(f"Running predictions on datetime [{dt.strftime('%Y-%m-%d %H:%M:%S')} UTC]")
+    log(f"Running predictions on datetime [{dt.strftime('%Y-%m-%d %H:%M:%S')} UTC]")
 
     last_dt = dt.strftime("%Y%m%dT%H%M%SZ")
     first_dt = (dt - datetime.timedelta(hours=N_HOURS)).strftime("%Y%m%dT%H%M%SZ")
@@ -50,7 +51,7 @@ if __name__ == "__main__":
     )
 
     # process data
-    print("Processing radar data...")
+    log("Processing radar data...")
     process_radar(num_workers=args.num_workers)
 
     # despeckle radar data

@@ -186,5 +186,3 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     build_dataframe_from_sat(**vars(args))
-# pipelines/precipitation_model/impa/data/dataframe_grids/rio_de_janeiro-res=2km-256x256.npy
-# pipelines/precipitation_model/impa/data/dataframe_grids/rio_de_janeiro-res=2km-256x256.npy

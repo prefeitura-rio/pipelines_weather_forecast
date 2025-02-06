@@ -197,6 +197,12 @@ def get_predictions(
 ) -> List:
     """
     get predictions
+    This function is a wrapper for the predict function.
+    OBS: 
+    1. NowcastNet needs to run after Evolution Network (EVONET) because it depends on the EVONET
+    predictions. EVONET depends on cuda to run.
+    2. Pysteps is not being used in the current implementation because the library is conflicting.
+    3. 
     """
     log("Start predictions...")
     return predict(dataframe_key=dataframe_key, num_workers=num_workers, cuda=cuda)

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # flake8: noqa: E501
 
+from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 from pipelines.precipitation_model.impa.src.data.HDFDataset2 import HDFDataset2
 from pipelines.precipitation_model.impa.src.data.HDFDatasetLocations import (
     HDFDatasetLocations,
@@ -155,5 +156,5 @@ def get_ds(
                     predict_sat=predict_sat,
                 )
                 val = 0.5
-    print(f"Use dataset: {ds}")
+    log(f"Use dataset: {ds}")
     return ds, val
