@@ -5,9 +5,9 @@
 
 import numpy as np
 import torch
+from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 from tqdm import tqdm
 
-from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 from pipelines.precipitation_model.impa.src.models.context_LDM_concat_new.utils import (
     make_ddim_sampling_parameters,
     make_ddim_timesteps,

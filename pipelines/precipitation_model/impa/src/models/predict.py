@@ -9,9 +9,8 @@ import joblib
 import pytorch_lightning as pl
 import torch
 from einops import rearrange
-from torch.utils.data import DataLoader
-
 from prefeitura_rio.pipelines_utils.logging import log
+from torch.utils.data import DataLoader
 
 from pipelines.precipitation_model.impa.src.data.HDFDatasetLocations import (
     HDFDatasetLocations,

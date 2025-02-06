@@ -4,6 +4,7 @@ import subprocess
 from argparse import ArgumentParser
 
 from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
+
 from pipelines.precipitation_model.impa.src.data.process.build_dataframe_from_radar import (
     build_dataframe_from_radar,
 )
