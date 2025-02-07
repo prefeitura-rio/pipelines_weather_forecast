@@ -185,18 +185,25 @@ def main(args_dict, parameters_dict):
     log(f"\nPredicting using the model: {input_model_filepath} and arguments: {args_dict}")
 
     if pathlib.Path(input_model_filepath).suffix == ".joblib":
+        log(f"\n prediction.py suffix joblib")
         if not needs_prediction:
+            log(f"\n prediction.py Dont need prediction before joblib")
             pipe = joblib.load(open(input_model_filepath, "rb"))
+            log(f"\n prediction.py Dont need prediction after joblib")
         else:
+            log(f"\n prediction.py need prediction before model")
             pipe = model(
                 **parameters_dict,
                 merge=merge,
                 satellite=sat,
                 map_location="cuda:0" if args_dict["accelerator"] == "cuda" else "cpu",
             )
+            log(f"\n prediction.py need prediction after model")
             pipe.load_state_dict(torch.load(input_model_filepath))
+            log(f"\n prediction.py need prediction after load_state")
 
     elif pathlib.Path(input_model_filepath).suffix == ".ckpt":
+        log(f"\n prediction.py suffix cpkt")
         pipe = model.load_from_checkpoint(
             input_model_filepath,
             **parameters_dict,
@@ -218,8 +225,10 @@ def main(args_dict, parameters_dict):
 
     # Load data
     if new_dataset:
+        log(f"\n prediction.py new dataset")
         for i, location in enumerate(locations):
             if not needs_prediction:
+                log(f"\n prediction.py Dont need prediction before")
                 ds = HDFDatasetLocations(
                     dataframe_filepath,
                     [location],
@@ -228,6 +237,7 @@ def main(args_dict, parameters_dict):
                     leadtime_conditioning=lead_time,
                 )
             else:
+                log(f"\n prediction.py need prediction before")
                 n_predictions = n_after
 
                 ds = PredHDFDatasetLocations(
@@ -238,11 +248,15 @@ def main(args_dict, parameters_dict):
                     n_after=n_after,
                     n_before=n_before,
                 )
+            log("Dataset loaded successfully. Before partial(transform")
             ds.x_transform = partial(transform, mean=0, std=1, sat=True)
             ds.y_transform = partial(transform, mean=0, std=1, sat=True)
+            log("After partial(transform and before data loader")
+            log(f"\n ds {ds}")
             test_dataloader = DataLoader(
                 ds, batch_size=batch_size, num_workers=args_dict["num_workers"]
             )
+            log("After data loader")
 
             # s2 = len(ds.keys)
             # ni = ds[0][0].shape[1]
@@ -253,6 +267,7 @@ def main(args_dict, parameters_dict):
                 enable_checkpointing=False,
             ).predict(pipe, test_dataloader)
 
+            log("Predictions made successfully.")
             predictions = torch.cat(predictions, axis=0)
             predictions[predictions < 0] = 0
             predictions = predictions.squeeze(1)
@@ -291,23 +306,25 @@ def main(args_dict, parameters_dict):
             except AttributeError:
                 mean_data = MEAN_LOG_RAD
                 std_data = STD_LOG_RAD
-
+        log("before partial(transform and before data loader else")
+        log(f"\n ds {ds}")
         ds.x_transform = partial(transform, mean=mean_data, std=std_data, sat=sat)
         ds.y_transform = partial(transform, mean=mean_data, std=std_data, sat=sat)
-
+        log("After partial(transform and before data loader else")
         test_dataloader = DataLoader(
             ds, batch_size=batch_size, num_workers=args_dict["num_workers"]
         )
-
+        log("After data loader else")
         predictions = pl.Trainer(
             accelerator=args_dict["accelerator"],
             logger=False,
             enable_checkpointing=False,
         ).predict(pipe, test_dataloader)
+        log("Predictions made successfully else.")
         predictions = torch.cat(predictions, axis=0)
 
         predictions = inv_transform(predictions, mean=mean_data, std=std_data, sat=sat)
-
+        log("before array_to_pred_hdf")
         array_to_pred_hdf(predictions, ds.keys, ds.future_keys, output_predict_filepaths[0])
 
     ok_message = "OK: Saved predictions successfully."
