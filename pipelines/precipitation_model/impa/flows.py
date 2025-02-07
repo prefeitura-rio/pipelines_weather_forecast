@@ -72,7 +72,7 @@ with Flow(
     )
     num_workers = Parameter(
         "num_workers",
-        default=8,
+        default=4,
         required=False,
         # description="Number of workers to use for parallel processing",
     )
@@ -243,7 +243,7 @@ prediction_previsao_chuva_impa.run_config = KubernetesRun(
     cpu_limit="4",
     cpu_request="4",
     memory_limit="60Gi",
-    memory_request="15Gi",
+    memory_request="25Gi",
 )
 prediction_previsao_chuva_impa.schedule = prediction_schedule
 prediction_previsao_chuva_impa.executor = LocalDaskExecutor(num_workers=1)
