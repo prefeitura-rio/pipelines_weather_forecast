@@ -8,9 +8,9 @@ from multiprocessing.pool import Pool
 
 import h5py
 import numpy as np
+from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 from tqdm import tqdm
 
-from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 from pipelines.precipitation_model.impa.src.data.process.RadarData import RadarData
 from pipelines.precipitation_model.impa.src.utils.data_utils import (
     NRAYS,

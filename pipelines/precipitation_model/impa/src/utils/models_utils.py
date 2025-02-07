@@ -2,6 +2,7 @@
 # flake8: noqa: E501
 
 from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
+
 from pipelines.precipitation_model.impa.src.data.HDFDataset2 import HDFDataset2
 from pipelines.precipitation_model.impa.src.data.HDFDatasetLocations import (
     HDFDatasetLocations,
