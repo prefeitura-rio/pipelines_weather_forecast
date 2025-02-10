@@ -69,7 +69,7 @@ def build_dataframe_from_sat(
     output_filepath = pathlib.Path(
         f"pipelines/precipitation_model/impa/data/dataframes/SAT-CORRECTED-{product}-{pathlib.Path(output_filename).stem}/test.hdf"
     )
-
+    log(f"\n\n>>>>>[DEBUG] Real time Output filepath: {output_filepath}")
     pathlib.Path(output_filepath).parents[0].mkdir(parents=True, exist_ok=True)
 
     if output_filepath.is_file():

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # flake8: noqa: E501
-
+import os
 import importlib
 import pathlib
 from functools import partial
@@ -135,6 +135,7 @@ def main(args_dict, parameters_dict):
     model = importlib.import_module(model_location).model
 
     dataframe_filepath = args_dict["dataframe_filepath"]
+    log(f"\n\n >>>> dataframe_filepath {dataframe_filepath}")
     locations = args_dict["locations"]
     output_predict_filepaths = args_dict["output_predict_filepaths"]
     input_model_filepath = args_dict["input_model_filepath"]
@@ -228,6 +229,8 @@ def main(args_dict, parameters_dict):
         for i, location in enumerate(locations):
             if not needs_prediction:
                 log(f"\n prediction.py Dont need prediction before")
+                log(f"\n\n >>>> list dir {os.listdir('pipelines/precipitation_model/impa/data/dataframes/')}")
+                log(f"\n\n >>>> dataframe_filepath {dataframe_filepath}")
                 ds = HDFDatasetLocations(
                     dataframe_filepath,
                     [location],
