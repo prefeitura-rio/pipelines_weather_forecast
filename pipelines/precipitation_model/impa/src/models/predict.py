@@ -257,6 +257,14 @@ def main(args_dict, parameters_dict):
             )
             log("After data loader")
 
+            # Check if there is any data inside the dataloader
+            data_iter = iter(test_dataloader)
+            try:
+                first_batch = next(data_iter)
+                log(f"\nFirst batch loaded successfully: {first_batch[0][0]}")
+            except StopIteration:
+                log("\nDataLoader is empty.")
+
             # s2 = len(ds.keys)
             # ni = ds[0][0].shape[1]
 
@@ -314,6 +322,15 @@ def main(args_dict, parameters_dict):
             ds, batch_size=batch_size, num_workers=args_dict["num_workers"]
         )
         log("After data loader else")
+
+        # Check if there is any data inside the dataloader
+        data_iter = iter(test_dataloader)
+        try:
+            first_batch = next(data_iter)
+            log(f"\nFirst batch loaded successfully: {first_batch[0][0]}")
+        except StopIteration:
+            log("\nDataLoader is empty.")
+
         predictions = pl.Trainer(
             accelerator=args_dict["accelerator"],
             logger=False,
