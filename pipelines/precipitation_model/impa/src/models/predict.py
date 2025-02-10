@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # flake8: noqa: E501
-import os
 import importlib
+import os
 import pathlib
 from functools import partial
 
@@ -229,8 +229,9 @@ def main(args_dict, parameters_dict):
         for i, location in enumerate(locations):
             if not needs_prediction:
                 log(f"\n prediction.py Dont need prediction before")
-                log(f"\n\n >>>> list dir {os.listdir('pipelines/precipitation_model/impa/data/dataframes/')}")
-                log(f"\n\n >>>> list dir {os.listdir('pipelines/precipitation_model/impa/data/dataframes/SAT-CORRECTED-ABI-L2-RRQPEF-real_time-rio_de_janeiro')}")
+                log(
+                    f"\n\n >>>> list dir {os.listdir('pipelines/precipitation_model/impa/data/dataframes/SAT-CORRECTED-ABI-L2-RRQPEF-real_time-rio_de_janeiro')}"
+                )
                 log(f"\n\n >>>> dataframe_filepath {dataframe_filepath}")
                 ds = HDFDatasetLocations(
                     dataframe_filepath,
