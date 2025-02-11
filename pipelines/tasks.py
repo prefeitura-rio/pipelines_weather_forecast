@@ -16,6 +16,7 @@ from typing import List, Union
 import basedosdados as bd  # pylint: disable=E0611, E0401
 import pandas as pd
 import pendulum  # pylint: disable=E0611, E0401
+import psutil
 from google.cloud import storage  # pylint: disable=E0611, E0401
 from prefect import task  # pylint: disable=E0611, E0401
 from prefect.triggers import all_successful  # pylint: disable=E0611, E0401
@@ -224,6 +225,16 @@ def get_storage_destination(path: str, filename: str = None) -> str:
 
 
 @task
+def get_storage_destination_model(path: str, filename: str = None) -> str:
+    """
+    Get storage blob destinationa and the name of the source file
+    """
+    destination_blob_name = f"{path}/{filename}" if filename else path
+    log(f"File destination_blob_name {destination_blob_name}")
+    return destination_blob_name
+
+
+@task
 def upload_files_to_storage(
     project: str, bucket_name: str, destination_folder: str, source_file_names: List[str]
 ) -> None:
@@ -245,7 +256,9 @@ def upload_files_to_storage(
         blob = bucket.blob(f"{destination_folder}/{file_name}")
         blob.upload_from_filename(file_path)
 
-        log(f"File {file_name} sent to {destination_folder} on bucket {bucket_name}.")
+        log(
+            f"File {file_name} from {file_path} sent to {destination_folder} on bucket {bucket_name}."
+        )
 
 
 # def upload_files_to_storage(
@@ -543,3 +556,92 @@ def unzip_files(
             extracted_files.append(output_file)
     log(f"Extracted files: {extracted_files}")
     return extracted_files
+
+
+@task
+def remove_paths(
+    paths: List[str],
+    wait=None,  # pylint: disable=unused-argument
+) -> bool:
+    """
+    If path is a file, remove it. If path is a directory, remove all files inside it.
+    """
+    for path in paths:
+        path_obj = Path(path)
+
+        if path_obj.is_file():
+            try:
+                path_obj.unlink()
+                log(f"File removed: {path}")
+            except Exception as e:
+                log(f"Error removing file {path}: {e}")
+
+        elif path_obj.is_dir():
+            # Se for um diretório, remove os arquivos dentro dele
+            for file in path_obj.glob("*"):
+                try:
+                    file.unlink()
+                except Exception as e:
+                    log(f"Error removing file {file}: {e}")
+            log(f"Files from {path} removed.")
+
+        else:
+            log(f"Path: {path} doesn't exist.")
+
+    return True
+
+
+@task
+def get_disk_usage(path="/", wait=None):  # pylint: disable=unused-argument)
+    """
+    Retorna o uso atual do disco para o caminho especificado.
+    Por padrão, verifica o uso no diretório raiz (/).
+    """
+    disk = psutil.disk_usage(path)
+    total_gb = disk.total / 1e9
+    used_gb = disk.used / 1e9
+    free_gb = disk.free / 1e9
+    percent_used = disk.percent
+    disk_usage = {
+        "total_gb": total_gb,
+        "used_gb": used_gb,
+        "free_gb": free_gb,
+        "percent_used": percent_used,
+    }
+    log(
+        f"Espaço em disco: {disk_usage['used_gb']:.2f}GB usados \
+            / {disk_usage['total_gb']:.2f}GB totais ({disk_usage['percent_used']}%)"
+    )
+    return disk_usage
+
+
+@task
+def get_memory_usage(wait=None):  # pylint: disable=unused-argument)
+    """
+    Retorna o uso atual de memória RAM em GB e a porcentagem utilizada.
+    """
+    mem = psutil.virtual_memory()
+    total_gb = mem.total / 1e9
+    used_gb = mem.used / 1e9
+    percent_used = mem.percent
+    mem_usage = {"total_gb": total_gb, "used_gb": used_gb, "percent_used": percent_used}
+    log(
+        f"Memória RAM: {mem_usage['used_gb']:.2f}GB \
+            / {mem_usage['total_gb']:.2f}GB ({mem_usage['percent_used']}%)"
+    )
+    return mem_usage
+
+
+@task
+def get_cpu_usage(wait=None):  # pylint: disable=unused-argument)
+    """
+    Retorna o uso atual da CPU em núcleos utilizados e em porcentagem.
+    """
+    total_cores = psutil.cpu_count(logical=True)  # Número total de cores lógicos
+    cpu_percent = psutil.cpu_percent(interval=1)  # Uso da CPU em %
+
+    # Estimando quantos núcleos estão sendo usados (aproximadamente)
+    used_cores = (cpu_percent / 100) * total_cores
+    cpu_usage = {"used_cores": used_cores, "cpu_percent": cpu_percent}
+    log(f"Uso da CPU: {cpu_usage['used_cores']:.2f} núcleos (~{cpu_usage['cpu_percent']}%)")
+    return cpu_usage

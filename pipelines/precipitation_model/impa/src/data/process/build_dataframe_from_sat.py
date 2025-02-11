@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# flake8: noqa: E501
+
 import argparse
 import datetime
 import glob
@@ -8,6 +10,7 @@ from functools import partial
 
 import h5py
 import numpy as np
+import pandas as pd
 from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 from tqdm import tqdm
 
@@ -36,8 +39,8 @@ def task_dt(
     datetime_key = (dt).strftime("%Y%m%d/%H%M")
 
     sat_df = sat_df.correct_parallax()
-    data_small = sat_df.interp_at_grid(band, dt + datetime.timedelta(minutes=5), grid_small)
-    data_large = sat_df.interp_at_grid(band, dt + datetime.timedelta(minutes=5), grid_large)
+    data_small = sat_df.interpolate_at_grid(band, dt + datetime.timedelta(minutes=5), grid_small)
+    data_large = sat_df.interpolate_at_grid(band, dt + datetime.timedelta(minutes=5), grid_large)
     assert data_small.shape == (ni, nj)
     assert data_large.shape == (ni, nj)
     data = np.dstack([data_small, data_large])
@@ -66,7 +69,7 @@ def build_dataframe_from_sat(
     output_filepath = pathlib.Path(
         f"pipelines/precipitation_model/impa/data/dataframes/SAT-CORRECTED-{product}-{pathlib.Path(output_filename).stem}/test.hdf"
     )
-
+    log(f"\n\n>>>>>[DEBUG] Real time Output filepath: {output_filepath}")
     pathlib.Path(output_filepath).parents[0].mkdir(parents=True, exist_ok=True)
 
     if output_filepath.is_file():
@@ -114,7 +117,7 @@ def build_dataframe_from_sat(
         chunk_indices = np.arange(0, size, step)
         if chunk_indices[-1] != size:
             chunk_indices = np.append(chunk_indices, [size])
-
+        # comentario
         task_dt_partial = partial(
             task_dt,
             ni=ni,
@@ -125,9 +128,19 @@ def build_dataframe_from_sat(
             value=value,
             band=band,
         )
-        log(f"\n\n[>>>>>] datetimes {datetimes}")
+        # print(f"\n\n {sat_df.data.columns}")
+        df_height = pd.read_feather(
+            "pipelines/precipitation_model/impa/data/processed/satellite/ABI-L2-ACHAF/SAT-real_time.feather"
+        )
+
+        # log(f"\n\n [DEBUG] {sat_df.data.creation.unique()}")
+        log(f"\n\n [DEBUG] {df_height.creation.unique()}")
+        log(f"\n\n Datetimes interval were we want to predict {relevant_datetimes}")
+        log(f"\n\n[DEBUG] Datetimes used to create interpolated product data {datetimes}\n\n")
         for i, j in tqdm(zip(chunk_indices, chunk_indices[1:]), total=len(chunk_indices)):
             chunk_iterable = datetimes[i:j]
+            log(f"\n\nChunk indices: {i}, {j}")
+            log(f"\n\nChunk iterable datetimes: {chunk_iterable}")
             with multiprocessing.Pool(num_workers) as pool:
                 datasets = list(pool.map(task_dt_partial, chunk_iterable))
             for datetime_key, data in datasets:

@@ -6,7 +6,7 @@ import pathlib
 from argparse import ArgumentParser
 from typing import List
 
-from prefeitura_rio.pipelines_utils.logging import log
+from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 
 from pipelines.precipitation_model.impa.src.utils.eval_utils import predict_dict
 from pipelines.precipitation_model.impa.src.utils.general_utils import print_warning
@@ -104,6 +104,7 @@ def predict(dataframe_key, num_workers=8, cuda=False) -> List:
             args["model"] = args["model_name"]
         ##################################
         del args["model_name"]
+        log(f"Final arguments before prediction for {model_name}: {args}")
         predict_func(args, params)
     return output_predict_filepaths
 

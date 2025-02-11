@@ -59,9 +59,7 @@ timestep = int(ground_truth_df["what"].attrs["timestep"])
 
 keys = get_dataset_keys(ground_truth_df)
 last_obs = keys[-1]
-past_obs = keys[-(NLAGS + 1)]
 last_obs_dt = pd.to_datetime(last_obs)
-past_obs_dt = pd.to_datetime(past_obs)
 
 log(f"last_obs: {last_obs}, last_obs_dt: {last_obs_dt}")
 
@@ -83,24 +81,20 @@ for model_name in specs_dict["models"].keys():
     preds.append(pred_hdf)
     model_names.append(model_name)
     log(f"preds: {preds}, \nmodel_names: {model_names}")
-preds = preds[:3]  # TODO: tirar
-model_names = model_names[:3]
+# preds = preds[:3]  # TODO: tirar
+# model_names = model_names[:3]
 
 
 # flake8: noqa: C901
-def task_lag(lag: int):
+def task_lag_img(lag: int):
     future_dt = last_obs_dt + datetime.timedelta(minutes=lag * timestep)
-    past_dt = past_obs_dt + datetime.timedelta(minutes=lag * timestep)
     output_filepath = pathlib.Path(
         f"pipelines/precipitation_model/impa/eval/viz/test/plot-real_time-{args.dataset}/lag={lag}"
     )
 
     future_time = (future_dt - datetime.timedelta(hours=3)).strftime("%H:%M")
-    past_time = (past_dt - datetime.timedelta(hours=3)).strftime("%H:%M")
-    present_time = (last_obs_dt - datetime.timedelta(hours=3)).strftime("%H:%M")
     future_imgs = len(preds) * [np.zeros((HEIGHT, WIDTH, 4), dtype=int)]
-    past_imgs = len(preds) * [np.zeros((HEIGHT, WIDTH, 4), dtype=int)]
-    metrics_array = np.zeros((len(model_names) - 1, len(METRICS_NAMES)))
+
     # Predict future
     for i, model_name in enumerate(model_names):
         pred = preds[i]
@@ -122,6 +116,7 @@ def task_lag(lag: int):
                     height=HEIGHT,
                     width=WIDTH,
                     no_colorbar=True,
+                    background=True,
                 )
             else:
                 values = np.array(pred[future_key])
@@ -135,108 +130,33 @@ def task_lag(lag: int):
                     height=HEIGHT,
                     width=WIDTH,
                     no_colorbar=True,
+                    background=True,
                 )
         except KeyError:
             pass
 
-    # Predict past
-    for i, model_name in enumerate(model_names):
-        pred = preds[i]
-        if i == 0:
-            future_key = past_dt.strftime("%Y%m%d/%H%M")
-        else:
-            future_key = past_dt.strftime("%Y%m%d-%H%M")
-            future_key = f"{past_obs}/{future_key}"
-        try:
-            if i == 0:
-                values = np.array(pred[future_key]).reshape((*latlons.shape[:2], -1))[:, :, 0]
-            else:
-                values = np.array(pred[future_key])
-            past_imgs[i] = get_img(
-                values,
-                latlons,
-                model_name,
-                feature,
-                None,
-                bg_color=BG_COLOR,
-                height=HEIGHT,
-                width=WIDTH,
-                no_colorbar=True,
-            )
-            if i == 0:
-                ground_truth = values
-            else:
-                for j, metric_name in enumerate(METRICS_NAMES):
-                    metric = metrics_dict[metric_name]
-                    try:
-                        metrics_array[i - 1, j] = metric(values, ground_truth)
-                    except ValueError:
-                        metrics_array[i - 1, j] = np.nan
-        except KeyError:
-            pass
-
-    best_metrics = np.argmin(metrics_array * order, axis=0)
-    worst_metrics = np.argmax(metrics_array * order, axis=0)
     pathlib.Path(output_filepath).parents[0].mkdir(parents=True, exist_ok=True)
-    # fig, axs = plt.subplots(figsize=(5 * len(preds), 10), ncols=len(preds), nrows=1)
-    imgs = future_imgs  # + past_imgs
-    present_dt = last_obs_dt - datetime.timedelta(hours=3)
-    for i in range(1):
-        for j in range(len(preds)):
-            log(f"Start creating image for {model_names[j]}")
-            fig, ax = plt.subplots(figsize=(10, 8))
-            ax.imshow(imgs[len(preds) * i + j])
-            if j == 0:
-                ax.set_facecolor((0.1, 0.2, 0.5))
-                ax.tick_params(bottom=False, labelbottom=False, left=False, labelleft=False)
-            else:
-                ax.axis("off")
-            ax.axis("tight")
-            if i == 0 and j == 0:
-                time = present_time
-            elif i == 0 and j != 0:
-                time = future_time
-            else:
-                time = past_time
+    imgs = future_imgs
+    for j in range(len(preds)):
+        log(f"Start creating image for {model_names[j]}")
+        fig, ax = plt.subplots(figsize=(10, 8))
+        ax.imshow(imgs[j])
+        if j == 0:
+            ax.set_facecolor((0.1, 0.2, 0.5))
+            ax.tick_params(bottom=False, labelbottom=False, left=False, labelleft=False)
+        else:
+            ax.axis("off")
+        ax.axis("tight")
 
-            if i == 1 and j != 0:
-                for k, metric_name in enumerate(METRICS_NAMES):
-                    if j - 1 == best_metrics[k]:
-                        color = "green"
-                    elif j - 1 == worst_metrics[k]:
-                        color = "red"
-                    else:
-                        color = "black"
-                    text = f"{metric_name}: {metrics_array[j-1,k]:.2f}"
-                    ax.text(
-                        0.85,
-                        0.21 - k * 0.06,
-                        text,
-                        backgroundcolor="white",
-                        horizontalalignment="center",
-                        verticalalignment="center",
-                        transform=ax.transAxes,
-                        # bbox=props,
-                        fontdict={"fontsize": 12, "color": color},
-                    )
-            fig.tight_layout()
-            line = plt.Line2D(
-                [0, 1],
-                [0.506, 0.506],
-                transform=fig.transFigure,
-                color="black",
-                linestyle="--",
-                linewidth=1,
-            )
-            fig.add_artist(line)
-            xpos = 1 / len(preds)
-            fig.subplots_adjust(bottom=0.1, top=0.9)
-            filename = f"{output_filepath}_{model_names[j]}.png"
-            log(f"Figure saved on {filename}")
-            fig.savefig(filename, transparent=True)
-            fig.clf()
-            plt.close()
+        fig.tight_layout()
+
+        fig.subplots_adjust(bottom=0.1, top=0.9)
+        filename = f"{output_filepath}_{model_names[j]}.png"
+        log(f"Figure saved on {filename}")
+        fig.savefig(filename, transparent=True)
+        fig.clf()
+        plt.close()
 
 
 with Pool(min(NLAGS, args.num_workers)) as pool:
-    list(tqdm.tqdm(pool.imap(task_lag, list(range(NLAGS, NLAGS + 1))), total=NLAGS))
+    list(tqdm.tqdm(pool.imap(task_lag_img, list(range(NLAGS, NLAGS + 1))), total=NLAGS))

@@ -7,6 +7,7 @@ from pathlib import Path
 import h5py
 import numpy as np
 import torch
+from prefeitura_rio.pipelines_utils.logging import log
 from torch.utils import data
 
 from pipelines.precipitation_model.impa.src.utils.dataframe_utils import (
@@ -60,7 +61,7 @@ class PredHDFDatasetLocations(data.Dataset):
         for location in locations:
             path = Path(dataframe.format(location=location)).resolve()
             predict_filepath = Path(dataset)
-
+            log(f"path {path}, predict_filepath {predict_filepath}")
             self.n_predictions = n_predictions
             shm_path = str(path).replace(str(path.parents[4]), "/dev/shm")
             if Path(shm_path).exists():
@@ -69,8 +70,10 @@ class PredHDFDatasetLocations(data.Dataset):
             else:
                 # print_warning("File not found in /dev/shm, using original path.")
                 filepath = path
+            log("before subprocess")
             subprocess.run(f"cat {filepath} > /dev/null", shell=True)
             subprocess.run(f"cat {predict_filepath} > /dev/null", shell=True)
+            log("after subprocess")
             self.filepaths.append(filepath)
             self.predict_filepaths.append(predict_filepath)
 
@@ -79,6 +82,7 @@ class PredHDFDatasetLocations(data.Dataset):
         self.elevation_tensors = []
         self.latlon_tensors = []
         for location in locations:
+            log("Loading elevation and latlon tensors")
             el1 = torch.tensor(np.load(elevation_file_small.format(location=location)))
             el2 = torch.tensor(np.load(elevation_file_large.format(location=location)))
             el = torch.stack((el1, el2), dim=-1).type(torch.float32)
@@ -88,6 +92,7 @@ class PredHDFDatasetLocations(data.Dataset):
             latlon2 = torch.tensor(np.load(latlon_file_large.format(location=location)))
             latlon = torch.stack((latlon1, latlon2), dim=-1).type(torch.float32)
             self.latlon_tensors.append(latlon)
+            log("elevation and latlon tensors loaded")
         self._load_keys()
 
     def _load_keys(self):
@@ -104,6 +109,7 @@ class PredHDFDatasetLocations(data.Dataset):
         self.past_keys = np.array([])
         self.future_keys = np.array([])
         self.pred_keys = np.array([])
+        log("Starting load_keys on PredHDFDatasetLocations")
         for i, filepath in enumerate(self.filepaths):
             with h5py.File(filepath) as hdf:
                 what = hdf["what"]
@@ -161,6 +167,7 @@ class PredHDFDatasetLocations(data.Dataset):
                     self.ds_indices.append(len(new_keys) + self.ds_indices[-1])
                 except IndexError:
                     self.ds_indices.append(len(new_keys))
+        log("End load_keys on PredHDFDatasetLocations")
 
     def _get_hdf_index(self, index):
         for i, ds_index in enumerate(self.ds_indices):
@@ -216,6 +223,7 @@ class PredHDFDatasetLocations(data.Dataset):
             Y = self.y_transform(Y)
 
         ### Metadata
+        log("Creating metadata PredHDFDatasetLocations")
         date = self.past_keys[index][-1]
         # year = int(date[:4])
         month = int(date[4:6])
@@ -235,6 +243,7 @@ class PredHDFDatasetLocations(data.Dataset):
             ),
             dim=-1,
         )
+        log("End Creating metadata PredHDFDatasetLocations")
         if self.leadtime_conditioning:
             return (X, Y, metadata_tensor, leadtime_index)
         else:
@@ -247,6 +256,7 @@ class PredHDFDatasetLocations(data.Dataset):
             return len(self.keys)
 
     def get_sample_weights(self):
+        log("Calculating sample weights on PredHDFDatasetLocations")
         weights = None
         for filepath in self.filepaths:
             filepath = Path(filepath)
@@ -269,4 +279,5 @@ class PredHDFDatasetLocations(data.Dataset):
         if self.leadtime_conditioning:
             weights = np.tile(weights, (self.n_after, 1)).T.flatten()
         assert len(weights) == len(self)
+        log("End calculating sample weights on PredHDFDatasetLocations")
         return weights / weights.sum()

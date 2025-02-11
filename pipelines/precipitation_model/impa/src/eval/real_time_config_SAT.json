@@ -1,9 +1,6 @@
 {
     "models":{
-        "UNET":{
-            "model_file": "3--best-epoch=4.ckpt"
-        },
-        "EVONET":{
+       "EVONET":{
             "model_file": "1--best-epoch=3.ckpt",
             "plot": false
         },
@@ -11,18 +8,15 @@
             "args":{
                 "locations": ["rio_de_janeiro"],
                 "overwrite": true,
-                "output_predict_filepaths": ["pipelines/precipitation_model/impa/predictions_SAT/NowcastNet.hdf"],
-                "dataframe_filepath": "pipelines/precipitation_model/impa/data/dataframes/SAT-CORRECTED-ABI-L2-RRQPEF-real_time-{location}/test.hdf",
+                "output_predict_filepaths": ["predictions_SAT/NowcastNet.hdf"],
+                "dataframe_filepath": "data/dataframes/SAT-CORRECTED-ABI-L2-RRQPEF-real_time-{location}/test.hdf",
                 "dataframe": "SAT-ABI-L2-RRQPEF-{location}-file=thr=0_split2",
-                "predict_dataframe": "pipelines/precipitation_model/impa/predictions_SAT/EVONET.hdf",
-                "input_model_filepath": "pipelines/precipitation_model/impa/models_SAT/NowcastNet/0--best-epoch=4-v1.ckpt",
+                "predict_dataframe": "predictions_SAT/EVONET.hdf",
+                "input_model_filepath": "models_SAT/NowcastNet/0--best-epoch=4-v1.ckpt",
                 "compile": false,
                 "batch_to_predict": 8
             },
-            "params_filepath": "pipelines/precipitation_model/impa/models_SAT/NowcastNet/params.json"
-        },
-        "MetNet3":{
-            "model_file": "3--best-epoch=3.ckpt"
+            "params_filepath": "models_SAT/NowcastNet/params.json"
         }
     }
 }

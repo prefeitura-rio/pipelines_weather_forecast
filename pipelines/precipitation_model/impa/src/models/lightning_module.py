@@ -3,6 +3,7 @@
 
 import torch
 from einops import rearrange
+from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 from pytorch_lightning import LightningModule
 
 from pipelines.precipitation_model.impa.src.utils.data_utils import (
@@ -47,7 +48,7 @@ class LModule(LightningModule):
         self.data_modification = self.hparams.data_modification
         self.needs_prediction = needs_prediction
         self.merge = merge
-        print("Satellite: ", satellite)
+        log(f"Satellite: {satellite}")
         self.sat = satellite
         self.dm_option = data_modification_options
         if self.data_modification is not None:
@@ -85,7 +86,7 @@ class LModule(LightningModule):
         elif len(context) == 1:
             self.channels_in = self.n_before
 
-        print("Old_data: ", self.old)
+        log(f"Old_data: {self.old}")
         self.channels_out = (
             1
             if self.dm_option["Lead_time_cond"]

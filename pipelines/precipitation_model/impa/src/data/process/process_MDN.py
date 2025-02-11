@@ -8,6 +8,7 @@ from multiprocessing.pool import Pool
 
 import h5py
 import numpy as np
+from prefeitura_rio.pipelines_utils.logging import log  # pylint: disable=E0611, E0401
 from tqdm import tqdm
 
 from pipelines.precipitation_model.impa.src.data.process.RadarData import RadarData
@@ -104,7 +105,7 @@ def process_data(full_matrix: np.array, operator) -> dict:
 
 # flake8: noqa
 def task_filepath(filepath, verbose=False, overwrite=False, feature="DBZH", process_type="CMAX"):
-    print(f"Processing {filepath}")
+    log(f"Processing {filepath}")
     is_gz = filepath.suffix == ".gz"
     if is_gz:
         f = gzip.open(filepath, "rb")

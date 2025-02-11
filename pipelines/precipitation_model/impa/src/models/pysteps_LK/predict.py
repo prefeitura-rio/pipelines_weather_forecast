@@ -201,7 +201,7 @@ def main(args_dict):
     # Run predictions for each chunk
     for i, j in zip(chunk_indices, chunk_indices[1:]):
         chunk_iterable = range(i, j)
-        # print(chunk_iterable)
+        # log(chunk_iterable)
         log("Before predict Parallel")
         predicts_list = Parallel(n_jobs=step)(delayed(task)(it) for it in chunk_iterable)
         log("Before predict Parallel")

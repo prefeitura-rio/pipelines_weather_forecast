@@ -70,7 +70,7 @@ class model(LModule):
         x_dim = self.ground_truth.shape[-2]
 
         sample_tensor = torch.zeros(1, 1, x_dim, x_dim)
-        self.grid = make_grid(sample_tensor)
+        self.grid = make_grid(sample_tensor, self.device)
 
     def forward(self, x):
         intensity, motion = self.evo_net(torch.flip(x, dims=[1]))
@@ -82,12 +82,7 @@ class model(LModule):
         grid = self.grid.repeat(x.shape[0], 1, 1, 1)
         for i in range(self.n_after):
             x_bili.append(
-                warp(
-                    last_frames,
-                    motion_[:, i],
-                    grid.to(self.device),
-                    padding_mode="border",
-                )
+                warp(last_frames, motion_[:, i], grid.to(self.device), padding_mode="border")
             )
             with torch.no_grad():
                 last_frames = warp(
