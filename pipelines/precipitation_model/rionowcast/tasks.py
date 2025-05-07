@@ -200,14 +200,6 @@ def query_data_from_gcp(  # pylint: disable=too-many-arguments, too-many-locals
     }
     dfr = convert_dtypes(dfr, dtype_mapping)
     log(f"Shape of dataset before renormalization: {dfr.shape}")
-    if "horizontal_reflectivity_mean" in dfr.columns and renormalization:
-        min_val = dfr["horizontal_reflectivity_mean"].min()
-        max_val = dfr["horizontal_reflectivity_mean"].max()
-        log(f"Min and max values before renormalization {min_val}, {max_val}")
-        dfr["horizontal_reflectivity_mean"] = (dfr["horizontal_reflectivity_mean"] - min_val) / (
-            max_val - min_val
-        )
-    # TODO: remove normalization after rionowcast finish preprocessing fixes
 
     log(f"df from {table_id}: {dfr.iloc[0]}")
     log(f"dtypes from {table_id}: {dfr.dtypes}")
