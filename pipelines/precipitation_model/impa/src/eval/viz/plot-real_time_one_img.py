@@ -4,6 +4,7 @@
 """
 Keep only lag 18. This lag represents 3h from last observation.
 """
+
 import datetime
 import json
 import pathlib
